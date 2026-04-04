@@ -7,6 +7,7 @@ import { PRELOADED_BUILDINGS } from "@/lib/buildings";
 import { createSession, setBuilding } from "@/lib/api";
 import { setSessionId } from "@/lib/session";
 import type { Building } from "@/lib/types";
+import "cesium/Build/Cesium/Widgets/widgets.css";
 
 interface CursorCoords {
   lat: string;
@@ -110,14 +111,16 @@ export default function GlobeView() {
         viewerRef.current = v;
 
         // If no Ion token, fall back to OpenStreetMap imagery
-        if (!ionToken) {
-          v.imageryLayers.removeAll();
-          v.imageryLayers.addImageryProvider(
-            new Cesium.OpenStreetMapImageryProvider({
-              url: 'https://tile.openstreetmap.org/'
-            })
-          );
-        }
+        // Use dark CartoDB tiles (works without Ion token, looks tactical)
+        v.imageryLayers.removeAll();
+        v.imageryLayers.addImageryProvider(
+          new Cesium.UrlTemplateImageryProvider({
+            url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+            credit: new Cesium.Credit("CartoDB Dark Matter"),
+            minimumLevel: 0,
+            maximumLevel: 18,
+          })
+        );
 
         // Dark globe styling
         v.scene.backgroundColor = Cesium.Color.fromCssColorString("#0a0a0a");
