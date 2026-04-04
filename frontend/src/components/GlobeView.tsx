@@ -72,6 +72,11 @@ export default function GlobeView() {
         // Set the base URL for Cesium assets
         (window as unknown as Record<string, unknown>).CESIUM_BASE_URL = "/cesium";
 
+        const ionToken = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
+        if (ionToken) {
+          Cesium.Ion.defaultAccessToken = ionToken;
+        }
+
         if (destroyed || !containerRef.current) return;
 
         // Create the viewer with minimal UI
@@ -103,6 +108,16 @@ export default function GlobeView() {
 
         viewer = v;
         viewerRef.current = v;
+
+        // If no Ion token, fall back to OpenStreetMap imagery
+        if (!ionToken) {
+          v.imageryLayers.removeAll();
+          v.imageryLayers.addImageryProvider(
+            new Cesium.OpenStreetMapImageryProvider({
+              url: 'https://tile.openstreetmap.org/'
+            })
+          );
+        }
 
         // Dark globe styling
         v.scene.backgroundColor = Cesium.Color.fromCssColorString("#0a0a0a");
