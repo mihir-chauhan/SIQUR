@@ -216,3 +216,93 @@ input:focus-visible,
 .cesium-viewer .cesium-widget-credits {
   display: none !important;
 }
+
+/* ─── WorldView-Style Effects ────────────────────────────────────────── */
+
+/* Bracket Panel */
+.bracket-panel {
+  position: relative;
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(0, 229, 255, 0.1);
+}
+
+.bracket-panel::before,
+.bracket-panel::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.bracket-panel::before {
+  background:
+    linear-gradient(to right, var(--color-accent-cyan) 2px, transparent 2px) 0 0,
+    linear-gradient(to bottom, var(--color-accent-cyan) 2px, transparent 2px) 0 0,
+    linear-gradient(to left, var(--color-accent-cyan) 2px, transparent 2px) 100% 0,
+    linear-gradient(to bottom, var(--color-accent-cyan) 2px, transparent 2px) 100% 0;
+  background-size: 10px 10px;
+  background-repeat: no-repeat;
+}
+
+.bracket-panel::after {
+  background:
+    linear-gradient(to right, var(--color-accent-cyan) 2px, transparent 2px) 0 100%,
+    linear-gradient(to top, var(--color-accent-cyan) 2px, transparent 2px) 0 100%,
+    linear-gradient(to left, var(--color-accent-cyan) 2px, transparent 2px) 100% 100%,
+    linear-gradient(to top, var(--color-accent-cyan) 2px, transparent 2px) 100% 100%;
+  background-size: 10px 10px;
+  background-repeat: no-repeat;
+}
+
+/* Night Vision Grain Overlay */
+.nv-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* CRT Vignette */
+.crt-vignette::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.8) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Radar Ping Animation */
+@keyframes radar-ping {
+  0% { transform: scale(0.5); opacity: 1; }
+  80% { transform: scale(3.5); opacity: 0; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+.radar-ping {
+  animation: radar-ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Scanner Line */
+@keyframes sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.scanner-line {
+  position: absolute;
+  width: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-accent-cyan), transparent);
+  animation: sweep 4s linear infinite;
+  box-shadow: 0 0 10px 2px rgba(0, 229, 255, 0.4);
+  pointer-events: none;
+}
