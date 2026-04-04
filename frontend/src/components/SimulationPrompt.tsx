@@ -76,22 +76,16 @@ export default function SimulationPrompt({
           }}
         >
           <span
+            className="sim-pulse"
             style={{
               display: "inline-block",
               width: 8,
               height: 8,
               borderRadius: "50%",
               background: "var(--color-accent-cyan)",
-              animation: "sim-pulse 1.2s ease-in-out infinite",
             }}
           />
           GENERATING SIMULATION...
-          <style>{`
-            @keyframes sim-pulse {
-              0%, 100% { opacity: 0.3; transform: scale(0.8); }
-              50% { opacity: 1; transform: scale(1.2); }
-            }
-          `}</style>
         </div>
       ) : (
         <div

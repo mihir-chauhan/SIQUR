@@ -284,6 +284,7 @@ export default function CameraView({
           />
           {/* Noise dots */}
           <div
+            className="noise-shift"
             style={{
               position: "absolute",
               inset: 0,
@@ -291,7 +292,6 @@ export default function CameraView({
               backgroundImage:
                 "radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)",
               backgroundSize: "4px 4px",
-              animation: "noise-shift 0.15s steps(3) infinite",
             }}
           />
           <div
@@ -319,14 +319,6 @@ export default function CameraView({
           >
             SPLAT ASSET NOT FOUND
           </div>
-          <style>{`
-            @keyframes noise-shift {
-              0% { transform: translate(0, 0); }
-              33% { transform: translate(-1px, 1px); }
-              66% { transform: translate(1px, -1px); }
-              100% { transform: translate(0, 0); }
-            }
-          `}</style>
         </div>
       )}
 
@@ -397,6 +389,7 @@ export default function CameraView({
             }}
           >
             <span
+              className="rec-blink"
               style={{
                 display: "inline-block",
                 width: 8,
@@ -404,7 +397,6 @@ export default function CameraView({
                 borderRadius: "50%",
                 background: "#ff2d2d",
                 boxShadow: "0 0 6px rgba(255, 45, 45, 0.8), 0 0 12px rgba(255, 45, 45, 0.4)",
-                animation: "rec-blink 1s step-start infinite",
               }}
             />
             <span
@@ -549,13 +541,6 @@ export default function CameraView({
           }}
         />
       </div>
-
-      <style>{`
-        @keyframes rec-blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-      `}</style>
 
       {/* Simulation Prompt */}
       <SimulationPrompt
