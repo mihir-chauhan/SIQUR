@@ -130,12 +130,12 @@ export default function GlobeView() {
         if (v.scene.sun) v.scene.sun.show = false;
         if (v.scene.moon) v.scene.moon.show = false;
 
-        // Fly to Purdue campus
+        // Fly to Purdue campus — top-down view to show all building markers
         v.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(-86.9167, 40.4274, 2000),
+          destination: Cesium.Cartesian3.fromDegrees(-86.9130, 40.4265, 1200),
           orientation: {
             heading: Cesium.Math.toRadians(0),
-            pitch: Cesium.Math.toRadians(-45),
+            pitch: Cesium.Math.toRadians(-75),
             roll: 0,
           },
           duration: 0,
