@@ -48,6 +48,9 @@ def parse_args():
                    help='Wall-adjacent candidate subsample step (default: 10)')
     p.add_argument('--n-rays', type=int, default=360,
                    help='Number of rays per candidate (default: 360)')
+    p.add_argument('--ceiling', action='store_true',
+                   help='Place cameras on ceilings (interior floor grid) '
+                        'instead of wall-adjacent positions')
     return p.parse_args()
 
 
@@ -71,12 +74,14 @@ def main():
     # -----------------------------------------------------------------------
     # Step 1: Load and preprocess floorplan
     # -----------------------------------------------------------------------
-    print(f"\n[1/4] Loading floorplan: {args.image}")
+    print(f"\n[1/4] Loading floorplan: {args.image}"
+          + (" [ceiling mode]" if args.ceiling else ""))
     fp = load_floorplan(
         args.image,
         px_per_meter=args.scale,
         grid_step=args.grid_step,
         wall_step=args.wall_step,
+        ceiling=args.ceiling,
     )
     print(f"      Image size:  {fp.img.shape[1]}×{fp.img.shape[0]}px")
     print(f"      Scale:       {args.scale:.1f} px/m  "

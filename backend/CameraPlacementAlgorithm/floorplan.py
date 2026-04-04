@@ -34,6 +34,7 @@ class FloorplanData:
     px_per_meter: float
     grid_points: np.ndarray  # (N,2) int array of (row,col) grid sample points
     candidates: np.ndarray   # (M,2) int array of (row,col) camera candidates
+    ceiling: bool = False    # True = ceiling-mounted cameras (interior floor grid)
 
 
 # ---------------------------------------------------------------------------
@@ -42,19 +43,22 @@ class FloorplanData:
 
 def load_floorplan(path: str, px_per_meter: float = PIXELS_PER_METER,
                    grid_step: int = GRID_STEP,
-                   wall_step: int = CANDIDATE_WALL_STEP) -> FloorplanData:
+                   wall_step: int = CANDIDATE_WALL_STEP,
+                   ceiling: bool = False) -> FloorplanData:
     img = cv2.imread(path)
     if img is None:
         raise FileNotFoundError(f"Cannot open image: {path}")
 
     wall_mask = _detect_walls(img)
     floor_mask = _extract_floor(wall_mask, img)
-    candidates = extract_candidates(floor_mask, wall_mask, step=wall_step)
+    candidates = extract_candidates(floor_mask, wall_mask, step=wall_step,
+                                    ceiling=ceiling)
     grid_pts = _sample_grid(floor_mask, grid_step)
 
+    mode_str = "ceiling" if ceiling else "wall-adjacent"
     print(f"  Floor pixels: {floor_mask.sum():,}")
     print(f"  Grid points:  {len(grid_pts):,}  (step={grid_step}px)")
-    print(f"  Candidates:   {len(candidates):,}")
+    print(f"  Candidates:   {len(candidates):,}  ({mode_str})")
 
     return FloorplanData(
         img=img,
@@ -63,6 +67,7 @@ def load_floorplan(path: str, px_per_meter: float = PIXELS_PER_METER,
         px_per_meter=px_per_meter,
         grid_points=grid_pts,
         candidates=candidates,
+        ceiling=ceiling,
     )
 
 
@@ -205,28 +210,41 @@ def _extract_floor(wall_mask: np.ndarray, img: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 def extract_candidates(floor_mask: np.ndarray, wall_mask: np.ndarray,
-                       step: int = CANDIDATE_WALL_STEP) -> np.ndarray:
+                       step: int = CANDIDATE_WALL_STEP,
+                       ceiling: bool = False) -> np.ndarray:
     """
     Returns (M, 2) array of (row, col) candidate camera positions.
 
-    Only wall-mounted positions: floor pixels that are strictly 1px adjacent
-    to a wall pixel (3×3 dilation).  The yaw optimiser in visibility.py will
-    orient each camera to face inward, maximising coverage from that position.
+    Wall mode (default): floor pixels strictly 1px adjacent to a wall pixel.
+    Ceiling mode (--ceiling): any interior floor pixel on a regular grid at
+    `step`-pixel spacing — cameras can be mounted anywhere on the ceiling.
     """
     h, w = floor_mask.shape
 
-    # Dilate walls by exactly 1 pixel (3×3 kernel) to get the floor strip
-    # immediately touching the wall surface.
-    dil_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    wall_dilated = cv2.dilate(wall_mask.astype(np.uint8), dil_kernel).astype(bool)
-    wall_adjacent = wall_dilated & floor_mask
+    if ceiling:
+        # Sample interior floor points on a regular grid — no wall adjacency
+        # required.  Use the same step as the wall-step parameter.
+        rs = np.arange(0, h, step)
+        cs = np.arange(0, w, step)
+        rr, cc = np.meshgrid(rs, cs, indexing='ij')
+        mask = floor_mask[rr, cc]
+        rows = rr[mask].flatten()
+        cols = cc[mask].flatten()
+    else:
+        # Dilate walls by exactly 1 pixel (3×3 kernel) to get the floor strip
+        # immediately touching the wall surface.
+        dil_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        wall_dilated = cv2.dilate(wall_mask.astype(np.uint8), dil_kernel).astype(bool)
+        wall_adjacent = wall_dilated & floor_mask
 
-    rows, cols = np.where(wall_adjacent)
-    idx = np.arange(0, len(rows), step)
+        rows, cols = np.where(wall_adjacent)
+        idx = np.arange(0, len(rows), step)
+        rows = rows[idx]
+        cols = cols[idx]
 
     candidates: List[Tuple[int, int]] = []
-    for i in idx:
-        candidates.append((int(rows[i]), int(cols[i])))
+    for r, c in zip(rows, cols):
+        candidates.append((int(r), int(c)))
 
     # Deduplicate and clip to image bounds
     seen = set()
