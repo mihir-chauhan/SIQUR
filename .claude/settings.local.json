@@ -12,7 +12,9 @@
       "Bash(python3 -m venv /home/rexmagnusdavid/Repositories/MinorityReport/CameraPlacementAlgorithm/.venv)",
       "Bash(/home/rexmagnusdavid/Repositories/MinorityReport/CameraPlacementAlgorithm/.venv/bin/pip install:*)",
       "Bash(.venv/bin/python3:*)",
-      "Bash(.venv/bin/python main.py DSAI_1.png --camera-count 5)"
+      "Bash(.venv/bin/python main.py DSAI_1.png --camera-count 5)",
+      "Bash(ls /home/rexmagnusdavid/Repositories/MinorityReport/backend/CameraPlacementAlgorithm/*.py)",
+      "Bash(ls /home/rexmagnusdavid/Repositories/MinorityReport/backend/CameraPlacementAlgorithm/requirements*.txt)"
     ]
   },
   "disabledMcpjsonServers": [
