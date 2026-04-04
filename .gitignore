@@ -1,1 +1,30 @@
-/SyntheticDataset/video-gen/.venv
+# Environment and secrets
+.env
+.env.local
+frontend/.env.local
+
+# Planning (local only)
+.planning/
+
+# Build artifacts
+.next/
+node_modules/
+__pycache__/
+*.pyc
+
+# Screenshots and test artifacts
+*.png
+*.jpg
+.playwright-mcp/
+
+# Python virtual environments
+.venv/
+backend/SyntheticDataset/video-gen/.venv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/

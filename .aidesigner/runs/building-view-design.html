@@ -1,0 +1,227 @@
+<!--
+  aesthetic_dna: Military Intelligence / Spy-Thriller Tactical HUD (Palantir/WorldView)
+-->
+<!DOCTYPE html>
+<html lang="en" class="bg-[#0a0a0a] text-[#00e5ff]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MINORITY REPORT // TACTICAL BLDG VIEW</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { mono: ['"Space Mono"', 'monospace'] },
+                    colors: {
+                        black: '#0a0a0a',
+                        cyan: { DEFAULT: '#00e5ff', dim: 'rgba(0,229,255,0.15)', glow: 'rgba(0,229,255,0.6)' },
+                        green: { DEFAULT: '#00ff41', glow: 'rgba(0,255,65,0.6)' },
+                        red: { DEFAULT: '#ff003c', glow: 'rgba(255,0,60,0.6)' },
+                        gray: { 900: '#111', 800: '#222' }
+                    },
+                    boxShadow: {
+                        'cyan-glow': '0 0 10px rgba(0,229,255,0.5), inset 0 0 10px rgba(0,229,255,0.2)',
+                        'cyan-glow-intense': '0 0 15px rgba(0,229,255,0.8), inset 0 0 15px rgba(0,229,255,0.4)',
+                        'green-glow': '0 0 10px rgba(0,255,65,0.5)',
+                        'red-glow': '0 0 10px rgba(255,0,60,0.5)',
+                    },
+                    dropShadow: { 'cyan': '0 0 5px rgba(0,229,255,0.8)' }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --c-cyan: #00e5ff; --c-bg: #0a0a0a; }
+        body { margin:0; overflow:hidden; cursor:crosshair; text-transform:uppercase; letter-spacing:0.05em; user-select:none; }
+        .scanlines { position:fixed; top:0; left:0; width:100vw; height:100vh; background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,0) 50%,rgba(0,0,0,0.4) 50%,rgba(0,0,0,0.4)); background-size:100% 4px; pointer-events:none; z-index:9999; opacity:0.6; }
+        @keyframes crt-flicker { 0%{opacity:0.95} 5%{opacity:0.85} 10%{opacity:0.95} 15%{opacity:1} 50%{opacity:0.95} 60%{opacity:0.9} 100%{opacity:1} }
+        .crt-overlay { animation:crt-flicker 0.15s infinite; }
+        .bracket-panel { position:relative; background:rgba(10,10,10,0.85); backdrop-filter:blur(4px); border:1px solid rgba(0,229,255,0.1); }
+        .bracket-panel::before,.bracket-panel::after { content:''; position:absolute; width:100%; height:100%; top:0; left:0; pointer-events:none; }
+        .bracket-panel::before { background:linear-gradient(to right,var(--c-cyan) 2px,transparent 2px) 0 0,linear-gradient(to bottom,var(--c-cyan) 2px,transparent 2px) 0 0,linear-gradient(to left,var(--c-cyan) 2px,transparent 2px) 100% 0,linear-gradient(to bottom,var(--c-cyan) 2px,transparent 2px) 100% 0; background-size:10px 10px; background-repeat:no-repeat; }
+        .bracket-panel::after { background:linear-gradient(to right,var(--c-cyan) 2px,transparent 2px) 0 100%,linear-gradient(to top,var(--c-cyan) 2px,transparent 2px) 0 100%,linear-gradient(to left,var(--c-cyan) 2px,transparent 2px) 100% 100%,linear-gradient(to top,var(--c-cyan) 2px,transparent 2px) 100% 100%; background-size:10px 10px; background-repeat:no-repeat; }
+        .text-glow { text-shadow:0 0 8px rgba(0,229,255,0.8); }
+        .text-glow-green { text-shadow:0 0 8px rgba(0,255,65,0.8); }
+        .text-glow-red { text-shadow:0 0 8px rgba(255,0,60,0.8); }
+        .tactical-input { background:transparent; border:none; border-bottom:2px solid var(--c-cyan); color:var(--c-cyan); outline:none; text-align:center; }
+        .tactical-input:focus { box-shadow:0 5px 10px -5px rgba(0,229,255,0.5); }
+        .tactical-input::-webkit-outer-spin-button,.tactical-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+        @keyframes scrollUp { 0%{transform:translateY(0)} 100%{transform:translateY(-50%)} }
+        .data-stream { animation:scrollUp 20s linear infinite; }
+        @keyframes sweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+        .scanner-line { position:absolute; top:0; left:0; width:50%; height:1px; background:linear-gradient(90deg,transparent,#00e5ff,transparent); animation:sweep 4s linear infinite; box-shadow:0 0 10px 2px rgba(0,229,255,0.4); }
+        @keyframes pulse-ring { 0%{transform:scale(0.8);opacity:0.8} 100%{transform:scale(2.5);opacity:0} }
+        .cam-ring { animation:pulse-ring 2s cubic-bezier(0.215,0.61,0.355,1) infinite; transform-origin:center; }
+        .camera-node { cursor:pointer; transition:all 0.2s; }
+        .camera-node:hover .cam-body { fill:#fff; }
+        .camera-node:hover .fov-cone { fill:rgba(0,229,255,0.4); stroke:#00e5ff; stroke-width:1; stroke-dasharray:4; }
+        .progress-circle { transition:stroke-dashoffset 1s ease-out; }
+        .map-grid { background-image:linear-gradient(rgba(0,229,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.05) 1px,transparent 1px); background-size:40px 40px; background-position:center center; }
+        .central-crosshair::before,.central-crosshair::after { content:''; position:absolute; background:rgba(0,229,255,0.2); z-index:0; pointer-events:none; }
+        .central-crosshair::before { width:100vw; height:1px; top:50%; left:0; }
+        .central-crosshair::after { width:1px; height:100vh; left:50%; top:0; }
+        ::-webkit-scrollbar { width:0px; background:transparent; }
+    </style>
+</head>
+<body class="font-mono text-xs md:text-sm antialiased h-screen w-screen flex flex-col crt-overlay map-grid central-crosshair">
+    <div class="scanlines"></div>
+    <header class="w-full relative z-50 flex justify-between items-start p-4 pointer-events-none">
+        <div class="flex flex-col gap-2 pointer-events-auto">
+            <button class="relative group flex items-center gap-2 border border-cyan/30 px-4 py-2 bg-black/50 hover:bg-cyan hover:text-black transition-colors duration-0 bracket-panel">
+                <i class="ph ph-caret-left text-lg"></i>
+                <span class="font-bold tracking-widest text-glow group-hover:text-black">BACK TO GLOBE</span>
+            </button>
+            <div class="text-[10px] text-cyan/60 flex flex-col gap-1 mt-2">
+                <span>NODE: OMNI-72.A</span>
+                <span>UPLINK: <span class="text-green text-glow-green">SECURE</span></span>
+                <span>LATENCY: 14ms</span>
+            </div>
+        </div>
+        <div class="flex flex-col items-center gap-1">
+            <div class="border border-red px-8 py-1 bg-red/10 text-red font-bold tracking-[0.2em] text-glow-red animate-pulse">TOP SECRET // EYES ONLY</div>
+            <div class="bg-cyan text-black px-6 py-0.5 font-bold tracking-[0.3em] text-[10px]">BUILDING ANALYSIS // MINORITY REPORT</div>
+            <div class="text-[10px] text-cyan/50 mt-1 font-mono tracking-widest">SYS.TIME: <span id="sys-time">00:00:00:00</span> ZULU</div>
+        </div>
+        <div class="text-right flex flex-col items-end gap-1 pointer-events-auto">
+            <div class="bracket-panel p-2 min-w-[200px]">
+                <div class="text-[10px] text-cyan/50 border-b border-cyan/20 pb-1 mb-1">TARGET DESIGNATION</div>
+                <div class="text-glow font-bold text-sm">FACILITY TANGO-9</div>
+                <div class="flex justify-between text-[10px] mt-2"><span class="text-cyan/60">SQ FEET</span><span>145,200</span></div>
+                <div class="flex justify-between text-[10px]"><span class="text-cyan/60">ELEVATION</span><span>+24.5M MSL</span></div>
+                <div class="flex justify-between text-[10px]"><span class="text-cyan/60">HVAC STATUS</span><span class="text-green text-glow-green">NOMINAL</span></div>
+            </div>
+        </div>
+    </header>
+    <main class="absolute inset-0 z-10 flex items-center justify-center overflow-hidden">
+        <div class="scanner-line top-[25%] hidden md:block"></div>
+        <div class="scanner-line top-[75%] hidden md:block" style="animation-direction:reverse;animation-duration:6s;"></div>
+        <div class="relative w-[90%] md:w-[70%] h-[80%] flex items-center justify-center">
+            <svg viewBox="0 0 1000 800" class="w-full h-full drop-shadow-cyan" style="filter:drop-shadow(0 0 15px rgba(0,229,255,0.2));">
+                <defs><pattern id="stripes" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="8" stroke="rgba(0,229,255,0.3)" stroke-width="1"/></pattern></defs>
+                <polygon points="100,150 350,150 350,50 700,50 700,200 900,200 900,650 750,650 750,750 400,750 400,650 100,650" fill="rgba(0,229,255,0.03)" stroke="#00e5ff" stroke-width="2"/>
+                <g stroke="rgba(0,229,255,0.4)" stroke-width="1" fill="none">
+                    <rect x="120" y="170" width="210" height="200"/><line x1="225" y1="170" x2="225" y2="370"/>
+                    <rect x="350" y="370" width="400" height="60" fill="url(#stripes)"/>
+                    <rect x="720" y="220" width="160" height="150"/><rect x="740" y="240" width="120" height="110" stroke="rgba(0,255,65,0.5)"/>
+                    <text x="750" y="260" fill="rgba(0,255,65,0.8)" font-size="12" font-family="monospace">SERVER CORE // SECURE</text>
+                    <rect x="420" y="450" width="310" height="180"/><line x1="575" y1="450" x2="575" y2="630"/><line x1="420" y1="540" x2="730" y2="540"/>
+                    <rect x="120" y="450" width="260" height="180"/><circle cx="250" cy="630" r="20" stroke-dasharray="4"/>
+                    <text x="180" y="655" fill="rgba(0,229,255,0.5)" font-size="10">MAIN INFILTRATION POINT</text>
+                </g>
+                <g class="camera-node" transform="translate(140, 610)">
+                    <path class="fov-cone" d="M 0,0 L 150,-40 A 160,160 0 0,1 150,40 Z" fill="rgba(0,229,255,0.15)" transform="rotate(-45)"/>
+                    <circle class="cam-ring" cx="0" cy="0" r="10" stroke="#00e5ff" stroke-width="1" fill="none"/>
+                    <rect class="cam-body" x="-4" y="-4" width="8" height="8" fill="#00e5ff"/>
+                    <text x="12" y="3" fill="#00e5ff" font-size="10" class="text-glow">C-01</text>
+                </g>
+                <g class="camera-node" transform="translate(360, 400)">
+                    <path class="fov-cone" d="M 0,0 L 200,-30 A 210,210 0 0,1 200,30 Z" fill="rgba(0,229,255,0.15)" transform="rotate(0)"/>
+                    <circle class="cam-ring" cx="0" cy="0" r="10" stroke="#00e5ff" stroke-width="1" fill="none" style="animation-delay:0.5s;"/>
+                    <polygon class="cam-body" points="0,-5 5,5 -5,5" fill="#00e5ff" transform="rotate(90)"/>
+                    <text x="-8" y="-10" fill="#00e5ff" font-size="10" class="text-glow">C-02</text>
+                </g>
+                <g class="camera-node" transform="translate(730, 400)">
+                    <path class="fov-cone" d="M 0,0 L 200,-30 A 210,210 0 0,1 200,30 Z" fill="rgba(0,229,255,0.15)" transform="rotate(180)"/>
+                    <circle class="cam-ring" cx="0" cy="0" r="10" stroke="#00e5ff" stroke-width="1" fill="none" style="animation-delay:1.2s;"/>
+                    <polygon class="cam-body" points="0,-5 5,5 -5,5" fill="#00e5ff" transform="rotate(-90)"/>
+                    <text x="-8" y="15" fill="#00e5ff" font-size="10" class="text-glow">C-03</text>
+                </g>
+                <g class="camera-node" transform="translate(800, 250)">
+                    <path class="fov-cone" d="M 0,0 L 100,-60 A 120,120 0 0,1 100,60 Z" fill="rgba(0,255,65,0.2)" stroke="rgba(0,255,65,0.5)" stroke-width="0.5" transform="rotate(45)"/>
+                    <circle class="cam-ring" cx="0" cy="0" r="10" stroke="#00ff41" stroke-width="1" fill="none" style="animation-delay:0.8s;"/>
+                    <rect class="cam-body" x="-3" y="-3" width="6" height="6" fill="#00ff41" transform="rotate(45)"/>
+                    <text x="10" y="-5" fill="#00ff41" font-size="10" class="text-glow-green">C-04 [SEC]</text>
+                </g>
+                <g class="camera-node" transform="translate(430, 460)">
+                    <path class="fov-cone" d="M 0,0 L 150,-45 A 160,160 0 0,1 150,45 Z" fill="rgba(0,229,255,0.15)" transform="rotate(45)"/>
+                    <circle class="cam-ring" cx="0" cy="0" r="10" stroke="#00e5ff" stroke-width="1" fill="none" style="animation-delay:0.2s;"/>
+                    <rect class="cam-body" x="-4" y="-4" width="8" height="8" fill="#00e5ff"/>
+                    <text x="-25" y="12" fill="#00e5ff" font-size="10" class="text-glow">C-05</text>
+                </g>
+                <g transform="translate(575, 540)">
+                    <circle cx="0" cy="0" r="25" stroke="#ff003c" stroke-width="0.5" fill="none"/>
+                    <line x1="-30" y1="0" x2="-15" y2="0" stroke="#ff003c"/><line x1="30" y1="0" x2="15" y2="0" stroke="#ff003c"/>
+                    <line x1="0" y1="-30" x2="0" y2="-15" stroke="#ff003c"/><line x1="0" y1="30" x2="0" y2="15" stroke="#ff003c"/>
+                    <text x="5" y="-10" fill="#ff003c" font-size="8" class="text-glow-red animate-pulse">BLIND SPOT DETECTED</text>
+                </g>
+            </svg>
+        </div>
+    </main>
+    <aside class="absolute left-4 bottom-4 z-40 w-64 md:w-80 flex flex-col gap-4">
+        <div class="h-32 overflow-hidden relative border-l border-cyan/30 pl-2">
+            <div class="absolute w-full h-[200%] data-stream flex flex-col text-[8px] text-cyan/40 leading-tight">
+                <div>&gt; INITIATING HEURISTIC SCAN...</div><div>&gt; CALCULATING OPTIMAL NODE PLACEMENT...</div>
+                <div>&gt; GRID SECTORS A-D MAPPED.</div><div>&gt; ANALYZING OCCUPANCY HEATMAPS...</div>
+                <div class="text-green">&gt; WALL PENETRATION RADAR: ACTIVE</div>
+                <div>&gt; CHOKEPOINT IDENTIFIED: X:350 Y:400</div><div>&gt; CHOKEPOINT IDENTIFIED: X:730 Y:400</div>
+                <div class="text-red">&gt; WARNING: SERVER ROOM BLIND SPOT DETECTED</div>
+                <div>&gt; ADJUSTING NODE ALGORITHMS...</div><div>&gt; READY FOR BUDGET INPUT.</div>
+                <div class="mt-4">&gt; INITIATING HEURISTIC SCAN...</div><div>&gt; CALCULATING OPTIMAL NODE PLACEMENT...</div>
+                <div>&gt; GRID SECTORS A-D MAPPED.</div><div>&gt; ANALYZING OCCUPANCY HEATMAPS...</div>
+                <div class="text-green">&gt; WALL PENETRATION RADAR: ACTIVE</div>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-[#0a0a0a] to-transparent"></div>
+        </div>
+        <div class="bracket-panel p-4 flex flex-col gap-5">
+            <div class="flex items-center gap-2 border-b border-cyan/20 pb-2">
+                <i class="ph-fill ph-cpu text-xl text-glow"></i>
+                <h2 class="text-sm font-bold tracking-widest text-glow">DEPLOYMENT PROTOCOL</h2>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] text-cyan/60 tracking-wider">ENTER CAMERA BUDGET (QTY)</label>
+                <input type="number" value="5" min="1" max="99" class="tactical-input w-full text-4xl font-bold bg-black/50 py-2" id="budget-input">
+            </div>
+            <button class="w-full relative group border border-cyan py-3 overflow-hidden bg-[#0a0a0a] transition-all hover:shadow-[0_0_15px_rgba(0,229,255,0.5)]">
+                <div class="absolute inset-0 bg-cyan translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out z-0"></div>
+                <div class="relative z-10 flex items-center justify-center gap-2 group-hover:text-black">
+                    <i class="ph-bold ph-crosshair text-lg"></i>
+                    <span class="font-bold tracking-widest group-hover:text-shadow-none text-glow">DEPLOY CAMERAS</span>
+                </div>
+            </button>
+            <div class="text-[9px] text-center text-cyan/40">AI ALGORITHM: MINORITY_REPORT_v3.2<br>ESTIMATED COMPUTE TIME: 0.4s</div>
+        </div>
+    </aside>
+    <aside class="absolute right-4 bottom-4 z-40 w-64 md:w-72 flex flex-col gap-4">
+        <div class="bracket-panel p-4 flex flex-col gap-4">
+            <div class="flex items-center gap-2 border-b border-cyan/20 pb-2">
+                <i class="ph-fill ph-radar text-xl text-glow-green text-green"></i>
+                <h2 class="text-sm font-bold tracking-widest text-glow">COVERAGE ANALYSIS</h2>
+            </div>
+            <div class="relative flex items-center justify-center py-4">
+                <svg class="w-32 h-32 transform -rotate-90">
+                    <circle cx="64" cy="64" r="54" stroke="rgba(0,229,255,0.1)" stroke-width="8" fill="none"/>
+                    <circle class="progress-circle text-cyan drop-shadow-cyan" cx="64" cy="64" r="54" stroke="currentColor" stroke-width="8" fill="none" stroke-dasharray="339.29" stroke-dashoffset="40" stroke-linecap="butt"/>
+                </svg>
+                <div class="absolute flex flex-col items-center justify-center">
+                    <span class="text-3xl font-bold text-glow">88<span class="text-sm">%</span></span>
+                    <span class="text-[8px] text-cyan/60 tracking-widest mt-1">COVERED</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[10px]">
+                <div class="border border-cyan/20 bg-black/40 p-2 flex flex-col"><span class="text-cyan/50">NODES ACTIVE</span><span class="text-lg font-bold text-glow">05</span></div>
+                <div class="border border-cyan/20 bg-black/40 p-2 flex flex-col"><span class="text-cyan/50">BLIND SPOTS</span><span class="text-lg font-bold text-glow-red text-red animate-pulse">01</span></div>
+                <div class="border border-cyan/20 bg-black/40 p-2 flex flex-col"><span class="text-cyan/50">TOTAL AREA</span><span class="text-sm font-bold text-glow mt-1">145k <span class="text-[8px]">SQFT</span></span></div>
+                <div class="border border-cyan/20 bg-black/40 p-2 flex flex-col"><span class="text-cyan/50">THREAT LVL</span><span class="text-sm font-bold text-glow-green text-green mt-1">LOW</span></div>
+            </div>
+            <div class="h-1 w-full bg-cyan/20 overflow-hidden"><div class="h-full bg-cyan w-[88%] shadow-cyan-glow"></div></div>
+        </div>
+        <div class="border-t border-cyan/30 pt-2 text-right">
+            <div class="text-[10px] text-cyan/50">GLOBAL POSITIONING</div>
+            <div class="font-bold tracking-widest text-glow text-sm" id="hud-coords">40.4274N 86.9167W</div>
+        </div>
+    </aside>
+    <div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-cyan/50"></div>
+    <div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-cyan/50"></div>
+    <div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-cyan/50"></div>
+    <div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-cyan/50"></div>
+    <script>
+        setInterval(()=>{const now=new Date();document.getElementById('sys-time').innerText=now.toISOString().split('T')[1].slice(0,-1);},50);
+        document.getElementById('budget-input').addEventListener('focus',function(){this.select();});
+    </script>
+</body>
+</html>

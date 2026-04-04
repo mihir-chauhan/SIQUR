@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MINORITY REPORT // SPATIAL FEED CAM-03</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { mono: ['"Space Mono"', 'monospace'] },
+                    colors: {
+                        black: '#020202',
+                        cyan: { DEFAULT: '#00e5ff', dim: 'rgba(0,229,255,0.2)' },
+                        red: { DEFAULT: '#ff003c', dim: 'rgba(255,0,60,0.2)' },
+                        green: { DEFAULT: '#00ff41', dim: 'rgba(0,255,65,0.2)' },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background:#000; color:#00e5ff; overflow:hidden; user-select:none; }
+        .scanlines { background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,0) 50%,rgba(0,0,0,0.2) 50%,rgba(0,0,0,0.2)); background-size:100% 4px; }
+        .crt-vignette { box-shadow:inset 0 0 150px rgba(0,0,0,0.9); background:radial-gradient(circle at center,transparent 40%,rgba(0,0,0,0.8) 100%); }
+        .nv-filter { filter:grayscale(100%) sepia(20%) hue-rotate(150deg) saturate(200%) brightness(0.6) contrast(1.5); }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        .animate-blink { animation:blink 1s step-end infinite; }
+        .animate-blink-fast { animation:blink 0.2s step-end infinite; }
+        @keyframes scanline-scroll { 0%{transform:translateY(-100%)} 100%{transform:translateY(100%)} }
+        .scanline-bar { position:absolute; width:100%; height:10px; background:rgba(0,229,255,0.1); opacity:0.4; animation:scanline-scroll 6s linear infinite; }
+        @keyframes crt-flicker { 0%{opacity:0.95} 5%{opacity:0.85} 10%{opacity:0.95} 15%{opacity:1} 100%{opacity:1} }
+        .flicker-wrapper { animation:crt-flicker 4s infinite; }
+        .bracket-corners { position:relative; }
+        .bracket-corners::before,.bracket-corners::after { content:''; position:absolute; width:8px; height:8px; pointer-events:none; }
+        .bracket-corners-top::before { top:0;left:0;border-top:2px solid #00e5ff;border-left:2px solid #00e5ff; }
+        .bracket-corners-top::after { top:0;right:0;border-top:2px solid #00e5ff;border-right:2px solid #00e5ff; }
+        .bracket-corners-bottom::before { bottom:0;left:0;border-bottom:2px solid #00e5ff;border-left:2px solid #00e5ff; }
+        .bracket-corners-bottom::after { bottom:0;right:0;border-bottom:2px solid #00e5ff;border-right:2px solid #00e5ff; }
+        .reticle-line { background-color:#00e5ff; opacity:0.4; position:absolute; }
+        input:focus { box-shadow:inset 0 0 10px rgba(0,229,255,0.2); }
+        .compass-tape { mask-image:linear-gradient(to right,transparent,black 15%,black 85%,transparent); -webkit-mask-image:linear-gradient(to right,transparent,black 15%,black 85%,transparent); }
+    </style>
+</head>
+<body class="font-mono text-xs w-screen h-screen flex flex-col bg-black">
+<div class="relative w-full h-full border-[12px] border-black flex overflow-hidden flicker-wrapper">
+    <div class="absolute inset-0 z-0 bg-[#061417]">
+        <img src="https://images.unsplash.com/photo-1541336032412-2048f3fb8d49?q=80&w=2600&auto=format&fit=crop" alt="Surveillance" class="w-full h-full object-cover opacity-60 nv-filter transform scale-105">
+    </div>
+    <div class="absolute inset-0 z-10 pointer-events-none mix-blend-overlay opacity-[0.15]" style="background-image:url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E')"></div>
+    <div class="absolute inset-0 z-10 pointer-events-none scanlines"></div>
+    <div class="scanline-bar z-10 pointer-events-none"></div>
+    <div class="absolute inset-0 z-10 pointer-events-none crt-vignette"></div>
+    <div class="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
+        <div class="w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full border border-cyan/10 relative flex items-center justify-center">
+            <div class="absolute w-6 h-6 border bg-black/50 border-cyan backdrop-blur-sm shadow-[0_0_8px_rgba(0,229,255,0.4)] flex items-center justify-center">
+                <div class="w-1 h-1 bg-red rounded-full animate-blink-fast shadow-[0_0_5px_rgba(255,0,60,1)]"></div>
+            </div>
+            <div class="reticle-line w-[1px] h-[100px]" style="position:absolute;top:-120px;left:50%;transform:translateX(-50%)"></div>
+            <div class="reticle-line w-[1px] h-[100px]" style="position:absolute;bottom:-120px;left:50%;transform:translateX(-50%)"></div>
+            <div class="reticle-line h-[1px] w-[100px]" style="position:absolute;left:-120px;top:50%;transform:translateY(-50%)"></div>
+            <div class="reticle-line h-[1px] w-[100px]" style="position:absolute;right:-120px;top:50%;transform:translateY(-50%)"></div>
+        </div>
+        <div class="absolute top-16 left-1/2 -translate-x-1/2 w-64 h-8 compass-tape overflow-hidden border-b border-cyan/30">
+            <div class="w-full h-full flex items-end justify-center gap-6 translate-x-4 opacity-70">
+                <div class="flex flex-col items-center"><span class="text-[8px]">N</span><div class="h-2 w-[1px] bg-cyan"></div></div>
+                <div class="flex flex-col items-center mt-2"><div class="h-1 w-[1px] bg-cyan"></div></div>
+                <div class="flex flex-col items-center"><span class="text-[9px] text-white">014&deg;</span><div class="h-3 w-0.5 bg-white shadow-[0_0_4px_white]"></div></div>
+                <div class="flex flex-col items-center mt-2"><div class="h-1 w-[1px] bg-cyan"></div></div>
+                <div class="flex flex-col items-center"><span class="text-[8px]">NE</span><div class="h-2 w-[1px] bg-cyan"></div></div>
+            </div>
+        </div>
+    </div>
+    <div class="absolute top-0 inset-x-0 z-30 flex justify-center pointer-events-none">
+        <div class="bg-red/10 border-b border-x border-red/40 px-12 py-1.5 backdrop-blur-md flex items-center gap-3">
+            <i class="ph ph-warning-octagon text-red text-sm animate-pulse"></i>
+            <span class="text-red font-bold tracking-[0.4em] text-[10px] uppercase" style="text-shadow:0 0 8px rgba(255,0,60,0.8)">SURVEILLANCE FEED // EYES ONLY</span>
+            <i class="ph ph-warning-octagon text-red text-sm animate-pulse"></i>
+        </div>
+    </div>
+    <div class="absolute top-12 left-8 z-30 flex flex-col gap-4 pointer-events-none max-w-xs">
+        <div class="bracket-corners bracket-corners-top bracket-corners-bottom p-2 bg-black/60 backdrop-blur-sm border border-cyan/20">
+            <div class="flex justify-between items-start mb-1 border-b border-cyan/20 pb-1">
+                <span class="font-bold text-sm tracking-wider text-white">CAM-03</span>
+                <span class="text-[8px] text-cyan/70">ID: AXR-992B</span>
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+                <div class="w-3 h-3 rounded-full bg-red border border-red animate-blink shadow-[0_0_8px_rgba(255,0,60,0.8)]"></div>
+                <span class="text-red font-bold tracking-widest">LIVE REC</span>
+                <span class="ml-auto text-cyan/80 tabular-nums" id="rec-time">14:02:49:11 UTC</span>
+            </div>
+        </div>
+        <div class="flex flex-col gap-0.5 text-[10px] text-cyan/60 tracking-wider">
+            <div class="flex justify-between w-48"><span class="text-cyan/40">SYS.LOC:</span><span>40&deg;25'38.6"N</span></div>
+            <div class="flex justify-between w-48"><span class="text-cyan/40"></span><span>86&deg;55'00.1"W</span></div>
+            <div class="flex justify-between w-48"><span class="text-cyan/40">ELEV:</span><span>+2.5m (L1)</span></div>
+            <div class="flex justify-between w-48"><span class="text-cyan/40">NODE:</span><span>OMEGA-7_ALPHA</span></div>
+        </div>
+    </div>
+    <div class="absolute top-12 right-8 z-30 flex flex-col items-end gap-4 pointer-events-none">
+        <div class="text-right border-r-2 border-cyan pr-3 bg-gradient-to-l from-cyan/10 to-transparent py-1">
+            <div class="text-[10px] text-cyan/50 tracking-widest uppercase mb-0.5">Asset Control</div>
+            <div class="text-xs text-white tracking-widest uppercase font-bold">LAWSON CS BUILDING</div>
+            <div class="text-[10px] text-cyan/80 uppercase">Sector 7G / High Security</div>
+        </div>
+        <div class="bracket-corners bracket-corners-top bracket-corners-bottom p-2 bg-black/60 backdrop-blur-sm border border-cyan/20 w-40">
+            <table class="w-full text-left text-[10px]">
+                <tr><td class="text-cyan/40 py-1">PITCH</td><td class="text-right text-white py-1">-15.0&deg;</td></tr>
+                <tr><td class="text-cyan/40 py-1">YAW</td><td class="text-right text-white py-1">45.0&deg;</td></tr>
+                <tr><td class="text-cyan/40 py-1">FOV</td><td class="text-right text-green py-1">60&deg; STD</td></tr>
+                <tr><td class="text-cyan/40 py-1">GAUSS</td><td class="text-right text-cyan py-1 animate-pulse">RENDER_ACTIVE</td></tr>
+            </table>
+        </div>
+        <div class="flex items-center gap-1 mt-2">
+            <div class="h-1 w-2 bg-cyan"></div><div class="h-2 w-2 bg-cyan"></div><div class="h-3 w-2 bg-cyan"></div><div class="h-4 w-2 bg-cyan"></div><div class="h-5 w-2 bg-cyan/20"></div>
+            <span class="text-[9px] ml-2 text-cyan/60">LINK: STABLE</span>
+        </div>
+    </div>
+    <div class="absolute bottom-0 inset-x-0 z-40 flex flex-col bg-gradient-to-t from-[#020202] via-[#020202]/95 to-transparent pt-20 pb-6 px-8 pointer-events-auto">
+        <div class="max-w-5xl mx-auto w-full flex flex-col gap-6">
+            <form class="relative flex items-stretch border border-cyan bg-black/80 backdrop-blur-md shadow-[0_0_15px_rgba(0,229,255,0.1)] group hover:shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all w-3/4 mx-auto" onsubmit="event.preventDefault();this.classList.add('hidden');document.getElementById('sim-loading').classList.remove('hidden');">
+                <div class="w-2 bg-cyan group-focus-within:bg-white transition-colors"></div>
+                <div class="flex-1 flex items-center px-4 gap-3">
+                    <span class="text-cyan text-sm font-bold animate-pulse">>_</span>
+                    <input type="text" placeholder="DESCRIBE SCENARIO..." class="w-full bg-transparent border-none outline-none text-white placeholder-cyan/30 text-xs tracking-wider" autocomplete="off" spellcheck="false" required>
+                </div>
+                <button type="submit" class="border-l border-cyan px-8 flex items-center justify-center bg-cyan/10 hover:bg-cyan text-cyan hover:text-black font-bold uppercase tracking-[0.2em] transition-all cursor-pointer">
+                    <i class="ph ph-cpu text-lg mr-2"></i> Simulate
+                </button>
+            </form>
+            <div id="sim-loading" class="hidden relative flex items-center justify-center border border-green bg-green/10 shadow-[0_0_20px_rgba(0,255,65,0.2)] w-3/4 mx-auto py-3">
+                <i class="ph ph-spinner-gap text-green animate-spin text-lg mr-3"></i>
+                <span class="text-green font-bold tracking-[0.3em] uppercase animate-pulse">GENERATING SIMULATION // PLEASE STAND BY</span>
+            </div>
+            <div class="backdrop-blur-md bg-black/50 border border-white/10 p-4 flex items-center bracket-corners bracket-corners-top bracket-corners-bottom">
+                <div class="flex flex-col items-center justify-center border-r border-white/10 pr-6 mr-6 min-w-max">
+                    <i class="ph ph-squares-four text-cyan/50 text-xl mb-1"></i>
+                    <span class="text-[10px] uppercase tracking-[0.2em] text-cyan/70 text-center leading-tight">Feed<br>Select</span>
+                </div>
+                <div class="flex items-center gap-4 w-full overflow-x-auto pb-1">
+                    <div class="relative min-w-[140px] h-[80px] border border-white/20 bg-[#061417] cursor-pointer group hover:border-cyan/50 transition-colors overflow-hidden">
+                        <div class="w-full h-full bg-[#0a1a1a]"></div>
+                        <div class="absolute top-1 left-2 bg-black/80 text-white/50 px-1 py-0.5 text-[8px] font-bold tracking-wider">CAM-01</div>
+                        <div class="absolute bottom-1 right-2 text-white/40 text-[8px]">STANDBY</div>
+                    </div>
+                    <div class="relative min-w-[140px] h-[80px] border border-white/20 bg-[#061417] cursor-pointer group hover:border-cyan/50 transition-colors overflow-hidden">
+                        <div class="w-full h-full bg-[#0a1a1a]"></div>
+                        <div class="absolute top-1 left-2 bg-black/80 text-white/50 px-1 py-0.5 text-[8px] font-bold tracking-wider">CAM-02</div>
+                        <div class="absolute bottom-1 right-2 text-white/40 text-[8px]">STANDBY</div>
+                    </div>
+                    <div class="relative min-w-[140px] h-[80px] border-2 border-cyan shadow-[0_0_15px_rgba(0,229,255,0.4)] bg-[#061417] overflow-hidden">
+                        <div class="w-full h-full bg-[#0a2025]"></div>
+                        <div class="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px] pointer-events-none"></div>
+                        <div class="absolute top-0 left-0 bg-cyan text-black px-1.5 py-0.5 text-[8px] font-bold tracking-wider flex items-center gap-1"><i class="ph-fill ph-video-camera text-[10px]"></i> CAM-03</div>
+                        <div class="absolute bottom-1 right-2 text-cyan font-bold text-[9px] animate-pulse">ACTIVE</div>
+                    </div>
+                    <div class="relative min-w-[140px] h-[80px] border border-white/20 bg-[#061417] cursor-pointer group hover:border-cyan/50 transition-colors overflow-hidden">
+                        <div class="w-full h-full bg-[#0a1a1a]"></div>
+                        <div class="absolute top-1 left-2 bg-black/80 text-white/50 px-1 py-0.5 text-[8px] font-bold tracking-wider">CAM-04</div>
+                        <div class="absolute bottom-1 right-2 text-white/40 text-[8px]">STANDBY</div>
+                    </div>
+                    <div class="relative min-w-[140px] h-[80px] border border-red/40 bg-black cursor-not-allowed overflow-hidden">
+                        <div class="absolute inset-0 flex items-center justify-center flex-col bg-red/10">
+                            <i class="ph ph-warning-circle text-red/70 text-lg animate-pulse"></i>
+                            <span class="text-red/70 text-[8px] font-bold tracking-widest">NO SIGNAL</span>
+                        </div>
+                        <div class="absolute top-1 left-2 bg-black/80 text-red px-1 py-0.5 text-[8px] font-bold border border-red/30">CAM-05</div>
+                    </div>
+                </div>
+                <div class="hidden md:flex flex-col items-end border-l border-white/10 pl-4 ml-4 min-w-max gap-1">
+                    <div class="text-[9px] text-cyan/50 flex items-center gap-2">DSK_IO <div class="w-12 h-1 bg-cyan/20 overflow-hidden"><div class="h-full w-2/3 bg-cyan"></div></div></div>
+                    <div class="text-[9px] text-cyan/50 flex items-center gap-2">NET_TX <div class="w-12 h-1 bg-cyan/20 overflow-hidden"><div class="h-full w-full bg-cyan animate-pulse"></div></div></div>
+                    <div class="text-[9px] text-cyan/50 flex items-center gap-2 mr-[14px]">PWR <span class="text-green text-[9px]">NORM</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-cyan/40 pointer-events-none z-50"></div>
+    <div class="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-cyan/40 pointer-events-none z-50"></div>
+    <div class="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-cyan/40 pointer-events-none z-50"></div>
+    <div class="absolute bottom-4 right-4 w-4 h-4 border-b-2 border-r-2 border-cyan/40 pointer-events-none z-50"></div>
+</div>
+<script>
+setInterval(()=>{const d=new Date();document.getElementById('rec-time').innerText=d.toISOString().split('T')[1].slice(0,-1)+' UTC';},50);
+</script>
+</body>
+</html>
