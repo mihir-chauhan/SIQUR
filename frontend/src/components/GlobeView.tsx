@@ -112,8 +112,8 @@ export default function GlobeView() {
         v.scene.globe.enableLighting = false;
 
         // Remove default sun/moon
-        v.scene.sun.show = false;
-        v.scene.moon.show = false;
+        if (v.scene.sun) v.scene.sun.show = false;
+        if (v.scene.moon) v.scene.moon.show = false;
 
         // Fly to Purdue campus
         v.camera.flyTo({
@@ -185,11 +185,12 @@ export default function GlobeView() {
         const handler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas);
 
         handler.setInputAction(
-          (click: { position: { x: number; y: number } }) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (click: any) => {
             const picked = v.scene.pick(click.position);
             if (Cesium.defined(picked) && picked.id && picked.id.id) {
               const building = PRELOADED_BUILDINGS.find(
-                (b) => b.id === picked.id.id
+                (b: Building) => b.id === picked.id.id
               );
               if (building) {
                 handleBuildingSelect(building);
@@ -201,11 +202,12 @@ export default function GlobeView() {
 
         // Hover handler
         handler.setInputAction(
-          (movement: { endPosition: { x: number; y: number } }) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (movement: any) => {
             const picked = v.scene.pick(movement.endPosition);
             if (Cesium.defined(picked) && picked.id && picked.id.id) {
               const building = PRELOADED_BUILDINGS.find(
-                (b) => b.id === picked.id.id
+                (b: Building) => b.id === picked.id.id
               );
               if (building) {
                 setHoveredBuilding(building.id);
