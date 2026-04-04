@@ -1,0 +1,25 @@
+# Virtual environment
+.venv/
+
+# Generated output (results are ephemeral, not source)
+output/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
