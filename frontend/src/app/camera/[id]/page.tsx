@@ -112,22 +112,52 @@ export default function CameraPage() {
         style={{ backgroundColor: "var(--color-bg)" }}
       >
         <div
-          className="glow-cyan font-mono text-sm tracking-[0.3em] uppercase hud-pulse"
           style={{
             fontFamily: "var(--font-mono)",
+            fontSize: 8,
+            letterSpacing: "0.4em",
             color: "var(--color-accent-cyan)",
+            opacity: 0.4,
+            marginBottom: 16,
+          }}
+        >
+          CLASSIFICATION: EYES ONLY
+        </div>
+        <div
+          className="glow-cyan hud-pulse"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 14,
+            letterSpacing: "0.3em",
+            color: "var(--color-accent-cyan)",
+            textTransform: "uppercase",
           }}
         >
           ESTABLISHING CAMERA FEED
         </div>
         <div
-          className="font-mono text-xs mt-4 tracking-[0.2em]"
           style={{
             fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.2em",
             color: "var(--color-text-dim)",
+            marginTop: 12,
           }}
         >
           CAM-{cameraId}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            letterSpacing: "0.15em",
+            color: "var(--color-text-dim)",
+            opacity: 0.4,
+            marginTop: 24,
+          }}
+          className="hud-pulse"
+        >
+          DECRYPTING FEED...
         </div>
       </main>
     );
@@ -141,19 +171,24 @@ export default function CameraPage() {
         style={{ backgroundColor: "var(--color-bg)" }}
       >
         <div
-          className="font-mono text-sm tracking-[0.2em]"
           style={{
             fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            letterSpacing: "0.25em",
             color: "#ff2d2d",
+            textShadow: "0 0 8px rgba(255, 45, 45, 0.6)",
           }}
         >
-          ERROR
+          FEED ERROR
         </div>
         <div
-          className="font-mono text-xs tracking-[0.1em] max-w-md text-center"
           style={{
             fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.1em",
             color: "var(--color-text-dim)",
+            maxWidth: 400,
+            textAlign: "center",
           }}
         >
           {error}
@@ -161,17 +196,29 @@ export default function CameraPage() {
         <button
           type="button"
           onClick={() => router.push("/building")}
+          className="glow-cyan-box"
           style={{
             marginTop: 16,
-            background: "rgba(0, 229, 255, 0.08)",
-            border: "1px solid rgba(0, 229, 255, 0.25)",
-            borderRadius: 3,
+            background: "rgba(0, 229, 255, 0.06)",
+            border: "1px solid rgba(0, 229, 255, 0.3)",
+            borderRadius: 2,
             padding: "8px 20px",
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.2em",
+            fontSize: 10,
+            letterSpacing: "0.25em",
             color: "var(--color-accent-cyan)",
             cursor: "pointer",
+            transition: "background var(--duration-fast) ease, border-color var(--duration-fast) ease",
+          }}
+          onMouseEnter={(e) => {
+            const el = e.currentTarget;
+            el.style.background = "rgba(0, 229, 255, 0.12)";
+            el.style.borderColor = "rgba(0, 229, 255, 0.5)";
+          }}
+          onMouseLeave={(e) => {
+            const el = e.currentTarget;
+            el.style.background = "rgba(0, 229, 255, 0.06)";
+            el.style.borderColor = "rgba(0, 229, 255, 0.3)";
           }}
         >
           BACK TO BUILDING
@@ -192,37 +239,39 @@ export default function CameraPage() {
       <button
         type="button"
         onClick={() => router.push("/building")}
+        className="glow-cyan-box"
         style={{
           position: "fixed",
-          top: 16,
-          left: "50%",
-          transform: "translateX(-50%)",
+          top: 20,
+          left: 20,
           zIndex: 60,
-          background: "rgba(0, 0, 0, 0.7)",
-          border: "1px solid rgba(0, 229, 255, 0.2)",
-          borderRadius: 3,
-          padding: "6px 18px",
+          background: "rgba(0, 0, 0, 0.8)",
+          border: "1px solid rgba(0, 229, 255, 0.25)",
+          borderRadius: 2,
+          padding: "6px 16px",
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 9,
           letterSpacing: "0.25em",
           color: "var(--color-accent-cyan)",
           cursor: "pointer",
-          backdropFilter: "blur(4px)",
+          backdropFilter: "blur(6px)",
           transition:
-            "background var(--duration-fast) ease, border-color var(--duration-fast) ease",
+            "background var(--duration-fast) ease, border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease",
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget;
           el.style.background = "rgba(0, 229, 255, 0.1)";
-          el.style.borderColor = "rgba(0, 229, 255, 0.4)";
+          el.style.borderColor = "rgba(0, 229, 255, 0.5)";
+          el.style.boxShadow = "0 0 12px rgba(0, 229, 255, 0.2)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget;
-          el.style.background = "rgba(0, 0, 0, 0.7)";
-          el.style.borderColor = "rgba(0, 229, 255, 0.2)";
+          el.style.background = "rgba(0, 0, 0, 0.8)";
+          el.style.borderColor = "rgba(0, 229, 255, 0.25)";
+          el.style.boxShadow = "0 0 0 1px rgba(0, 229, 255, 0.25), 0 0 16px rgba(0, 229, 255, 0.10)";
         }}
       >
-        &larr; BACK TO BUILDING
+        &larr; BUILDING VIEW
       </button>
 
       <CameraView

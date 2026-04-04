@@ -55,6 +55,33 @@ export default function VideoOverlay({ videoUrl, onClose }: VideoOverlayProps) {
           padding: 32,
         }}
       >
+        {/* Classification banner */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            padding: "4px 0",
+            background: "rgba(0, 229, 255, 0.04)",
+            borderBottom: "1px solid rgba(0, 229, 255, 0.1)",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 8,
+              letterSpacing: "0.4em",
+              color: "var(--color-accent-cyan)",
+              opacity: 0.45,
+            }}
+          >
+            TOP SECRET // SIMULATION OUTPUT // DO NOT DISTRIBUTE
+          </span>
+        </div>
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -62,7 +89,7 @@ export default function VideoOverlay({ videoUrl, onClose }: VideoOverlayProps) {
           transition={{ delay: 0.15, duration: 0.3 }}
           style={{
             position: "absolute",
-            top: 24,
+            top: 28,
             left: "50%",
             transform: "translateX(-50%)",
             fontFamily: "var(--font-mono)",
@@ -80,35 +107,38 @@ export default function VideoOverlay({ videoUrl, onClose }: VideoOverlayProps) {
           type="button"
           onClick={onClose}
           aria-label="Close simulation playback"
+          className="glow-cyan-box"
           style={{
             position: "absolute",
-            top: 20,
+            top: 24,
             right: 24,
-            background: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(0, 229, 255, 0.2)",
-            borderRadius: 3,
+            background: "rgba(0, 229, 255, 0.05)",
+            border: "1px solid rgba(0, 229, 255, 0.25)",
+            borderRadius: 2,
             padding: "6px 14px",
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.15em",
+            fontSize: 10,
+            letterSpacing: "0.2em",
             color: "var(--color-accent-cyan)",
             cursor: "pointer",
             zIndex: 101,
-            transition: "background var(--duration-fast) ease",
+            transition: "background var(--duration-fast) ease, border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease",
           }}
           onMouseEnter={(e) => {
-            (e.target as HTMLButtonElement).style.background =
-              "rgba(255, 255, 255, 0.1)";
+            const el = e.currentTarget;
+            el.style.background = "rgba(0, 229, 255, 0.12)";
+            el.style.borderColor = "rgba(0, 229, 255, 0.5)";
           }}
           onMouseLeave={(e) => {
-            (e.target as HTMLButtonElement).style.background =
-              "rgba(255, 255, 255, 0.05)";
+            const el = e.currentTarget;
+            el.style.background = "rgba(0, 229, 255, 0.05)";
+            el.style.borderColor = "rgba(0, 229, 255, 0.25)";
           }}
         >
           CLOSE [ESC]
         </button>
 
-        {/* Video container */}
+        {/* Video container with HUD corners */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -119,12 +149,17 @@ export default function VideoOverlay({ videoUrl, onClose }: VideoOverlayProps) {
             maxWidth: "85vw",
             maxHeight: "75vh",
             border: "1px solid rgba(0, 229, 255, 0.2)",
-            borderRadius: 4,
+            borderRadius: 3,
             overflow: "hidden",
             background: "#000",
           }}
           className="glow-cyan-box"
         >
+          {/* HUD corners on video */}
+          <span aria-hidden style={{ position: "absolute", top: 4, left: 4, width: 20, height: 20, borderTop: "2px solid rgba(0, 229, 255, 0.5)", borderLeft: "2px solid rgba(0, 229, 255, 0.5)", zIndex: 2, pointerEvents: "none" }} />
+          <span aria-hidden style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderTop: "2px solid rgba(0, 229, 255, 0.5)", borderRight: "2px solid rgba(0, 229, 255, 0.5)", zIndex: 2, pointerEvents: "none" }} />
+          <span aria-hidden style={{ position: "absolute", bottom: 4, left: 4, width: 20, height: 20, borderBottom: "2px solid rgba(0, 229, 255, 0.5)", borderLeft: "2px solid rgba(0, 229, 255, 0.5)", zIndex: 2, pointerEvents: "none" }} />
+          <span aria-hidden style={{ position: "absolute", bottom: 4, right: 4, width: 20, height: 20, borderBottom: "2px solid rgba(0, 229, 255, 0.5)", borderRight: "2px solid rgba(0, 229, 255, 0.5)", zIndex: 2, pointerEvents: "none" }} />
           <video
             src={videoUrl}
             autoPlay
@@ -144,12 +179,13 @@ export default function VideoOverlay({ videoUrl, onClose }: VideoOverlayProps) {
             position: "absolute",
             bottom: 20,
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.2em",
+            fontSize: 9,
+            letterSpacing: "0.25em",
             color: "var(--color-text-dim)",
+            opacity: 0.6,
           }}
         >
-          CLICK OUTSIDE OR PRESS ESC TO CLOSE
+          CLICK OUTSIDE OR PRESS ESC TO DISMISS
         </div>
       </motion.div>
     </AnimatePresence>

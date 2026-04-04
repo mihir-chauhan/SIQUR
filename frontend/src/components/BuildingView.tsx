@@ -247,15 +247,26 @@ export default function BuildingView() {
         </p>
         <button
           onClick={() => router.replace("/")}
+          className="glow-cyan-box"
           style={{
             fontFamily: "var(--font-mono, monospace)",
             color: "var(--color-accent-cyan)",
-            background: "transparent",
+            background: "rgba(0,229,255,0.05)",
             border: "1px solid rgba(0,229,255,0.35)",
             padding: "8px 24px",
             letterSpacing: "0.2em",
-            fontSize: "12px",
+            fontSize: "11px",
             cursor: "pointer",
+            borderRadius: "2px",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.12)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.6)";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.05)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.35)";
           }}
         >
           RETURN TO GLOBE
@@ -310,6 +321,34 @@ export default function BuildingView() {
         position: "relative",
       }}
     >
+      {/* Page-level HUD corners */}
+      <span aria-hidden style={{ position: "fixed", top: 8, left: 8, width: 28, height: 28, borderTop: "2px solid rgba(0,229,255,0.25)", borderLeft: "2px solid rgba(0,229,255,0.25)", zIndex: 10, pointerEvents: "none" }} />
+      <span aria-hidden style={{ position: "fixed", top: 8, right: 8, width: 28, height: 28, borderTop: "2px solid rgba(0,229,255,0.25)", borderRight: "2px solid rgba(0,229,255,0.25)", zIndex: 10, pointerEvents: "none" }} />
+      <span aria-hidden style={{ position: "fixed", bottom: 8, left: 8, width: 28, height: 28, borderBottom: "2px solid rgba(0,229,255,0.25)", borderLeft: "2px solid rgba(0,229,255,0.25)", zIndex: 10, pointerEvents: "none" }} />
+      <span aria-hidden style={{ position: "fixed", bottom: 8, right: 8, width: 28, height: 28, borderBottom: "2px solid rgba(0,229,255,0.25)", borderRight: "2px solid rgba(0,229,255,0.25)", zIndex: 10, pointerEvents: "none" }} />
+      {/* ── Classification banner ────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "3px 0",
+          marginBottom: "-16px",
+          borderBottom: "1px solid rgba(0, 229, 255, 0.06)",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: "7px",
+            letterSpacing: "0.5em",
+            color: "var(--color-accent-cyan)",
+            opacity: 0.35,
+          }}
+        >
+          TOP SECRET // BUILDING ANALYSIS // MINORITY REPORT SURVEILLANCE SYSTEM
+        </span>
+      </div>
+
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <header
         style={{
@@ -624,6 +663,20 @@ export default function BuildingView() {
                 cursor: placing ? "not-allowed" : "pointer",
                 transition: "all 0.15s ease",
                 width: "100%",
+              }}
+              onMouseEnter={e => {
+                if (!placing) {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.14)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.6)";
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 16px rgba(0,229,255,0.2)";
+                }
+              }}
+              onMouseLeave={e => {
+                if (!placing) {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.07)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.35)";
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 1px rgba(0,229,255,0.25), 0 0 16px rgba(0,229,255,0.10)";
+                }
               }}
             >
               {placing ? (

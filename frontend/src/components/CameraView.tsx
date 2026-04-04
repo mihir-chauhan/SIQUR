@@ -302,11 +302,38 @@ export default function CameraView({
           zIndex: 20,
         }}
       >
+        {/* Classification banner */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            padding: "4px 0",
+            background: "rgba(0, 0, 0, 0.6)",
+            borderBottom: "1px solid rgba(0, 229, 255, 0.08)",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 8,
+              letterSpacing: "0.4em",
+              color: "var(--color-accent-cyan)",
+              opacity: 0.4,
+            }}
+          >
+            SURVEILLANCE FEED // EYES ONLY // {building?.name?.toUpperCase() ?? "UNKNOWN"}
+          </span>
+        </div>
+
         {/* Top-left: Camera ID, REC, Timestamp */}
         <div
           style={{
             position: "absolute",
-            top: 16,
+            top: 24,
             left: 20,
             display: "flex",
             flexDirection: "column",
@@ -339,6 +366,7 @@ export default function CameraView({
                 height: 8,
                 borderRadius: "50%",
                 background: "#ff2d2d",
+                boxShadow: "0 0 6px rgba(255, 45, 45, 0.8), 0 0 12px rgba(255, 45, 45, 0.4)",
                 animation: "rec-blink 1s step-start infinite",
               }}
             />
@@ -346,8 +374,10 @@ export default function CameraView({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
+                fontWeight: 700,
                 letterSpacing: "0.15em",
                 color: "#ff2d2d",
+                textShadow: "0 0 8px rgba(255, 45, 45, 0.6)",
               }}
             >
               REC
@@ -370,7 +400,7 @@ export default function CameraView({
           <div
             style={{
               position: "absolute",
-              top: 16,
+              top: 24,
               right: 20,
               display: "flex",
               flexDirection: "column",
@@ -413,6 +443,17 @@ export default function CameraView({
                 {camera.rotation.pitch.toFixed(1)}
               </span>
               &deg;
+            </span>
+            <span
+              style={{
+                marginTop: 6,
+                fontSize: 8,
+                letterSpacing: "0.2em",
+                color: "var(--color-accent-cyan)",
+                opacity: 0.4,
+              }}
+            >
+              FOV: {camera.fov.toFixed(0)}&deg;
             </span>
           </div>
         )}

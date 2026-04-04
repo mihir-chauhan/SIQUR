@@ -41,18 +41,34 @@ export default function SimulationPrompt({
         width: "min(600px, 90vw)",
       }}
     >
+      {/* Label above the prompt */}
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 8,
+          letterSpacing: "0.35em",
+          color: "var(--color-accent-cyan)",
+          opacity: 0.5,
+          marginBottom: 4,
+          paddingLeft: 2,
+        }}
+      >
+        SCENARIO INPUT // CLASSIFIED
+      </div>
+
       {isSimulating ? (
         <div
-          className="glow-cyan"
+          className="glow-cyan-box"
           style={{
+            position: "relative",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 10,
             padding: "12px 20px",
-            background: "rgba(0, 0, 0, 0.85)",
+            background: "rgba(0, 0, 0, 0.9)",
             border: "1px solid rgba(0, 229, 255, 0.3)",
-            borderRadius: 4,
+            borderRadius: 3,
             fontFamily: "var(--font-mono)",
             fontSize: 12,
             letterSpacing: "0.15em",
@@ -79,31 +95,46 @@ export default function SimulationPrompt({
         </div>
       ) : (
         <div
+          className="glow-cyan-box"
           style={{
+            position: "relative",
             display: "flex",
             alignItems: "center",
             gap: 0,
-            background: "rgba(0, 0, 0, 0.85)",
+            background: "rgba(0, 0, 0, 0.9)",
             border: "1px solid rgba(0, 229, 255, 0.25)",
-            borderRadius: 4,
+            borderRadius: 3,
             overflow: "hidden",
           }}
         >
+          {/* Prompt prefix */}
+          <span
+            style={{
+              flex: "0 0 auto",
+              padding: "12px 0 12px 14px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--color-accent-cyan)",
+              opacity: 0.5,
+            }}
+          >
+            &gt;
+          </span>
           <input
             type="text"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe scenario..."
+            placeholder="DESCRIBE SCENARIO..."
             style={{
               flex: 1,
               background: "transparent",
               border: "none",
               outline: "none",
-              padding: "12px 16px",
+              padding: "12px 12px",
               fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              letterSpacing: "0.05em",
+              fontSize: 12,
+              letterSpacing: "0.08em",
               color: "var(--color-text)",
             }}
           />
@@ -111,18 +142,19 @@ export default function SimulationPrompt({
             type="button"
             onClick={handleSubmit}
             disabled={value.trim().length === 0}
+            className={value.trim().length > 0 ? "glow-cyan-box" : ""}
             style={{
-              background: "rgba(0, 229, 255, 0.1)",
+              background: "rgba(0, 229, 255, 0.08)",
               border: "none",
               borderLeft: "1px solid rgba(0, 229, 255, 0.2)",
               padding: "12px 20px",
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.2em",
+              fontSize: 10,
+              letterSpacing: "0.25em",
               color: "var(--color-accent-cyan)",
               cursor: value.trim().length === 0 ? "default" : "pointer",
               opacity: value.trim().length === 0 ? 0.3 : 1,
-              transition: "opacity var(--duration-fast) ease, background var(--duration-fast) ease",
+              transition: "opacity var(--duration-fast) ease, background var(--duration-fast) ease, box-shadow var(--duration-fast) ease",
             }}
             onMouseEnter={(e) => {
               if (value.trim().length > 0) {
@@ -132,7 +164,7 @@ export default function SimulationPrompt({
             }}
             onMouseLeave={(e) => {
               (e.target as HTMLButtonElement).style.background =
-                "rgba(0, 229, 255, 0.1)";
+                "rgba(0, 229, 255, 0.08)";
             }}
           >
             SIMULATE

@@ -43,9 +43,19 @@ export default function CoverageBadge({ score }: CoverageBadgeProps) {
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - score);
 
+  const cornerStyle: React.CSSProperties = {
+    position: "absolute",
+    width: "14px",
+    height: "14px",
+    borderColor: text,
+    borderStyle: "solid",
+    opacity: 0.5,
+  };
+
   return (
     <div
       style={{
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -58,6 +68,11 @@ export default function CoverageBadge({ score }: CoverageBadgeProps) {
         minWidth: "96px",
       }}
     >
+      {/* HUD corner brackets */}
+      <span aria-hidden style={{ ...cornerStyle, top: 0, left: 0, borderWidth: "2px 0 0 2px" }} />
+      <span aria-hidden style={{ ...cornerStyle, top: 0, right: 0, borderWidth: "2px 2px 0 0" }} />
+      <span aria-hidden style={{ ...cornerStyle, bottom: 0, left: 0, borderWidth: "0 0 2px 2px" }} />
+      <span aria-hidden style={{ ...cornerStyle, bottom: 0, right: 0, borderWidth: "0 2px 2px 0" }} />
       {/* Circular arc */}
       <svg width="80" height="80" viewBox="0 0 80 80" aria-hidden>
         {/* Track */}
@@ -109,7 +124,20 @@ export default function CoverageBadge({ score }: CoverageBadgeProps) {
           textAlign: "center",
         }}
       >
-        COVERED
+        AREA COVERED
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--font-mono, monospace)",
+          fontSize: "7px",
+          letterSpacing: "0.3em",
+          color: text,
+          opacity: 0.5,
+          textTransform: "uppercase",
+          textAlign: "center",
+        }}
+      >
+        {pct >= 80 ? "OPTIMAL" : pct >= 50 ? "PARTIAL" : "INSUFFICIENT"}
       </span>
     </div>
   );
