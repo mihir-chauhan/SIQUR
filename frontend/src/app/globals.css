@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+/* ─── Design Tokens ──────────────────────────────────────────────────── */
+:root {
+  --color-bg:             #0a0a0a;
+  --color-surface:        #111111;
+  --color-surface-hover:  #1a1a1a;
+  --color-text:           #c8d6e5;
+  --color-text-dim:       #4a5568;
+  --color-accent-cyan:    #00e5ff;
+  --color-accent-green:   #00ff41;
+  --color-border:         rgba(0, 229, 255, 0.12);
+
+  --font-ui:   var(--font-inter);
+  --font-mono: var(--font-space-mono);
+
+  --duration-fast:   120ms;
+  --duration-normal: 280ms;
+  --ease-out-expo:   cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Base Reset ─────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Prevent white flash before JS hydrates */
+  background-color: var(--color-bg);
+  color-scheme: dark;
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Tailwind v4 Theme Bridge ───────────────────────────────────────── */
+@theme inline {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-space-mono);
+}
+
+/* ─── Glow Utilities ─────────────────────────────────────────────────── */
+.glow-cyan {
+  text-shadow:
+    0 0 8px  rgba(0, 229, 255, 0.9),
+    0 0 20px rgba(0, 229, 255, 0.55),
+    0 0 40px rgba(0, 229, 255, 0.25);
+}
+
+.glow-green {
+  text-shadow:
+    0 0 8px  rgba(0, 255, 65, 0.9),
+    0 0 20px rgba(0, 255, 65, 0.55),
+    0 0 40px rgba(0, 255, 65, 0.25);
+}
+
+.glow-cyan-box {
+  box-shadow:
+    0 0 0 1px rgba(0, 229, 255, 0.25),
+    0 0 16px rgba(0, 229, 255, 0.10);
+}
+
+.glow-green-box {
+  box-shadow:
+    0 0 0 1px rgba(0, 255, 65, 0.25),
+    0 0 16px rgba(0, 255, 65, 0.10);
+}
+
+/* ─── Scanline Overlay ───────────────────────────────────────────────── */
+.scanlines::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.06) 2px,
+    rgba(0, 0, 0, 0.06) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ─── Cursor Blink ───────────────────────────────────────────────────── */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: "_";
+  animation: cursor-blink 1.1s step-start infinite;
+}
+
+/* ─── HUD Pulse ──────────────────────────────────────────────────────── */
+@keyframes hud-pulse {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1; }
+}
+
+.hud-pulse {
+  animation: hud-pulse 2.4s ease-in-out infinite;
+}
+
+/* ─── Flicker (optional atmosphere) ─────────────────────────────────── */
+@keyframes flicker {
+  0%, 96%, 100% { opacity: 1; }
+  97%           { opacity: 0.85; }
+  98%           { opacity: 1; }
+  99%           { opacity: 0.9; }
+}
+
+.flicker {
+  animation: flicker 8s linear infinite;
+}
