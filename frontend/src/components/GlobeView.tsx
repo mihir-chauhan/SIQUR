@@ -7,6 +7,8 @@ import { PRELOADED_BUILDINGS } from "@/lib/buildings";
 import { createSession, setBuilding } from "@/lib/api";
 import { setSessionId } from "@/lib/session";
 import type { Building } from "@/lib/types";
+import GlobeSidebar from "@/components/GlobeSidebar";
+import GlobeStatusBar from "@/components/GlobeStatusBar";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 // Stable reference for building select to avoid re-running the Cesium init effect
@@ -35,10 +37,32 @@ export default function GlobeView() {
     alt: "800",
   });
 
-  // Intro overlay: show until user clicks AND Cesium is ready
+  // Boot sequence
+  interface BootLine { timestamp: string; text: string; type: "success" | "info" | "highlight"; }
+  const [bootLines, setBootLines] = useState<BootLine[]>([]);
+  const [bootComplete, setBootComplete] = useState(false);
   const [userDismissed, setUserDismissed] = useState(false);
   const [cesiumReady, setCesiumReady] = useState(false);
   const introVisible = !userDismissed || !cesiumReady;
+
+  useEffect(() => {
+    const ts = () => { const d = new Date(); return `${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}:${String(d.getUTCSeconds()).padStart(2,"0")}`; };
+    const lines: Omit<BootLine, "timestamp">[] = [
+      { text: "✓ satellite uplink established", type: "success" },
+      { text: "✓ terrain mesh loaded", type: "success" },
+      { text: "✓ building registry synced", type: "success" },
+      { text: "✓ camera placement engine ready", type: "success" },
+      { text: "✓ gaussian splat decoder initialized", type: "success" },
+      { text: "HUD systems initializing...", type: "info" },
+      { text: "Vision modes: STANDARD | NV | FLIR active", type: "highlight" },
+      { text: "Connecting to surveillance feeds...", type: "info" },
+      { text: "✓ System operational — 3 targets acquired", type: "success" },
+    ];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    lines.forEach((line, i) => { timers.push(setTimeout(() => { setBootLines(prev => [...prev, { ...line, timestamp: ts() }]); }, i * 300)); });
+    timers.push(setTimeout(() => setBootComplete(true), lines.length * 300 + 400));
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   const handleBuildingSelect = useCallback(
     async (building: Building) => {
@@ -342,85 +366,34 @@ export default function GlobeView() {
               style={{ borderColor: "var(--color-accent-cyan)", opacity: 0.5 }}
             />
 
-            {/* Top banner */}
-            <div
-              className="absolute top-6 left-1/2 -translate-x-1/2 font-mono text-xs tracking-[0.3em] hud-pulse"
-              style={{
-                fontFamily: "var(--font-mono)",
-                color: "var(--color-accent-green)",
-              }}
-            >
-              SYSTEM ONLINE
-            </div>
+            {/* Terminal boot sequence */}
+            <section className="flex flex-col items-start gap-4 px-12 max-w-2xl w-full" style={{ fontFamily: "var(--font-mono)" }}>
+              <div className="mb-4">
+                <h1 className="glow-cyan font-bold tracking-[0.15em] uppercase text-lg" style={{ color: "var(--color-accent-cyan)" }}>
+                  MINORITY REPORT // SPATIAL INTELLIGENCE SYSTEM
+                </h1>
+                <p className="text-xs mt-1" style={{ color: "#555" }}>by Catapult — Purdue University</p>
+              </div>
 
-            {/* Main content */}
-            <section className="flex flex-col items-center gap-6 text-center px-8">
-              <p
-                className="font-mono text-xs tracking-[0.5em] uppercase"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--color-accent-cyan)",
-                  opacity: 0.6,
-                }}
-              >
-                CLASSIFICATION: EYES ONLY
-              </p>
+              <div className="h-px w-full" style={{ background: "linear-gradient(90deg, var(--color-accent-cyan), transparent)", opacity: 0.4 }} />
 
-              <h1
-                className="glow-cyan font-mono font-bold tracking-[0.15em] uppercase select-none flicker"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--color-accent-cyan)",
-                  fontSize: "clamp(2.5rem, 7vw, 6rem)",
-                  lineHeight: 1.05,
-                }}
-              >
-                MINORITY
-                <br />
-                REPORT
-              </h1>
+              <div className="flex flex-col gap-1 text-xs w-full min-h-[200px]">
+                {bootLines.map((line, i) => (
+                  <div key={i} style={{ color: line.type === "success" ? "#00ff41" : line.type === "highlight" ? "#00e5ff" : "#555" }}>
+                    <span style={{ color: "#555" }}>[{line.timestamp}]</span>{" "}
+                    {line.type === "success" && <span style={{ color: "#00ff41" }}>{line.text}</span>}
+                    {line.type === "info" && <span>{line.text}</span>}
+                    {line.type === "highlight" && <span className="glow-cyan" style={{ color: "#00e5ff" }}>{line.text}</span>}
+                  </div>
+                ))}
+              </div>
 
-              <div
-                className="h-px w-48 mx-auto"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, var(--color-accent-cyan), transparent)",
-                  opacity: 0.4,
-                }}
-              />
-
-              <p
-                className="glow-green font-mono text-sm tracking-[0.4em] uppercase cursor-blink"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--color-accent-green)",
-                }}
-              >
-                ESTABLISHING SATELLITE LINK
-              </p>
-
-              <p
-                className="font-mono text-xs mt-2"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--color-text-dim)",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                {cesiumReady ? "SYSTEM READY" : "LOADING CESIUM GLOBE ENGINE..."}
-              </p>
-
-              {cesiumReady && (
-                <p
-                  className="font-mono text-sm mt-6 tracking-[0.3em] uppercase animate-pulse cursor-pointer"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    color: "var(--color-accent-cyan)",
-                    letterSpacing: "0.2em",
-                  }}
-                >
-                  [ CLICK ANYWHERE TO ENTER ]
-                </p>
+              {bootComplete && (
+                <div className="w-full text-center mt-4">
+                  <p className="text-sm tracking-[0.3em] uppercase animate-pulse" style={{ color: "var(--color-accent-cyan)" }}>
+                    [ CLICK TO ENTER ]
+                  </p>
+                </div>
               )}
             </section>
 
@@ -442,6 +415,25 @@ export default function GlobeView() {
               </span>
               <span>ALT 0.8 KM</span>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar + Status Bar — shown after intro dismisses */}
+      <AnimatePresence>
+        {ready && !introVisible && (
+          <motion.div
+            key="chrome"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="absolute inset-0"
+            style={{ zIndex: 25, pointerEvents: "none" }}
+          >
+            <div style={{ pointerEvents: "auto" }}>
+              <GlobeSidebar onBuildingSelect={handleBuildingSelect} />
+            </div>
+            <GlobeStatusBar />
           </motion.div>
         )}
       </AnimatePresence>
