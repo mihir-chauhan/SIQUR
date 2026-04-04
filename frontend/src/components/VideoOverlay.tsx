@@ -37,6 +37,7 @@ export default function VideoOverlay({ videoUrl, onClose }: VideoOverlayProps) {
   return (
     <AnimatePresence>
       <motion.div
+        key="video-overlay"
         ref={backdropRef}
         onClick={handleBackdropClick}
         initial={{ opacity: 0 }}

@@ -1,0 +1,24 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic:
+      - generic:
+        - generic:
+          - generic: TOP SECRET // SCI // MINORITY REPORT SYSTEM
+        - generic:
+          - generic: ● SATELLITE LINK ACTIVE
+          - generic: "FEED: PURDUE UNIVERSITY"
+          - generic: "RESOLUTION: 0.3m/px"
+        - generic:
+          - generic: 07:08:52 UTC
+          - generic: "CLASSIFICATION: EYES ONLY"
+        - generic: SELECT TARGET BUILDING TO PROCEED
+        - generic:
+          - generic: LAT 40.4274° N
+          - generic: "|"
+          - generic: LON -86.9167° W
+          - generic: "|"
+          - generic: ALT 800 KM
+        - generic: "TARGETS: 3"
+  - button "Open Next.js Dev Tools" [ref=e22] [cursor=pointer]:
+    - img [ref=e23]
+  - alert [ref=e26]

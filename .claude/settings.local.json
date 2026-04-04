@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:alex000kim.com)",
+      "WebFetch(domain:eu.36kr.com)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:www.aidesigner.ai)"
+    ]
+  }
+}

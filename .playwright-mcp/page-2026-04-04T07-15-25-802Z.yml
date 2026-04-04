@@ -1,0 +1,31 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e26]:
+      - generic:
+        - generic:
+          - generic: TOP SECRET // SCI // MINORITY REPORT SYSTEM
+        - generic:
+          - generic: ● SATELLITE LINK ACTIVE
+          - generic: "FEED: PURDUE UNIVERSITY"
+          - generic: "RESOLUTION: 0.3m/px"
+        - generic:
+          - generic: 07:15:25 UTC
+          - generic: "CLASSIFICATION: EYES ONLY"
+        - generic: SELECT TARGET BUILDING TO PROCEED
+        - generic:
+          - generic: LAT 40.4274° N
+          - generic: "|"
+          - generic: LON -86.9167° W
+          - generic: "|"
+          - generic: ALT 800 KM
+        - generic: "TARGETS: 3"
+      - generic:
+        - generic: "TARGET: ARMSTRONG HALL"
+        - generic: 40.4268°N, -86.9145°W | CLICK TO SELECT
+      - generic [ref=e33]:
+        - generic [ref=e34]: ⚠ SYSTEM ERROR
+        - text: "BACKEND OFFLINE: Failed to fetch"
+        - button "DISMISS" [ref=e35] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e22] [cursor=pointer]:
+    - img [ref=e23]
+  - alert [ref=e36]

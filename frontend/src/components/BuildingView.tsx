@@ -111,9 +111,16 @@ function CameraPin({ svgX, svgY, cameraId, index, onClick }: CameraPinProps) {
   return (
     <g
       role="button"
-      aria-label={`Camera ${index + 1}`}
+      tabIndex={0}
+      aria-label={`Camera ${index + 1}, click to view`}
       style={{ cursor: "pointer" }}
       onClick={() => onClick(cameraId)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick(cameraId);
+        }
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -305,11 +312,7 @@ export default function BuildingView() {
   const scaledPolygon = scalePolygon(building.footprint_polygon);
 
   return (
-    <motion.main
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 1.02 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+    <main
       style={{
         minHeight: "100vh",
         backgroundColor: "var(--color-bg)",
@@ -791,6 +794,6 @@ export default function BuildingView() {
           {new Date().toISOString().slice(0, 19).replace("T", " ")} UTC
         </span>
       </footer>
-    </motion.main>
+    </main>
   );
 }

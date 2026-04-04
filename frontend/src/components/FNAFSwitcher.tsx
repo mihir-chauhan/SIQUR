@@ -67,6 +67,7 @@ export default function FNAFSwitcher({
             key={cam.id}
             type="button"
             onClick={() => onSwitch(cam.id)}
+            aria-label={`Camera ${padded}${isActive ? ", currently active" : ", click to switch"}`}
             className={isActive ? "glow-cyan-box" : ""}
             style={{
               flex: "0 0 auto",

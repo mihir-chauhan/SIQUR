@@ -126,6 +126,7 @@ export default function SimulationPrompt({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="DESCRIBE SCENARIO..."
+            aria-label="Scenario description for camera simulation"
             style={{
               flex: 1,
               background: "transparent",

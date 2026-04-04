@@ -1,0 +1,19 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: SYSTEM ONLINE
+      - generic [ref=e5]:
+        - paragraph [ref=e6]: "CLASSIFICATION: EYES ONLY"
+        - heading "MINORITY REPORT" [level=1] [ref=e7]:
+          - text: MINORITY
+          - text: REPORT
+        - paragraph [ref=e9]: ESTABLISHING SATELLITE LINK_
+        - paragraph [ref=e10]: LOADING CESIUM GLOBE ENGINE...
+      - generic [ref=e11]:
+        - generic [ref=e12]: LAT 40.4274° N
+        - generic [ref=e13]: "|"
+        - generic [ref=e14]: LON 86.9167° W
+        - generic [ref=e15]: "|"
+        - generic [ref=e16]: ALT 0.8 KM
+  - button "Open Next.js Dev Tools" [ref=e22] [cursor=pointer]:
+    - img [ref=e23]
