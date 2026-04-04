@@ -22,26 +22,7 @@ interface CursorCoords {
   alt: string;
 }
 
-// ─── Boot sequence line config ──────────────────────────────────────────
-interface BootLine {
-  timestamp: string;
-  text: string;
-  type: "success" | "info" | "highlight";
-}
-
-const BOOT_LINES: Omit<BootLine, "timestamp">[] = [
-  { text: "✓ satellite uplink established", type: "success" },
-  { text: "✓ terrain mesh loaded", type: "success" },
-  { text: "✓ building registry synced", type: "success" },
-  { text: "✓ camera placement engine ready", type: "success" },
-  { text: "✓ gaussian splat decoder initialized", type: "success" },
-  { text: "HUD systems initializing...", type: "info" },
-  { text: "Vision modes: STANDARD | NV | FLIR active", type: "highlight" },
-  { text: "Connecting to surveillance feeds...", type: "info" },
-  { text: "✓ System operational — 3 targets acquired", type: "success" },
-];
-
-const TITLE_TEXT = "MINORITY REPORT";
+// Boot sequence removed in favor of landing page heroine
 
 export default function GlobeView() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -60,44 +41,8 @@ export default function GlobeView() {
     alt: "800",
   });
 
-  // Boot sequence state
-  const [bootLines, setBootLines] = useState<BootLine[]>([]);
-  const [bootComplete, setBootComplete] = useState(false);
-  const [userDismissed, setUserDismissed] = useState(false);
+  // Globe initialization state
   const [cesiumReady, setCesiumReady] = useState(false);
-  const [titleRevealed, setTitleRevealed] = useState(false);
-  const [progressPct, setProgressPct] = useState(0);
-  const introVisible = !userDismissed || !cesiumReady;
-
-  // Animate title reveal
-  useEffect(() => {
-    const t = setTimeout(() => setTitleRevealed(true), 200);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Boot sequence with progress
-  useEffect(() => {
-    const ts = () => {
-      const d = new Date();
-      return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}:${String(d.getUTCSeconds()).padStart(2, "0")}`;
-    };
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    BOOT_LINES.forEach((line, i) => {
-      timers.push(
-        setTimeout(() => {
-          setBootLines((prev) => [...prev, { ...line, timestamp: ts() }]);
-          setProgressPct(((i + 1) / BOOT_LINES.length) * 100);
-        }, 800 + i * 350)
-      );
-    });
-    timers.push(
-      setTimeout(
-        () => setBootComplete(true),
-        800 + BOOT_LINES.length * 350 + 600
-      )
-    );
-    return () => timers.forEach(clearTimeout);
-  }, []);
 
   const handleBuildingSelect = useCallback(
     async (building: Building) => {
@@ -223,12 +168,7 @@ export default function GlobeView() {
           try {
             const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(96188);
             v.scene.primitives.add(tileset);
-            // Style: dark muted buildings that show 3D depth naturally
-            // No colored overlay — just subtle gray with slight height variation
-            tileset.style = new Cesium.Cesium3DTileStyle({
-              color: "color('#1a1d24')",
-              show: true,
-            });
+            // Reverted black overlay styling per user request; letting Cesium handle default PBR lighting.
           } catch (e) {
             console.warn("[Globe] Could not load 3D buildings tileset:", e);
           }
@@ -377,9 +317,9 @@ export default function GlobeView() {
     };
   }, []);
 
-  // ─── Fly-in animation when user dismisses intro ──────────────────────
+  // ─── Fly-in animation when globe is ready ──────────────────────────────
   useEffect(() => {
-    if (!userDismissed || !cesiumReady || !viewerRef.current) return;
+    if (!cesiumReady || !viewerRef.current) return;
 
     const v = viewerRef.current as {
       camera: {
@@ -400,7 +340,7 @@ export default function GlobeView() {
         easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
       });
     });
-  }, [userDismissed, cesiumReady]);
+  }, [cesiumReady]);
 
   const hoveredBuildingData = PRELOADED_BUILDINGS.find(
     (b) => b.id === hoveredBuilding
@@ -418,285 +358,11 @@ export default function GlobeView() {
         style={{ backgroundColor: "#0a0a0a" }}
       />
 
-      {/* ─── Intro loading overlay ─────────────────────────────────────── */}
-      <AnimatePresence>
-        {introVisible && (
-          <motion.div
-            key="intro-overlay"
-            initial={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute inset-0 z-50 flex flex-col items-center justify-center cursor-pointer"
-            style={{ backgroundColor: "#060608" }}
-            onClick={() => cesiumReady && setUserDismissed(true)}
-          >
-            {/* Radial glow background orb */}
-            <div
-              style={{
-                position: "absolute",
-                top: "45%",
-                left: "50%",
-                width: "700px",
-                height: "700px",
-                transform: "translate(-50%, -50%)",
-                background: "radial-gradient(circle, rgba(0, 229, 255, 0.06) 0%, rgba(0, 229, 255, 0.02) 40%, transparent 70%)",
-                pointerEvents: "none",
-              }}
-            />
-
-            {/* Animated dot grid background */}
-            <div
-              className="absolute inset-0 dot-grid-animated"
-              style={{ opacity: 0.25 }}
-            />
-
-            {/* Concentric targeting rings */}
-            {[180, 280, 400].map((size, i) => (
-              <div
-                key={i}
-                style={{
-                  position: "absolute",
-                  top: "45%",
-                  left: "50%",
-                  width: `${size}px`,
-                  height: `${size}px`,
-                  transform: "translate(-50%, -50%)",
-                  borderRadius: "50%",
-                  border: `1px solid rgba(0, 229, 255, ${0.08 - i * 0.02})`,
-                  animation: `expand-ring ${6 + i * 2}s ease-out infinite`,
-                  animationDelay: `${i * 0.5}s`,
-                  pointerEvents: "none",
-                }}
-              />
-            ))}
-
-            {/* Corner brackets */}
-            {[
-              { top: 24, left: 24, bTop: true, bLeft: true },
-              { top: 24, right: 24, bTop: true, bRight: true },
-              { bottom: 24, left: 24, bBottom: true, bLeft: true },
-              { bottom: 24, right: 24, bBottom: true, bRight: true },
-            ].map((pos, i) => (
-              <span
-                key={i}
-                aria-hidden
-                className="pointer-events-none absolute"
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderColor: "rgba(0, 229, 255, 0.25)",
-                  borderStyle: "solid",
-                  borderWidth: 0,
-                  ...(pos.top !== undefined && { top: pos.top }),
-                  ...(pos.bottom !== undefined && { bottom: pos.bottom }),
-                  ...(pos.left !== undefined && { left: pos.left }),
-                  ...(pos.right !== undefined && { right: pos.right }),
-                  ...(pos.bTop && { borderTopWidth: "2px" }),
-                  ...(pos.bBottom && { borderBottomWidth: "2px" }),
-                  ...(pos.bLeft && { borderLeftWidth: "2px" }),
-                  ...(pos.bRight && { borderRightWidth: "2px" }),
-                }}
-              />
-            ))}
-
-            {/* TOP CLASSIFICATION BAR */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                padding: "8px 0",
-                textAlign: "center",
-                fontFamily: "var(--font-mono)",
-                fontSize: "8px",
-                letterSpacing: "0.5em",
-                color: "rgba(0, 229, 255, 0.3)",
-                borderBottom: "1px solid rgba(0, 229, 255, 0.06)",
-              }}
-            >
-              TOP SECRET // SCI // NOFORN // CATAPULT SYSTEMS
-            </motion.div>
-
-            {/* ── HERO: Giant title ────────────────────────────── */}
-            <section
-              className="flex flex-col items-center gap-6 relative"
-              style={{ fontFamily: "var(--font-mono)", zIndex: 10 }}
-            >
-              {/* Small descriptor above title */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: titleRevealed ? 0.4 : 0, y: titleRevealed ? 0 : 10 }}
-                transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                style={{
-                  fontSize: "10px",
-                  letterSpacing: "0.6em",
-                  color: "var(--color-accent-cyan)",
-                  textTransform: "uppercase",
-                }}
-              >
-                AI SURVEILLANCE PLATFORM
-              </motion.div>
-
-              {/* MASSIVE title — the hero moment */}
-              <h1
-                className="font-bold tracking-[0.12em] uppercase flex flex-wrap justify-center"
-                style={{
-                  color: "var(--color-accent-cyan)",
-                  fontSize: "clamp(3rem, 8vw, 6rem)",
-                  lineHeight: 1.05,
-                  textAlign: "center",
-                  textShadow: "0 0 60px rgba(0, 229, 255, 0.3), 0 0 120px rgba(0, 229, 255, 0.1)",
-                }}
-              >
-                {TITLE_TEXT.split("").map((char, i) => (
-                  <motion.span
-                    key={i}
-                    initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
-                    animate={
-                      titleRevealed
-                        ? { opacity: 1, y: 0, filter: "blur(0px)" }
-                        : {}
-                    }
-                    transition={{
-                      delay: i * 0.04,
-                      duration: 0.5,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
-                    style={{
-                      display: "inline-block",
-                      minWidth: char === " " ? "0.3em" : undefined,
-                    }}
-                  >
-                    {char}
-                  </motion.span>
-                ))}
-              </h1>
-
-              {/* Subtitle */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.35 }}
-                transition={{ delay: 1.0, duration: 0.6 }}
-                style={{
-                  fontSize: "11px",
-                  letterSpacing: "0.3em",
-                  color: "#666",
-                  textTransform: "uppercase",
-                }}
-              >
-                by Catapult — Purdue University
-              </motion.p>
-
-              {/* Divider */}
-              <motion.div
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.8, duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
-                style={{
-                  width: "min(480px, 70vw)",
-                  height: "1px",
-                  background: "linear-gradient(90deg, transparent, var(--color-accent-cyan), transparent)",
-                  opacity: 0.3,
-                  transformOrigin: "center",
-                }}
-              />
-
-              {/* Boot lines — compact centered block */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "3px",
-                  fontSize: "11px",
-                  width: "min(440px, 80vw)",
-                  minHeight: "140px",
-                }}
-              >
-                {bootLines.map((line, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "baseline",
-                      color:
-                        line.type === "success"
-                          ? "#00ff41"
-                          : line.type === "highlight"
-                            ? "#00e5ff"
-                            : "#444",
-                    }}
-                  >
-                    <span style={{ color: "#2a2a2a", fontSize: "10px", flexShrink: 0 }}>
-                      [{line.timestamp}]
-                    </span>
-                    <span>{line.text}</span>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Progress bar */}
-              <div
-                style={{
-                  width: "min(440px, 80vw)",
-                  height: "2px",
-                  background: "rgba(0, 229, 255, 0.06)",
-                  borderRadius: "1px",
-                  overflow: "hidden",
-                }}
-              >
-                <motion.div
-                  initial={{ width: "0%" }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  style={{
-                    height: "100%",
-                    background:
-                      "linear-gradient(90deg, var(--color-accent-cyan), var(--color-accent-green))",
-                    boxShadow: "0 0 10px rgba(0, 229, 255, 0.6)",
-                    borderRadius: "1px",
-                  }}
-                />
-              </div>
-
-              {/* Click to enter */}
-              <AnimatePresence>
-                {bootComplete && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-center mt-2"
-                  >
-                    <p
-                      className="tracking-[0.35em] uppercase breathing-glow"
-                      style={{
-                        color: "var(--color-accent-cyan)",
-                        fontSize: "13px",
-                        fontWeight: 500,
-                      }}
-                    >
-                      [ CLICK TO ENTER ]
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </section>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Intro overlay removed */}
 
       {/* ─── Sidebar + Status Bar ─────────────────────────────────────── */}
       <AnimatePresence>
-        {ready && !introVisible && (
+        {ready && (
           <motion.div
             key="chrome"
             initial={{ opacity: 0 }}
@@ -715,7 +381,7 @@ export default function GlobeView() {
 
       {/* ─── HUD Overlay Elements ─────────────────────────────────────── */}
       <AnimatePresence>
-        {ready && !introVisible && (
+        {ready && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -967,7 +633,7 @@ export default function GlobeView() {
 
       {/* ─── Hovered building tooltip ─────────────────────────────────── */}
       <AnimatePresence>
-        {hoveredBuildingData && !introVisible && (
+        {hoveredBuildingData && (
           <motion.div
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}

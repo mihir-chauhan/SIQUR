@@ -14,7 +14,6 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 from scipy import ndimage
-from skimage.morphology import skeletonize
 
 
 # ---------------------------------------------------------------------------
@@ -35,6 +34,7 @@ class FloorplanData:
     px_per_meter: float
     grid_points: np.ndarray  # (N,2) int array of (row,col) grid sample points
     candidates: np.ndarray   # (M,2) int array of (row,col) camera candidates
+    ceiling: bool = False    # True = ceiling-mounted cameras (interior floor grid)
 
 
 # ---------------------------------------------------------------------------
@@ -43,19 +43,22 @@ class FloorplanData:
 
 def load_floorplan(path: str, px_per_meter: float = PIXELS_PER_METER,
                    grid_step: int = GRID_STEP,
-                   wall_step: int = CANDIDATE_WALL_STEP) -> FloorplanData:
+                   wall_step: int = CANDIDATE_WALL_STEP,
+                   ceiling: bool = False) -> FloorplanData:
     img = cv2.imread(path)
     if img is None:
         raise FileNotFoundError(f"Cannot open image: {path}")
 
     wall_mask = _detect_walls(img)
     floor_mask = _extract_floor(wall_mask, img)
-    candidates = extract_candidates(floor_mask, wall_mask, step=wall_step)
+    candidates = extract_candidates(floor_mask, wall_mask, step=wall_step,
+                                    ceiling=ceiling)
     grid_pts = _sample_grid(floor_mask, grid_step)
 
+    mode_str = "ceiling" if ceiling else "wall-adjacent"
     print(f"  Floor pixels: {floor_mask.sum():,}")
     print(f"  Grid points:  {len(grid_pts):,}  (step={grid_step}px)")
-    print(f"  Candidates:   {len(candidates):,}")
+    print(f"  Candidates:   {len(candidates):,}  ({mode_str})")
 
     return FloorplanData(
         img=img,
@@ -64,6 +67,7 @@ def load_floorplan(path: str, px_per_meter: float = PIXELS_PER_METER,
         px_per_meter=px_per_meter,
         grid_points=grid_pts,
         candidates=candidates,
+        ceiling=ceiling,
     )
 
 
@@ -206,72 +210,41 @@ def _extract_floor(wall_mask: np.ndarray, img: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 def extract_candidates(floor_mask: np.ndarray, wall_mask: np.ndarray,
-                       step: int = CANDIDATE_WALL_STEP) -> np.ndarray:
+                       step: int = CANDIDATE_WALL_STEP,
+                       ceiling: bool = False) -> np.ndarray:
     """
     Returns (M, 2) array of (row, col) candidate camera positions.
 
-    Three tiers (unioned, deduped):
-      1. Wall-adjacent floor pixels — best for corner/wall mounting
-      2. Skeleton junctions — best for corridor intersections
-      3. Room centroids — seeds for open-plan spaces
+    Wall mode (default): floor pixels strictly 1px adjacent to a wall pixel.
+    Ceiling mode (--ceiling): any interior floor pixel on a regular grid at
+    `step`-pixel spacing — cameras can be mounted anywhere on the ceiling.
     """
     h, w = floor_mask.shape
+
+    if ceiling:
+        # Sample interior floor points on a regular grid — no wall adjacency
+        # required.  Use the same step as the wall-step parameter.
+        rs = np.arange(0, h, step)
+        cs = np.arange(0, w, step)
+        rr, cc = np.meshgrid(rs, cs, indexing='ij')
+        mask = floor_mask[rr, cc]
+        rows = rr[mask].flatten()
+        cols = cc[mask].flatten()
+    else:
+        # Dilate walls by exactly 1 pixel (3×3 kernel) to get the floor strip
+        # immediately touching the wall surface.
+        dil_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        wall_dilated = cv2.dilate(wall_mask.astype(np.uint8), dil_kernel).astype(bool)
+        wall_adjacent = wall_dilated & floor_mask
+
+        rows, cols = np.where(wall_adjacent)
+        idx = np.arange(0, len(rows), step)
+        rows = rows[idx]
+        cols = cols[idx]
+
     candidates: List[Tuple[int, int]] = []
-
-    # --- Tier 1: wall-adjacent floor pixels ---
-    dil_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
-    wall_dilated = cv2.dilate(wall_mask.astype(np.uint8), dil_kernel).astype(bool)
-    wall_adjacent = wall_dilated & floor_mask
-
-    rows, cols = np.where(wall_adjacent)
-    # Subsample
-    idx = np.arange(0, len(rows), step)
-    for i in idx:
-        candidates.append((int(rows[i]), int(cols[i])))
-
-    # --- Tier 2: skeleton junctions (corridor T-intersections) ---
-    try:
-        skel = skeletonize(floor_mask)
-        skel_rows, skel_cols = np.where(skel)
-        for i in range(len(skel_rows)):
-            r, c = skel_rows[i], skel_cols[i]
-            # Count neighbours in 3×3 neighbourhood
-            r0, r1 = max(0, r - 1), min(h, r + 2)
-            c0, c1 = max(0, c - 1), min(w, c + 2)
-            n_neighbours = skel[r0:r1, c0:c1].sum() - 1  # exclude self
-            if n_neighbours >= 3:  # junction
-                candidates.append((r, c))
-    except Exception:
-        pass  # skimage not available or fails gracefully
-
-    # --- Tier 3: room centroids ---
-    labeled, n_labels = ndimage.label(floor_mask)
-    for lbl in range(1, n_labels + 1):
-        region = (labeled == lbl)
-        area = region.sum()
-        if area < MIN_ROOM_AREA_PX:
-            continue
-        rows_r, cols_r = np.where(region)
-        centroid_r = int(rows_r.mean())
-        centroid_c = int(cols_r.mean())
-        # Make sure centroid is on floor (it might land in a hole)
-        if floor_mask[centroid_r, centroid_c]:
-            candidates.append((centroid_r, centroid_c))
-        else:
-            # Snap to nearest floor pixel
-            dists = (rows_r - centroid_r) ** 2 + (cols_r - centroid_c) ** 2
-            nearest = int(np.argmin(dists))
-            candidates.append((int(rows_r[nearest]), int(cols_r[nearest])))
-
-        # For large rooms (>30m across), seed interior at 10m grid
-        room_width = cols_r.max() - cols_r.min()
-        room_height = rows_r.max() - rows_r.min()
-        interior_step_px = int(10 * PIXELS_PER_METER)
-        if room_width > interior_step_px or room_height > interior_step_px:
-            for ir in range(int(rows_r.min()), int(rows_r.max()), interior_step_px):
-                for ic in range(int(cols_r.min()), int(cols_r.max()), interior_step_px):
-                    if 0 <= ir < h and 0 <= ic < w and floor_mask[ir, ic]:
-                        candidates.append((ir, ic))
+    for r, c in zip(rows, cols):
+        candidates.append((int(r), int(c)))
 
     # Deduplicate and clip to image bounds
     seen = set()

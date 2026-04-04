@@ -27,6 +27,8 @@ import numpy as np
 
 from floorplan import FloorplanData, CAMERA_HEIGHT_M
 from visibility import VisibilityData
+
+CEILING_HEIGHT_M = 3.0   # assumed ceiling height in metres
 from optimizer import compute_placement_scores, compute_coverage_radius, _coverage_fraction
 
 
@@ -41,14 +43,15 @@ def pixel_to_world(row: float, col: float, fp: FloorplanData):
     Coordinate system (matches BuildingView.tsx cameraToSVG):
       x: east,  positive = right in image
       z: north, positive = up in image (row decreases)
-      y: fixed wall height
+      y: fixed mount height (wall height or ceiling height)
     """
     h, w = fp.floor_mask.shape
     cx = w / 2.0
     cz = h / 2.0
     x_m = (col - cx) / fp.px_per_meter
     z_m = -(row - cz) / fp.px_per_meter   # flip row axis
-    return x_m, CAMERA_HEIGHT_M, z_m
+    y_m = CEILING_HEIGHT_M if fp.ceiling else CAMERA_HEIGHT_M
+    return x_m, y_m, z_m
 
 
 def ray_idx_to_yaw(ray_idx: int, n_rays: int = 360) -> float:
@@ -108,6 +111,7 @@ def build_cameras(selected: List[int],
         x_m, y_m, z_m = pixel_to_world(float(row), float(col), fp)
         yaw = ray_idx_to_yaw(int(vis.best_yaw_idx[cam_idx]), n_rays)
 
+        pitch = -90.0 if fp.ceiling else -20.0
         cameras.append({
             "id": f"cam_{rank}",
             "building_id": building_id,
@@ -118,7 +122,7 @@ def build_cameras(selected: List[int],
             },
             "rotation": {
                 "yaw": round(yaw, 1),
-                "pitch": -20.0,
+                "pitch": pitch,
             },
             "fov": fov_deg,
             "coverage_radius": round(radius, 2),

@@ -34,8 +34,8 @@ def parse_args():
                    help='Target coverage fraction 0.0-1.0 (default: 0.98)')
     p.add_argument('--scale', type=float, default=29.5,
                    help='Pixels per metre (default: 29.5 for 1/8" scale at 72 DPI)')
-    p.add_argument('--max-range', type=float, default=15.0,
-                   help='Camera max range in metres (default: 15.0)')
+    p.add_argument('--max-range', type=float, default=None,
+                   help='Camera max range in metres (default: infinite)')
     p.add_argument('--fov', type=float, default=90.0,
                    help='Camera field of view in degrees (default: 90.0)')
     p.add_argument('--no-ilp', action='store_true',
@@ -48,6 +48,9 @@ def parse_args():
                    help='Wall-adjacent candidate subsample step (default: 10)')
     p.add_argument('--n-rays', type=int, default=360,
                    help='Number of rays per candidate (default: 360)')
+    p.add_argument('--ceiling', action='store_true',
+                   help='Place cameras on ceilings (interior floor grid) '
+                        'instead of wall-adjacent positions')
     return p.parse_args()
 
 
@@ -71,12 +74,14 @@ def main():
     # -----------------------------------------------------------------------
     # Step 1: Load and preprocess floorplan
     # -----------------------------------------------------------------------
-    print(f"\n[1/4] Loading floorplan: {args.image}")
+    print(f"\n[1/4] Loading floorplan: {args.image}"
+          + (" [ceiling mode]" if args.ceiling else ""))
     fp = load_floorplan(
         args.image,
         px_per_meter=args.scale,
         grid_step=args.grid_step,
         wall_step=args.wall_step,
+        ceiling=args.ceiling,
     )
     print(f"      Image size:  {fp.img.shape[1]}×{fp.img.shape[0]}px")
     print(f"      Scale:       {args.scale:.1f} px/m  "
@@ -93,7 +98,8 @@ def main():
     # -----------------------------------------------------------------------
     # Step 2: Compute visibility
     # -----------------------------------------------------------------------
-    print(f"\n[2/4] Computing visibility (max range={args.max_range}m, "
+    range_str = "∞" if args.max_range is None else f"{args.max_range}m"
+    print(f"\n[2/4] Computing visibility (max range={range_str}, "
           f"FOV={args.fov}°, rays={args.n_rays})")
     vis = compute_visibility(
         fp,

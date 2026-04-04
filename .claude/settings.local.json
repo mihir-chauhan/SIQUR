@@ -6,12 +6,7 @@
       "WebFetch(domain:eu.36kr.com)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "WebFetch(domain:www.aidesigner.ai)",
-      "Bash(python3 -m ensurepip --upgrade)",
-      "Bash(python3 -m pip install --user opencv-python scipy shapely scikit-image ortools matplotlib Pillow)",
-      "Bash(python3 -m venv /home/rexmagnusdavid/Repositories/MinorityReport/CameraPlacementAlgorithm/.venv)",
-      "Bash(/home/rexmagnusdavid/Repositories/MinorityReport/CameraPlacementAlgorithm/.venv/bin/pip install:*)",
-      "Bash(.venv/bin/python3:*)"
+      "WebFetch(domain:www.aidesigner.ai)"
     ]
   },
   "disabledMcpjsonServers": [

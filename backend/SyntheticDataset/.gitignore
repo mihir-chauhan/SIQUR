@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+video-gen/.venv
+
+# Generated outputs
+outputs/
+*.mp4

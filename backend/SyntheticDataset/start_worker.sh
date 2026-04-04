@@ -8,7 +8,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/.venv/bin/activate"
+source "$SCRIPT_DIR/video-gen/.venv/bin/activate"
 cd "$SCRIPT_DIR/backend"
 
 MODEL_ID="${MODEL_ID:-Wan-AI/Wan2.2-I2V-A14B-Diffusers}"
@@ -21,7 +21,7 @@ echo "  Port  : localhost:$PORT  (internal only)"
 echo ""
 
 exec env MODEL_ID="$MODEL_ID" \
-  "$SCRIPT_DIR/.venv/bin/python3" -m uvicorn worker:app \
+  "$SCRIPT_DIR/video-gen/.venv/bin/python3" -m uvicorn worker:app \
   --host 127.0.0.1 \
   --port "$PORT" \
   --log-level info \

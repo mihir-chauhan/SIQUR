@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/.venv/bin/activate"
+source "$SCRIPT_DIR/video-gen/.venv/bin/activate"
 cd "$SCRIPT_DIR/backend"
 
 HOST="${HOST:-0.0.0.0}"
@@ -16,7 +16,7 @@ echo "  Local  : http://localhost:$PORT"
 echo "  Network: http://$(hostname -I | awk '{print $1}'):$PORT"
 echo ""
 
-exec "$SCRIPT_DIR/.venv/bin/python3" -m uvicorn app:app \
+exec "$SCRIPT_DIR/video-gen/.venv/bin/python3" -m uvicorn app:app \
   --host "$HOST" \
   --port "$PORT" \
   --log-level info \

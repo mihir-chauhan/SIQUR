@@ -38,7 +38,7 @@ class VisibilityData:
 
 def compute_visibility(fp: FloorplanData,
                        fov_deg: float = FOV_DEG,
-                       max_range_m: float = 15.0,
+                       max_range_m: float | None = None,
                        n_rays: int = N_RAYS,
                        batch_size: int = 64) -> VisibilityData:
     """
@@ -47,7 +47,8 @@ def compute_visibility(fp: FloorplanData,
     Args:
         fp:          FloorplanData from floorplan.py
         fov_deg:     Camera field of view in degrees
-        max_range_m: Maximum camera range in metres
+        max_range_m: Maximum camera range in metres. None (default) = infinite
+                     (rays travel until they hit a wall).
         n_rays:      Number of rays cast per candidate (angular resolution)
         batch_size:  Candidates processed per numpy batch (memory control)
 
@@ -58,7 +59,13 @@ def compute_visibility(fp: FloorplanData,
     candidates = fp.candidates   # (M, 2) int (row, col)
     grid_pts = fp.grid_points    # (N, 2) int (row, col)
     px_per_m = fp.px_per_meter
-    max_range_px = max_range_m * px_per_m
+
+    h, w = wall_mask.shape
+    if max_range_m is None:
+        # Use image diagonal — a ray can never travel further than this
+        max_range_px = float(np.sqrt(h ** 2 + w ** 2))
+    else:
+        max_range_px = max_range_m * px_per_m
 
     M = len(candidates)
     N = len(grid_pts)
@@ -69,7 +76,6 @@ def compute_visibility(fp: FloorplanData,
     dx = np.cos(angles).astype(np.float32)   # column direction
     dy = np.sin(angles).astype(np.float32)   # row direction (positive = down)
 
-    h, w = wall_mask.shape
     wall_u8 = wall_mask.astype(np.uint8)
 
     # Determine step count from max range
