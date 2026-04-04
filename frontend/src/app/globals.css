@@ -129,15 +129,33 @@ body {
 }
 
 /* ─── Cesium Overrides ──────────────────────────────────────────────── */
-.cesium-viewer {
+.cesium-viewer,
+.cesium-widget {
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
   overflow: hidden !important;
+  z-index: 0 !important;
 }
 
+.cesium-viewer {
+  background: #0a0a0a !important;
+}
+
+.cesium-widget canvas {
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+}
+
+.cesium-viewer-bottom,
+.cesium-credit-textContainer,
+.cesium-credit-logoContainer,
+.cesium-viewer-toolbar,
 .cesium-viewer .cesium-widget-credits {
   display: none !important;
 }

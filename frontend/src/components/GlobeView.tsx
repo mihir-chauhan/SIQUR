@@ -9,6 +9,9 @@ import { setSessionId } from "@/lib/session";
 import type { Building } from "@/lib/types";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
+// Stable reference for building select to avoid re-running the Cesium init effect
+const buildingSelectRef: { current: ((b: Building) => void) | null } = { current: null };
+
 interface CursorCoords {
   lat: string;
   lng: string;
@@ -60,32 +63,40 @@ export default function GlobeView() {
     [selectingBuilding, router]
   );
 
+  // Keep the stable ref in sync so the Cesium click handler always calls the latest version
+  buildingSelectRef.current = handleBuildingSelect;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!containerRef.current) return;
 
-    let viewer: { destroy: () => void } | null = null;
+    let viewer: { destroy: () => void; isDestroyed: () => boolean } | null = null;
     let destroyed = false;
 
     async function initCesium() {
       try {
         const Cesium = await import("cesium");
 
-        // Set the base URL for Cesium assets
+        // Point to our copied static assets (Workers, Assets, Widgets, ThirdParty)
         (window as unknown as Record<string, unknown>).CESIUM_BASE_URL = "/cesium";
 
         const ionToken = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
         if (ionToken) {
           Cesium.Ion.defaultAccessToken = ionToken;
+        } else {
+          Cesium.Ion.defaultAccessToken = undefined as unknown as string;
         }
 
         if (destroyed || !containerRef.current) return;
 
-        // Create the viewer with minimal UI
+        // Create the viewer matching WorldView OSS patterns:
+        // baseLayer: false prevents loading default Bing imagery (avoids Ion token requirement)
+        // scene3DOnly: true simplifies rendering
+        // requestRenderMode: false ensures continuous rendering (no black screen from missed frames)
         const v = new Cesium.Viewer(containerRef.current, {
           animation: false,
           baseLayerPicker: false,
           fullscreenButton: false,
-          vrButton: false,
           geocoder: false,
           homeButton: false,
           infoBox: false,
@@ -93,18 +104,17 @@ export default function GlobeView() {
           selectionIndicator: false,
           timeline: false,
           navigationHelpButton: false,
-          navigationInstructionsInitiallyVisible: false,
-          creditContainer: document.createElement("div"),
-          msaaSamples: 1,
-          requestRenderMode: true,
-          maximumRenderTimeChange: Infinity,
+          scene3DOnly: true,
+          baseLayer: false,
           skyBox: false,
           skyAtmosphere: false,
           contextOptions: {
             webgl: {
-              alpha: false,
+              alpha: true,
             },
           },
+          requestRenderMode: false,
+          maximumRenderTimeChange: Infinity,
         });
 
         viewer = v;
@@ -210,8 +220,8 @@ export default function GlobeView() {
               const building = PRELOADED_BUILDINGS.find(
                 (b: Building) => b.id === picked.id.id
               );
-              if (building) {
-                handleBuildingSelect(building);
+              if (building && buildingSelectRef.current) {
+                buildingSelectRef.current(building);
               }
             }
           },
@@ -266,7 +276,7 @@ export default function GlobeView() {
 
     return () => {
       destroyed = true;
-      if (viewer) {
+      if (viewer && !viewer.isDestroyed()) {
         try {
           viewer.destroy();
         } catch {
@@ -274,7 +284,7 @@ export default function GlobeView() {
         }
       }
     };
-  }, [handleBuildingSelect]);
+  }, []);
 
   const hoveredBuildingData = PRELOADED_BUILDINGS.find(
     (b) => b.id === hoveredBuilding

@@ -4,8 +4,15 @@ const nextConfig: NextConfig = {
   // Cesium assets are served from public/cesium/ (copied from node_modules/cesium/Build/Cesium/)
   // The CESIUM_BASE_URL is set at runtime in the GlobeView component to "/cesium"
 
-  // Empty turbopack config silences the webpack-only warning in Next.js 16
-  turbopack: {},
+  // Turbopack resolve aliases (Cesium static assets handled by scripts/copy-cesium.js)
+  turbopack: {
+    resolveAlias: {},
+  },
+
+  // Silence large page data warnings from Cesium
+  experimental: {
+    largePageDataBytes: 512 * 1000,
+  },
 
   webpack: (config, { isServer }) => {
     if (!isServer) {
