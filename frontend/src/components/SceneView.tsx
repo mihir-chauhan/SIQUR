@@ -4,30 +4,72 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
+import {
+  computeBoundsTree,
+  disposeBoundsTree,
+  acceleratedRaycast,
+} from "three-mesh-bvh";
+
+// Patch Three.js to use BVH-accelerated raycasting globally
+// @ts-expect-error — three-mesh-bvh monkey-patches prototypes
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+// @ts-expect-error
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 /**
  * SceneView — Full-viewport 3D renderer.
  * Gaussian splat + OBJ mesh in the same Three.js scene.
- * WASD + click-drag mouse look.
+ * WASD + click-drag mouse look + camera placement via raycast.
  */
 export interface SceneObjects {
-  splatGroup: THREE.Group | null;
+  splatGroup: THREE.Object3D | null;
   objGroup: THREE.Group | null;
+}
+
+export interface CameraPlacement {
+  position: THREE.Vector3;
+  normal: THREE.Vector3;
+  mesh: THREE.Mesh;
 }
 
 export default function SceneView({
   splatPath,
   objPath,
   mtlPath,
+  placementMode,
+  splatVisible,
+  objVisible,
+  objPosition,
+  objRotation,
+  objScale,
   onObjectsReady,
+  onCameraPlaced,
 }: {
   splatPath: string;
   objPath?: string;
   mtlPath?: string;
+  placementMode?: boolean;
+  splatVisible?: boolean;
+  objVisible?: boolean;
+  objPosition?: { x: number; y: number; z: number };
+  objRotation?: { x: number; y: number; z: number };
+  objScale?: { x: number; y: number; z: number };
   onObjectsReady?: (objects: SceneObjects) => void;
+  onCameraPlaced?: (placement: CameraPlacement) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const placementModeRef = useRef(false);
+  const onCameraPlacedRef = useRef(onCameraPlaced);
+  const splatVisibleRef = useRef(splatVisible ?? true);
+  const objVisibleRef = useRef(objVisible ?? true);
+
+  // Keep refs in sync with props every render
+  placementModeRef.current = placementMode ?? false;
+  onCameraPlacedRef.current = onCameraPlaced;
+  splatVisibleRef.current = splatVisible ?? true;
+  objVisibleRef.current = objVisible ?? true;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -43,6 +85,12 @@ export default function SceneView({
       // Wrapper group for OBJ — we control visibility/position on this
       const objWrapper = new THREE.Group();
       objWrapper.name = "obj-wrapper";
+      if (objPosition) objWrapper.position.set(objPosition.x, objPosition.y, objPosition.z);
+      if (objRotation) {
+        const d = Math.PI / 180;
+        objWrapper.rotation.set(objRotation.x * d, objRotation.y * d, objRotation.z * d);
+      }
+      if (objScale) objWrapper.scale.set(objScale.x, objScale.y, objScale.z);
       threeScene.add(objWrapper);
 
       const sceneObjects: SceneObjects = {
@@ -108,6 +156,22 @@ export default function SceneView({
             (obj) => {
               console.log("[SceneView] OBJ loaded successfully");
               obj.rotation.x = Math.PI;
+
+              // BVH acceleration + DoubleSide for raycasting
+              obj.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                  const mesh = child as THREE.Mesh;
+                  // @ts-expect-error — patched by three-mesh-bvh
+                  mesh.geometry.computeBoundsTree();
+                  if (Array.isArray(mesh.material)) {
+                    mesh.material.forEach((m) => (m.side = THREE.DoubleSide));
+                  } else {
+                    mesh.material.side = THREE.DoubleSide;
+                  }
+                }
+              });
+              console.log("[SceneView] BVH computed for OBJ meshes");
+
               objWrapper.add(obj);
               if (onObjectsReady) onObjectsReady(sceneObjects);
             },
@@ -130,9 +194,23 @@ export default function SceneView({
       const shiftMultiplier = 3; // 3x speed when holding shift
       const lookSpeed = 0.004;
       let isDragging = false;
+      let didDrag = false;
+      let mouseDownPos = { x: 0, y: 0 };
 
       // Initialize euler from current camera orientation
       euler.setFromQuaternion(camera.quaternion);
+
+      // --- Raycaster for camera placement ---
+      const raycaster = new THREE.Raycaster();
+      raycaster.firstHitOnly = true;
+      const pointer = new THREE.Vector2();
+
+      const markerGeo = new THREE.SphereGeometry(0.06, 16, 16);
+      const markerMat = new THREE.MeshBasicMaterial({
+        color: 0x00e5ff,
+        transparent: true,
+        opacity: 0.9,
+      });
 
       const onKeyDown = (e: KeyboardEvent) => {
         keys[e.key.toLowerCase()] = true;
@@ -143,17 +221,63 @@ export default function SceneView({
         if (e.key === "Shift") keys["shift"] = false;
       };
       const onMouseDown = (e: MouseEvent) => {
-        if (e.button === 0) isDragging = true; // left click
+        if (e.button === 0) {
+          isDragging = true;
+          didDrag = false;
+          mouseDownPos = { x: e.clientX, y: e.clientY };
+        }
       };
       const onMouseUp = (e: MouseEvent) => {
-        if (e.button === 0) isDragging = false;
+        if (e.button === 0) {
+          isDragging = false;
+
+          // If didn't drag and in placement mode, do raycast
+          if (!didDrag && placementModeRef.current) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+
+            const hits = raycaster.intersectObjects([objWrapper], true);
+            if (hits.length > 0) {
+              const hit = hits[0];
+              const worldNormal = hit.face!.normal
+                .clone()
+                .transformDirection(hit.object.matrixWorld);
+
+              // Spawn marker
+              const marker = new THREE.Mesh(markerGeo, markerMat.clone());
+              marker.position.copy(hit.point);
+              // Offset slightly along normal to prevent z-fighting
+              marker.position.addScaledVector(worldNormal, 0.02);
+              threeScene.add(marker);
+
+              console.log("[SceneView] Camera placed at", hit.point);
+
+              if (onCameraPlacedRef.current) {
+                onCameraPlacedRef.current({
+                  position: hit.point.clone(),
+                  normal: worldNormal,
+                  mesh: marker,
+                });
+              }
+            }
+          }
+        }
       };
       const onMouseMove = (e: MouseEvent) => {
         if (!isDragging) return;
-        euler.y -= e.movementX * lookSpeed;
-        euler.x -= e.movementY * lookSpeed;
-        euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
-        camera.quaternion.setFromEuler(euler);
+        // Detect if mouse actually moved (threshold of 3px)
+        const dx = e.clientX - mouseDownPos.x;
+        const dy = e.clientY - mouseDownPos.y;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDrag = true;
+
+        if (didDrag) {
+          euler.y -= e.movementX * lookSpeed;
+          euler.x -= e.movementY * lookSpeed;
+          euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+          camera.quaternion.setFromEuler(euler);
+        }
       };
 
       window.addEventListener("keydown", onKeyDown);
@@ -197,7 +321,11 @@ export default function SceneView({
         if (keys["a"]) camera.position.addScaledVector(right, -speed);
         if (keys["d"]) camera.position.addScaledVector(right, speed);
 
-        // Let the viewer update its internal state and render
+        // Apply visibility every frame (viewer may reset it otherwise)
+        objWrapper.visible = objVisibleRef.current;
+        const splatMesh = (viewer as unknown as { splatMesh: THREE.Object3D }).splatMesh;
+        if (splatMesh) splatMesh.visible = splatVisibleRef.current;
+
         viewer.update();
         viewer.render();
       }

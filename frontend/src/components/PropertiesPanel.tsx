@@ -6,7 +6,11 @@ import type { Layer } from "./LayersSidebar";
 interface PropertiesPanelProps {
   layer: Layer | null;
   position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+  scale: { x: number; y: number; z: number };
   onPositionChange: (axis: "x" | "y" | "z", value: number) => void;
+  onRotationChange: (axis: "x" | "y" | "z", value: number) => void;
+  onScaleChange: (axis: "x" | "y" | "z", value: number) => void;
 }
 
 function DragInput({
@@ -155,7 +159,11 @@ function DragInput({
 export default function PropertiesPanel({
   layer,
   position,
+  rotation,
+  scale,
   onPositionChange,
+  onRotationChange,
+  onScaleChange,
 }: PropertiesPanelProps) {
   if (!layer) {
     return (
@@ -213,7 +221,11 @@ export default function PropertiesPanel({
             marginTop: "2px",
           }}
         >
-          {layer.type === "splat" ? "GAUSSIAN SPLAT" : "OBJ MESH"}
+          {layer.type === "splat"
+            ? "GAUSSIAN SPLAT"
+            : layer.type === "camera"
+              ? "CAMERA POINT"
+              : "OBJ MESH"}
         </p>
       </div>
 
@@ -247,6 +259,78 @@ export default function PropertiesPanel({
           value={position.z}
           onChange={(v) => onPositionChange("z", v)}
           color="#4488ff"
+        />
+      </div>
+
+      {/* Rotation */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: "9px",
+            letterSpacing: "0.25em",
+            color: "var(--color-text-dim)",
+            marginBottom: "2px",
+          }}
+        >
+          ROTATION (DEG) — DRAG TO ADJUST
+        </span>
+        <DragInput
+          label="X"
+          value={rotation.x}
+          onChange={(v) => onRotationChange("x", v)}
+          color="#ff4444"
+          step={0.5}
+        />
+        <DragInput
+          label="Y"
+          value={rotation.y}
+          onChange={(v) => onRotationChange("y", v)}
+          color="#44ff44"
+          step={0.5}
+        />
+        <DragInput
+          label="Z"
+          value={rotation.z}
+          onChange={(v) => onRotationChange("z", v)}
+          color="#4488ff"
+          step={0.5}
+        />
+      </div>
+
+      {/* Scale */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: "9px",
+            letterSpacing: "0.25em",
+            color: "var(--color-text-dim)",
+            marginBottom: "2px",
+          }}
+        >
+          SCALE — DRAG TO ADJUST
+        </span>
+        <DragInput
+          label="X"
+          value={scale.x}
+          onChange={(v) => onScaleChange("x", v)}
+          color="#ff4444"
+          step={0.01}
+        />
+        <DragInput
+          label="Y"
+          value={scale.y}
+          onChange={(v) => onScaleChange("y", v)}
+          color="#44ff44"
+          step={0.01}
+        />
+        <DragInput
+          label="Z"
+          value={scale.z}
+          onChange={(v) => onScaleChange("z", v)}
+          color="#4488ff"
+          step={0.01}
         />
       </div>
     </div>

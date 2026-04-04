@@ -5,7 +5,7 @@ import { useState } from "react";
 export interface Layer {
   id: string;
   name: string;
-  type: "splat" | "obj";
+  type: "splat" | "obj" | "camera";
   visible: boolean;
 }
 
@@ -177,7 +177,11 @@ export default function LayersSidebar({
                     marginTop: "2px",
                   }}
                 >
-                  {layer.type === "splat" ? "GAUSSIAN SPLAT" : "OBJ MESH"}
+                  {layer.type === "splat"
+                    ? "GAUSSIAN SPLAT"
+                    : layer.type === "camera"
+                      ? "CAMERA POINT"
+                      : "OBJ MESH"}
                 </span>
               </div>
             </div>
