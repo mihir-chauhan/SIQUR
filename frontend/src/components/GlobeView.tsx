@@ -292,7 +292,7 @@ export default function GlobeView() {
 
   return (
     <div
-      className="relative w-full h-full"
+      className="absolute inset-0 w-full h-full"
       style={{ backgroundColor: "var(--color-bg)" }}
     >
       {/* Cesium container */}
