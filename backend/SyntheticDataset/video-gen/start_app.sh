@@ -16,7 +16,7 @@ echo "  Local  : http://localhost:$PORT"
 echo "  Network: http://$(hostname -I | awk '{print $1}'):$PORT"
 echo ""
 
-exec uvicorn app:app \
+exec "$SCRIPT_DIR/.venv/bin/python3" -m uvicorn app:app \
   --host "$HOST" \
   --port "$PORT" \
   --log-level info \

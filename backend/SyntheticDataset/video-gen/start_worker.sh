@@ -20,7 +20,8 @@ echo "  Model : $MODEL_ID"
 echo "  Port  : localhost:$PORT  (internal only)"
 echo ""
 
-exec env MODEL_ID="$MODEL_ID" uvicorn worker:app \
+exec env MODEL_ID="$MODEL_ID" \
+  "$SCRIPT_DIR/.venv/bin/python3" -m uvicorn worker:app \
   --host 127.0.0.1 \
   --port "$PORT" \
   --log-level info \

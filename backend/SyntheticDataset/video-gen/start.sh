@@ -26,7 +26,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # Start worker in background
-env MODEL_ID="$MODEL_ID" uvicorn worker:app \
+env MODEL_ID="$MODEL_ID" "$SCRIPT_DIR/.venv/bin/python3" -m uvicorn worker:app \
   --host 127.0.0.1 --port "$WORKER_PORT" \
   --log-level info --timeout-keep-alive 600 \
   --ws-ping-interval 20 --ws-ping-timeout 60 &
@@ -36,7 +36,7 @@ WORKER_PID=$!
 sleep 1
 
 # Start app in foreground (--reload lets you edit frontend/app.py without restart)
-exec uvicorn app:app \
+exec "$SCRIPT_DIR/.venv/bin/python3" -m uvicorn app:app \
   --host 0.0.0.0 --port "$APP_PORT" \
   --log-level info \
   --reload --reload-dir . \
