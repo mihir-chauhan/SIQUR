@@ -17,8 +17,8 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Minority Report",
-  description: "Secure. Simulate. Save.",
+  title: "Minority Report — AI Surveillance Platform",
+  description: "Secure. Simulate. Save. An AI-powered surveillance optimization and synthetic data platform by Catapult at Purdue University.",
 };
 
 export default function RootLayout({
@@ -29,18 +29,20 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${spaceMono.variable} h-full antialiased`}
-      style={{ backgroundColor: "#0a0a0a", colorScheme: "dark" }}
+      className={`${inter.variable} ${spaceMono.variable}`}
+      suppressHydrationWarning
     >
       <head>
-        {/* Prevent white flash by forcing background before any paint */}
+        {/* Prevent white flash before JS hydrates */}
         <style
           dangerouslySetInnerHTML={{
-            __html: `html,body{background:#0a0a0a;color-scheme:dark}`,
+            __html: `html,body{background:#0a0a0a;color-scheme:dark;margin:0;padding:0;height:100%;-webkit-font-smoothing:antialiased}`,
           }}
         />
       </head>
-      <body className="scanlines min-h-full flex flex-col">{children}</body>
+      <body suppressHydrationWarning>
+        <div className="scanlines app-shell">{children}</div>
+      </body>
     </html>
   );
 }

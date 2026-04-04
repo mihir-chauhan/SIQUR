@@ -71,6 +71,7 @@ export default function FNAFSwitcher({
             className={isActive ? "glow-cyan-box" : ""}
             style={{
               flex: "0 0 auto",
+              position: "relative" as const,
               minWidth: 88,
               padding: "6px 12px 8px",
               background: isActive
@@ -87,13 +88,13 @@ export default function FNAFSwitcher({
                 ? "var(--color-accent-cyan)"
                 : "var(--color-text-dim)",
               cursor: "pointer",
-              transition:
-                "border-color var(--duration-fast) ease, color var(--duration-fast) ease, background var(--duration-fast) ease, box-shadow var(--duration-fast) ease",
-              textAlign: "center",
+              transition: "all 200ms cubic-bezier(0.16, 1, 0.3, 1)",
+              textAlign: "center" as const,
               display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
+              flexDirection: "column" as const,
+              alignItems: "center" as const,
               gap: 2,
+              overflow: "hidden" as const,
             }}
             onMouseEnter={(e) => {
               if (!isActive) {
@@ -117,12 +118,39 @@ export default function FNAFSwitcher({
               style={{
                 fontSize: 7,
                 letterSpacing: "0.1em",
-                opacity: isActive ? 0.8 : 0.4,
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                opacity: isActive ? 0.9 : 0.4,
                 color: isActive ? "var(--color-accent-green)" : "var(--color-text-dim)",
               }}
             >
-              {isActive ? "ACTIVE" : "STANDBY"}
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  backgroundColor: isActive ? "var(--color-accent-green)" : "var(--color-text-dim)",
+                  boxShadow: isActive ? "0 0 6px rgba(0, 255, 65, 0.7)" : "none",
+                  display: "inline-block",
+                }}
+              />
+              {isActive ? "LIVE" : "STANDBY"}
             </span>
+            {/* Scanner line under active camera */}
+            {isActive && (
+              <span
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: "10%",
+                  right: "10%",
+                  height: "1px",
+                  background: "linear-gradient(90deg, transparent, var(--color-accent-cyan), transparent)",
+                  boxShadow: "0 0 6px rgba(0, 229, 255, 0.5)",
+                }}
+              />
+            )}
           </button>
         );
       })}

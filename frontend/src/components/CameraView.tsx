@@ -256,6 +256,30 @@ export default function CameraView({
         }}
       />
 
+      {/* CRT Vignette */}
+      <div className="crt-vignette" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }} />
+
+      {/* Center Crosshair */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          pointerEvents: "none",
+          zIndex: 2,
+          opacity: 0.2,
+        }}
+      >
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <line x1="24" y1="0" x2="24" y2="18" stroke="#00e5ff" strokeWidth="0.5" />
+          <line x1="24" y1="30" x2="24" y2="48" stroke="#00e5ff" strokeWidth="0.5" />
+          <line x1="0" y1="24" x2="18" y2="24" stroke="#00e5ff" strokeWidth="0.5" />
+          <line x1="30" y1="24" x2="48" y2="24" stroke="#00e5ff" strokeWidth="0.5" />
+          <circle cx="24" cy="24" r="3" stroke="#00e5ff" strokeWidth="0.5" fill="none" />
+        </svg>
+      </div>
+
       {/* Fallback when splat fails */}
       {loadError && (
         <div

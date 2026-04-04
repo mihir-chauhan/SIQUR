@@ -9,7 +9,7 @@ import { getBuilding, getCameras, placeCameras } from "../lib/api";
 import type {
   Building,
   Camera,
-} from "../../../types";
+} from "@/lib/types";
 import CoverageBadge from "./CoverageBadge";
 
 // ─── SVG floor-plan helpers ───────────────────────────────────────────────────
@@ -505,9 +505,12 @@ export default function BuildingView() {
             border: "1px solid var(--color-border)",
             borderRadius: "4px",
             padding: "20px",
+            overflow: "hidden",
           }}
         >
           <HudCorners />
+          {/* Scanner sweep overlay */}
+          <div className="scanner-line" style={{ top: "50%", opacity: 0.2 }} />
 
           {/* Panel label */}
           <p
@@ -537,13 +540,30 @@ export default function BuildingView() {
                   <g key={i}>
                     <line
                       x1={coord} y1={0} x2={coord} y2={SVG_SIZE}
-                      stroke="rgba(0,229,255,0.05)" strokeWidth="1"
+                      stroke="rgba(0,229,255,0.06)" strokeWidth="0.5"
                     />
                     <line
                       x1={0} y1={coord} x2={SVG_SIZE} y2={coord}
-                      stroke="rgba(0,229,255,0.05)" strokeWidth="1"
+                      stroke="rgba(0,229,255,0.06)" strokeWidth="0.5"
                     />
                   </g>
+                );
+              })}
+              {/* Grid labels along edges */}
+              {Array.from({ length: 5 }, (_, i) => {
+                const coord = SVG_PAD + ((SVG_SIZE - SVG_PAD * 2) / 4) * i;
+                return (
+                  <text
+                    key={`label-${i}`}
+                    x={coord}
+                    y={SVG_SIZE - 8}
+                    fill="rgba(0,229,255,0.2)"
+                    fontSize="7"
+                    fontFamily="var(--font-space-mono, monospace)"
+                    textAnchor="middle"
+                  >
+                    {(i * 25).toString()}
+                  </text>
                 );
               })}
 
@@ -684,8 +704,9 @@ export default function BuildingView() {
                 borderRadius: "3px",
                 padding: "12px 16px",
                 cursor: placing ? "not-allowed" : "pointer",
-                transition: "all 0.15s ease",
+                transition: "all 200ms cubic-bezier(0.16, 1, 0.3, 1)",
                 width: "100%",
+                textTransform: "uppercase" as const,
               }}
               onMouseEnter={e => {
                 if (!placing) {
