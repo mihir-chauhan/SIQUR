@@ -127,3 +127,18 @@ body {
 .flicker {
   animation: flicker 8s linear infinite;
 }
+
+/* ─── Cesium Overrides ──────────────────────────────────────────────── */
+.cesium-viewer,
+.cesium-viewer-cesiumWidgetContainer,
+.cesium-widget,
+.cesium-widget canvas {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  inset: 0 !important;
+}
+
+.cesium-viewer .cesium-widget-credits {
+  display: none !important;
+}
