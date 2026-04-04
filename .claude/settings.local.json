@@ -11,7 +11,8 @@
       "Bash(python3 -m pip install --user opencv-python scipy shapely scikit-image ortools matplotlib Pillow)",
       "Bash(python3 -m venv /home/rexmagnusdavid/Repositories/MinorityReport/CameraPlacementAlgorithm/.venv)",
       "Bash(/home/rexmagnusdavid/Repositories/MinorityReport/CameraPlacementAlgorithm/.venv/bin/pip install:*)",
-      "Bash(.venv/bin/python3:*)"
+      "Bash(.venv/bin/python3:*)",
+      "Bash(.venv/bin/python main.py DSAI_1.png --camera-count 5)"
     ]
   },
   "disabledMcpjsonServers": [

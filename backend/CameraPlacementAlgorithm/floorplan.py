@@ -14,7 +14,6 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 from scipy import ndimage
-from skimage.morphology import skeletonize
 
 
 # ---------------------------------------------------------------------------
@@ -210,68 +209,24 @@ def extract_candidates(floor_mask: np.ndarray, wall_mask: np.ndarray,
     """
     Returns (M, 2) array of (row, col) candidate camera positions.
 
-    Three tiers (unioned, deduped):
-      1. Wall-adjacent floor pixels — best for corner/wall mounting
-      2. Skeleton junctions — best for corridor intersections
-      3. Room centroids — seeds for open-plan spaces
+    Only wall-mounted positions: floor pixels that are strictly 1px adjacent
+    to a wall pixel (3×3 dilation).  The yaw optimiser in visibility.py will
+    orient each camera to face inward, maximising coverage from that position.
     """
     h, w = floor_mask.shape
-    candidates: List[Tuple[int, int]] = []
 
-    # --- Tier 1: wall-adjacent floor pixels ---
-    dil_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
+    # Dilate walls by exactly 1 pixel (3×3 kernel) to get the floor strip
+    # immediately touching the wall surface.
+    dil_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     wall_dilated = cv2.dilate(wall_mask.astype(np.uint8), dil_kernel).astype(bool)
     wall_adjacent = wall_dilated & floor_mask
 
     rows, cols = np.where(wall_adjacent)
-    # Subsample
     idx = np.arange(0, len(rows), step)
+
+    candidates: List[Tuple[int, int]] = []
     for i in idx:
         candidates.append((int(rows[i]), int(cols[i])))
-
-    # --- Tier 2: skeleton junctions (corridor T-intersections) ---
-    try:
-        skel = skeletonize(floor_mask)
-        skel_rows, skel_cols = np.where(skel)
-        for i in range(len(skel_rows)):
-            r, c = skel_rows[i], skel_cols[i]
-            # Count neighbours in 3×3 neighbourhood
-            r0, r1 = max(0, r - 1), min(h, r + 2)
-            c0, c1 = max(0, c - 1), min(w, c + 2)
-            n_neighbours = skel[r0:r1, c0:c1].sum() - 1  # exclude self
-            if n_neighbours >= 3:  # junction
-                candidates.append((r, c))
-    except Exception:
-        pass  # skimage not available or fails gracefully
-
-    # --- Tier 3: room centroids ---
-    labeled, n_labels = ndimage.label(floor_mask)
-    for lbl in range(1, n_labels + 1):
-        region = (labeled == lbl)
-        area = region.sum()
-        if area < MIN_ROOM_AREA_PX:
-            continue
-        rows_r, cols_r = np.where(region)
-        centroid_r = int(rows_r.mean())
-        centroid_c = int(cols_r.mean())
-        # Make sure centroid is on floor (it might land in a hole)
-        if floor_mask[centroid_r, centroid_c]:
-            candidates.append((centroid_r, centroid_c))
-        else:
-            # Snap to nearest floor pixel
-            dists = (rows_r - centroid_r) ** 2 + (cols_r - centroid_c) ** 2
-            nearest = int(np.argmin(dists))
-            candidates.append((int(rows_r[nearest]), int(cols_r[nearest])))
-
-        # For large rooms (>30m across), seed interior at 10m grid
-        room_width = cols_r.max() - cols_r.min()
-        room_height = rows_r.max() - rows_r.min()
-        interior_step_px = int(10 * PIXELS_PER_METER)
-        if room_width > interior_step_px or room_height > interior_step_px:
-            for ir in range(int(rows_r.min()), int(rows_r.max()), interior_step_px):
-                for ic in range(int(cols_r.min()), int(cols_r.max()), interior_step_px):
-                    if 0 <= ir < h and 0 <= ic < w and floor_mask[ir, ic]:
-                        candidates.append((ir, ic))
 
     # Deduplicate and clip to image bounds
     seen = set()

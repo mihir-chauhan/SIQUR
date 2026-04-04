@@ -34,8 +34,8 @@ def parse_args():
                    help='Target coverage fraction 0.0-1.0 (default: 0.98)')
     p.add_argument('--scale', type=float, default=29.5,
                    help='Pixels per metre (default: 29.5 for 1/8" scale at 72 DPI)')
-    p.add_argument('--max-range', type=float, default=15.0,
-                   help='Camera max range in metres (default: 15.0)')
+    p.add_argument('--max-range', type=float, default=None,
+                   help='Camera max range in metres (default: infinite)')
     p.add_argument('--fov', type=float, default=90.0,
                    help='Camera field of view in degrees (default: 90.0)')
     p.add_argument('--no-ilp', action='store_true',
@@ -93,7 +93,8 @@ def main():
     # -----------------------------------------------------------------------
     # Step 2: Compute visibility
     # -----------------------------------------------------------------------
-    print(f"\n[2/4] Computing visibility (max range={args.max_range}m, "
+    range_str = "∞" if args.max_range is None else f"{args.max_range}m"
+    print(f"\n[2/4] Computing visibility (max range={range_str}, "
           f"FOV={args.fov}°, rays={args.n_rays})")
     vis = compute_visibility(
         fp,
