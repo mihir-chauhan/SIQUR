@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { PRELOADED_BUILDINGS } from "@/lib/buildings";
 import { createSession, setBuilding } from "@/lib/api";
-import { setSessionId } from "@/lib/session";
+import { setSessionId, setSelectedBuilding } from "@/lib/session";
 import type { Building } from "@/lib/types";
 import GlobeSidebar from "@/components/GlobeSidebar";
 import GlobeStatusBar from "@/components/GlobeStatusBar";
@@ -72,6 +72,7 @@ export default function GlobeView() {
       try {
         const session = await createSession();
         setSessionId(session.session_id);
+        setSelectedBuilding(building.id);
 
         await setBuilding(session.session_id, {
           building_id: building.id,
@@ -149,17 +150,24 @@ export default function GlobeView() {
         viewer = v;
         viewerRef.current = v;
 
-        // If no Ion token, fall back to OpenStreetMap imagery
-        // Use dark CartoDB tiles (works without Ion token, looks tactical)
-        v.imageryLayers.removeAll();
-        v.imageryLayers.addImageryProvider(
-          new Cesium.UrlTemplateImageryProvider({
-            url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-            credit: new Cesium.Credit("CartoDB Dark Matter"),
-            minimumLevel: 0,
-            maximumLevel: 18,
-          })
-        );
+        // Use satellite imagery if Ion token is set, otherwise dark CartoDB tiles
+        if (ionToken) {
+          // Ion token present: use default Bing Maps aerial satellite imagery
+          v.imageryLayers.addImageryProvider(
+            await Cesium.IonImageryProvider.fromAssetId(2)
+          );
+        } else {
+          // No token: fall back to dark CartoDB tiles
+          v.imageryLayers.removeAll();
+          v.imageryLayers.addImageryProvider(
+            new Cesium.UrlTemplateImageryProvider({
+              url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+              credit: new Cesium.Credit("CartoDB Dark Matter"),
+              minimumLevel: 0,
+              maximumLevel: 18,
+            })
+          );
+        }
 
         // Dark globe styling
         v.scene.backgroundColor = Cesium.Color.fromCssColorString("#0a0a0a");
