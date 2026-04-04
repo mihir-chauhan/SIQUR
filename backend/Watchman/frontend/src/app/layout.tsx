@@ -1,0 +1,45 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { Space_Mono } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "Watchman — AI Security Monitor",
+  description: "Real-time AI surveillance incident detection by Minority Report.",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html
+      lang="en"
+      className={`${inter.variable} ${spaceMono.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `html,body{background:#0a0a0a;color-scheme:dark;margin:0;padding:0;height:100%;-webkit-font-smoothing:antialiased}`,
+          }}
+        />
+      </head>
+      <body suppressHydrationWarning>
+        <div className="scanlines app-shell">{children}</div>
+      </body>
+    </html>
+  );
+}
