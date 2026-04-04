@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSessionId } from "../lib/session";
+import { getSessionId, getSelectedBuilding } from "../lib/session";
+import { PRELOADED_BUILDINGS } from "../lib/buildings";
 import { getBuilding, getCameras, placeCameras } from "../lib/api";
 import type {
   Building,
@@ -186,18 +187,37 @@ export default function BuildingView() {
 
     Promise.all([getBuilding(sid), getCameras(sid)])
       .then(([buildingRes, camerasRes]) => {
-        if (!buildingRes.building) {
+        let resolvedBuilding = buildingRes.building;
+
+        // Fallback: if API returned null, try loading from localStorage
+        if (!resolvedBuilding) {
+          const storedId = getSelectedBuilding();
+          if (storedId) {
+            resolvedBuilding = PRELOADED_BUILDINGS.find((b) => b.id === storedId) ?? null;
+          }
+        }
+
+        if (!resolvedBuilding) {
           router.replace("/");
           return;
         }
-        setBuilding(buildingRes.building);
+        setBuilding(resolvedBuilding);
         setCameras(camerasRes.cameras);
         if (camerasRes.placement_complete && camerasRes.cameras.length > 0) {
           setPlacementDone(true);
         }
       })
       .catch(() => {
-        setLoadError("SYSTEM OFFLINE — UNABLE TO RETRIEVE BUILDING DATA");
+        // Last resort fallback: try localStorage even on full network failure
+        const storedId = getSelectedBuilding();
+        const fallback = storedId
+          ? PRELOADED_BUILDINGS.find((b) => b.id === storedId) ?? null
+          : null;
+        if (fallback) {
+          setBuilding(fallback);
+        } else {
+          setLoadError("SYSTEM OFFLINE — UNABLE TO RETRIEVE BUILDING DATA");
+        }
       });
   }, [router]);
 

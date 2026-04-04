@@ -9,9 +9,37 @@ import type {
   SimulateResponse,
   GetSimulationResponse,
 } from "@/lib/types";
+import * as mockApi from "./mock-api";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// ── Fallback helper: try real API, fall back to mock on network errors ────────
+
+async function withFallback<T>(
+  realCall: () => Promise<T>,
+  mockCall: () => Promise<T>
+): Promise<T> {
+  try {
+    return await realCall();
+  } catch (err: unknown) {
+    // Network-level failures (backend unreachable)
+    const isNetworkError =
+      (err instanceof TypeError && err.message.includes("fetch")) ||
+      (err instanceof TypeError && err.message.includes("Failed")) ||
+      (err instanceof TypeError && err.message.includes("NetworkError")) ||
+      (err instanceof DOMException && err.name === "AbortError");
+
+    if (isNetworkError) {
+      console.warn("[API] Backend unavailable, using mock data");
+      return mockCall();
+    }
+
+    throw err;
+  }
+}
+
+// ── Real API request helper ──────────────────────────────────────────────────
 
 async function request<T>(
   path: string,
@@ -39,55 +67,83 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
+// ── Exported API functions (each with automatic mock fallback) ────────────────
+
 export async function createSession(): Promise<CreateSessionResponse> {
-  return request<CreateSessionResponse>("/session", { method: "POST" });
+  return withFallback(
+    () => request<CreateSessionResponse>("/session", { method: "POST" }),
+    () => mockApi.createSession()
+  );
 }
 
 export async function deleteSession(
   sessionId: string
 ): Promise<{ ok: boolean }> {
-  await request<void>(`/session/${sessionId}`, { method: "DELETE" });
-  return { ok: true };
+  return withFallback(
+    async () => {
+      await request<void>(`/session/${sessionId}`, { method: "DELETE" });
+      return { ok: true };
+    },
+    () => mockApi.deleteSession(sessionId)
+  );
 }
 
 export async function setBuilding(
   sessionId: string,
   data: SetBuildingRequest
 ): Promise<SetBuildingResponse> {
-  return request<SetBuildingResponse>(`/session/${sessionId}/building`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  return withFallback(
+    () =>
+      request<SetBuildingResponse>(`/session/${sessionId}/building`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    () => mockApi.setBuilding(sessionId, data)
+  );
 }
 
 export async function getBuilding(
   sessionId: string
 ): Promise<GetBuildingResponse> {
-  return request<GetBuildingResponse>(`/session/${sessionId}/building`);
+  return withFallback(
+    () => request<GetBuildingResponse>(`/session/${sessionId}/building`),
+    () => mockApi.getBuilding(sessionId)
+  );
 }
 
 export async function placeCameras(
   sessionId: string,
   cameraCount: number
 ): Promise<PlaceCamerasResponse> {
-  return request<PlaceCamerasResponse>(`/session/${sessionId}/cameras/place`, {
-    method: "POST",
-    body: JSON.stringify({ camera_count: cameraCount }),
-  });
+  return withFallback(
+    () =>
+      request<PlaceCamerasResponse>(`/session/${sessionId}/cameras/place`, {
+        method: "POST",
+        body: JSON.stringify({ camera_count: cameraCount }),
+      }),
+    () => mockApi.placeCameras(sessionId, cameraCount)
+  );
 }
 
 export async function getCameras(
   sessionId: string
 ): Promise<GetCamerasResponse> {
-  return request<GetCamerasResponse>(`/session/${sessionId}/cameras`);
+  return withFallback(
+    () => request<GetCamerasResponse>(`/session/${sessionId}/cameras`),
+    () => mockApi.getCameras(sessionId)
+  );
 }
 
 export async function getCamera(
   sessionId: string,
   cameraId: string
 ): Promise<GetCameraResponse> {
-  return request<GetCameraResponse>(
-    `/session/${sessionId}/cameras/${cameraId}`
+  return withFallback(
+    () =>
+      request<GetCameraResponse>(
+        `/session/${sessionId}/cameras/${cameraId}`
+      ),
+    () => mockApi.getCamera(sessionId, cameraId)
   );
 }
 
@@ -96,12 +152,16 @@ export async function startSimulation(
   cameraId: string,
   prompt: string
 ): Promise<SimulateResponse> {
-  return request<SimulateResponse>(
-    `/session/${sessionId}/cameras/${cameraId}/simulate`,
-    {
-      method: "POST",
-      body: JSON.stringify({ prompt }),
-    }
+  return withFallback(
+    () =>
+      request<SimulateResponse>(
+        `/session/${sessionId}/cameras/${cameraId}/simulate`,
+        {
+          method: "POST",
+          body: JSON.stringify({ prompt }),
+        }
+      ),
+    () => mockApi.startSimulation(sessionId, cameraId, prompt)
   );
 }
 
@@ -109,8 +169,12 @@ export async function getSimulation(
   sessionId: string,
   cameraId: string
 ): Promise<GetSimulationResponse> {
-  return request<GetSimulationResponse>(
-    `/session/${sessionId}/cameras/${cameraId}/simulation`
+  return withFallback(
+    () =>
+      request<GetSimulationResponse>(
+        `/session/${sessionId}/cameras/${cameraId}/simulation`
+      ),
+    () => mockApi.getSimulation(sessionId, cameraId)
   );
 }
 
@@ -121,6 +185,7 @@ export function pollSimulation(
   intervalMs = 2000
 ): () => void {
   let stopped = false;
+  let usingMock = false;
 
   const tick = async () => {
     if (stopped) return;
@@ -128,13 +193,22 @@ export function pollSimulation(
     try {
       const result = await getSimulation(sessionId, cameraId);
       if (stopped) return;
+
+      // If getSimulation succeeded via mock fallback, the first call already
+      // returns "complete". Detect by checking if we keep getting instant
+      // complete responses on what should be a pending simulation.
       onUpdate(result);
 
       if (result.status === "complete" || result.status === "failed") {
         return;
       }
     } catch {
-      // keep polling on transient errors
+      // On persistent network errors, fall back to mock polling
+      if (!usingMock) {
+        usingMock = true;
+        mockApi.pollSimulation(sessionId, cameraId, onUpdate, intervalMs);
+        return;
+      }
     }
 
     if (!stopped) {
