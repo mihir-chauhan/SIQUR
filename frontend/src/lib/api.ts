@@ -8,7 +8,7 @@ import type {
   GetCameraResponse,
   SimulateResponse,
   GetSimulationResponse,
-} from "../../../types";
+} from "@/lib/types";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -40,13 +40,13 @@ async function request<T>(
 }
 
 export async function createSession(): Promise<CreateSessionResponse> {
-  return request<CreateSessionResponse>("/sessions", { method: "POST" });
+  return request<CreateSessionResponse>("/session", { method: "POST" });
 }
 
 export async function deleteSession(
   sessionId: string
 ): Promise<{ ok: boolean }> {
-  await request<void>(`/sessions/${sessionId}`, { method: "DELETE" });
+  await request<void>(`/session/${sessionId}`, { method: "DELETE" });
   return { ok: true };
 }
 
@@ -54,7 +54,7 @@ export async function setBuilding(
   sessionId: string,
   data: SetBuildingRequest
 ): Promise<SetBuildingResponse> {
-  return request<SetBuildingResponse>(`/sessions/${sessionId}/building`, {
+  return request<SetBuildingResponse>(`/session/${sessionId}/building`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -63,14 +63,14 @@ export async function setBuilding(
 export async function getBuilding(
   sessionId: string
 ): Promise<GetBuildingResponse> {
-  return request<GetBuildingResponse>(`/sessions/${sessionId}/building`);
+  return request<GetBuildingResponse>(`/session/${sessionId}/building`);
 }
 
 export async function placeCameras(
   sessionId: string,
   cameraCount: number
 ): Promise<PlaceCamerasResponse> {
-  return request<PlaceCamerasResponse>(`/sessions/${sessionId}/cameras`, {
+  return request<PlaceCamerasResponse>(`/session/${sessionId}/cameras/place`, {
     method: "POST",
     body: JSON.stringify({ camera_count: cameraCount }),
   });
@@ -79,7 +79,7 @@ export async function placeCameras(
 export async function getCameras(
   sessionId: string
 ): Promise<GetCamerasResponse> {
-  return request<GetCamerasResponse>(`/sessions/${sessionId}/cameras`);
+  return request<GetCamerasResponse>(`/session/${sessionId}/cameras`);
 }
 
 export async function getCamera(
@@ -87,7 +87,7 @@ export async function getCamera(
   cameraId: string
 ): Promise<GetCameraResponse> {
   return request<GetCameraResponse>(
-    `/sessions/${sessionId}/cameras/${cameraId}`
+    `/session/${sessionId}/cameras/${cameraId}`
   );
 }
 
@@ -97,7 +97,7 @@ export async function startSimulation(
   prompt: string
 ): Promise<SimulateResponse> {
   return request<SimulateResponse>(
-    `/sessions/${sessionId}/cameras/${cameraId}/simulate`,
+    `/session/${sessionId}/cameras/${cameraId}/simulate`,
     {
       method: "POST",
       body: JSON.stringify({ prompt }),
@@ -110,7 +110,7 @@ export async function getSimulation(
   cameraId: string
 ): Promise<GetSimulationResponse> {
   return request<GetSimulationResponse>(
-    `/sessions/${sessionId}/cameras/${cameraId}/simulation`
+    `/session/${sessionId}/cameras/${cameraId}/simulation`
   );
 }
 

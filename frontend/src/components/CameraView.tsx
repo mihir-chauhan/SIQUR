@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { getSessionId } from "@/lib/session";
-import { getCameras, getBuilding, API_BASE_URL } from "@/lib/api";
+import { useEffect, useRef, useState } from "react";
 import type { Camera, Building } from "@/lib/types";
 import FNAFSwitcher from "./FNAFSwitcher";
 import SimulationPrompt from "./SimulationPrompt";
@@ -27,7 +25,9 @@ export default function CameraView({
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<unknown>(null);
   const viewerRef = useRef<unknown>(null);
+  const threeCameraRef = useRef<unknown>(null);
   const frameIdRef = useRef<number>(0);
+  const sceneInitialized = useRef(false);
   const [loadError, setLoadError] = useState(false);
   const [timestamp, setTimestamp] = useState("");
 
@@ -46,10 +46,11 @@ export default function CameraView({
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize Three.js and Gaussian Splats viewer
+  // Initialize Three.js and Gaussian Splats viewer ONCE (scene persists across camera switches)
   useEffect(() => {
-    if (!containerRef.current || !building) return;
+    if (!containerRef.current || !building || sceneInitialized.current) return;
 
+    sceneInitialized.current = true;
     let disposed = false;
 
     const initViewer = async () => {
@@ -77,15 +78,15 @@ export default function CameraView({
           0.1,
           1000
         );
+        threeCameraRef.current = threeCamera;
 
-        // Set camera position from camera data
+        // Set initial camera position from camera data
         if (camera) {
           threeCamera.position.set(
             camera.position.x,
             camera.position.y,
             camera.position.z
           );
-          // Convert yaw/pitch to Euler rotation
           const yawRad = THREE.MathUtils.degToRad(camera.rotation.yaw);
           const pitchRad = THREE.MathUtils.degToRad(camera.rotation.pitch);
           threeCamera.rotation.set(pitchRad, yawRad, 0, "YXZ");
@@ -118,11 +119,13 @@ export default function CameraView({
           if (disposed) {
             viewer.dispose();
             renderer.dispose();
-            container.removeChild(renderer.domElement);
+            if (container.contains(renderer.domElement)) {
+              container.removeChild(renderer.domElement);
+            }
             return;
           }
 
-          // Render loop
+          // Render loop — persists across camera switches
           const animate = () => {
             if (disposed) return;
             frameIdRef.current = requestAnimationFrame(animate);
@@ -152,6 +155,7 @@ export default function CameraView({
 
     return () => {
       disposed = true;
+      sceneInitialized.current = false;
       if (frameIdRef.current) {
         cancelAnimationFrame(frameIdRef.current);
       }
@@ -178,8 +182,41 @@ export default function CameraView({
       }
       viewerRef.current = null;
       rendererRef.current = null;
+      threeCameraRef.current = null;
     };
-  }, [building, cameraId, camera]);
+  // Only depends on building — NOT cameraId. Scene is created once per building.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [building]);
+
+  // When cameraId changes, only update the Three.js camera position/rotation
+  useEffect(() => {
+    if (!camera || !threeCameraRef.current) return;
+
+    const threeCamera = threeCameraRef.current as {
+      position: { set: (x: number, y: number, z: number) => void };
+      rotation: { set: (x: number, y: number, z: number, order: string) => void };
+      fov: number;
+      updateProjectionMatrix: () => void;
+    };
+
+    threeCamera.position.set(
+      camera.position.x,
+      camera.position.y,
+      camera.position.z
+    );
+
+    // Convert yaw/pitch to Euler rotation
+    const degToRad = (deg: number) => (deg * Math.PI) / 180;
+    threeCamera.rotation.set(
+      degToRad(camera.rotation.pitch),
+      degToRad(camera.rotation.yaw),
+      0,
+      "YXZ"
+    );
+
+    threeCamera.fov = camera.fov;
+    threeCamera.updateProjectionMatrix();
+  }, [camera, cameraId]);
 
   // Handle resize
   useEffect(() => {

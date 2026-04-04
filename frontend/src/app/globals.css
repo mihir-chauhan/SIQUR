@@ -128,6 +128,23 @@ body {
   animation: flicker 8s linear infinite;
 }
 
+/* ─── Reduced Motion ─────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .flicker {
+    animation: none;
+  }
+
+  .hud-pulse {
+    animation: none;
+    opacity: 0.85;
+  }
+
+  .cursor-blink::after {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* ─── Cesium Overrides ──────────────────────────────────────────────── */
 .cesium-viewer,
 .cesium-widget {
