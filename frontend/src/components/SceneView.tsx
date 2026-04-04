@@ -10,14 +10,21 @@ import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
  * Gaussian splat + OBJ mesh in the same Three.js scene.
  * WASD + click-drag mouse look.
  */
+export interface SceneObjects {
+  splatGroup: THREE.Group | null;
+  objGroup: THREE.Group | null;
+}
+
 export default function SceneView({
   splatPath,
   objPath,
   mtlPath,
+  onObjectsReady,
 }: {
   splatPath: string;
   objPath?: string;
   mtlPath?: string;
+  onObjectsReady?: (objects: SceneObjects) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -31,10 +38,19 @@ export default function SceneView({
       const GaussianSplats3D = await import("@mkkellogg/gaussian-splats-3d");
       if (destroyed) return;
 
-      // Our own Three.js scene so we can add FBX later
       const threeScene = new THREE.Scene();
 
-      // Create the Viewer with built-in controls DISABLED
+      // Wrapper group for OBJ — we control visibility/position on this
+      const objWrapper = new THREE.Group();
+      objWrapper.name = "obj-wrapper";
+      threeScene.add(objWrapper);
+
+      const sceneObjects: SceneObjects = {
+        splatGroup: null,
+        objGroup: objWrapper,
+      };
+
+      // Create the Viewer
       const viewer = new GaussianSplats3D.Viewer({
         rootElement: container,
         cameraUp: [0, -1, 0],
@@ -58,6 +74,12 @@ export default function SceneView({
         })
         .then(() => {
           console.log("[SceneView] Splat loaded successfully");
+          // Grab the viewer's splatMesh — this is the actual renderable
+          const splatMesh = (viewer as unknown as { splatMesh: THREE.Object3D }).splatMesh;
+          if (splatMesh) {
+            sceneObjects.splatGroup = splatMesh;
+            if (onObjectsReady) onObjectsReady(sceneObjects);
+          }
         })
         .catch((err: unknown) => {
           console.error("[SceneView] Splat load error:", err);
@@ -85,7 +107,9 @@ export default function SceneView({
             objPath,
             (obj) => {
               console.log("[SceneView] OBJ loaded successfully");
-              threeScene.add(obj);
+              obj.rotation.x = Math.PI;
+              objWrapper.add(obj);
+              if (onObjectsReady) onObjectsReady(sceneObjects);
             },
             undefined,
             (err) => {
