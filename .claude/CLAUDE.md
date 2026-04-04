@@ -25,32 +25,32 @@ Minority Report automates the installation and simulation of surveillance camera
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        USER BROWSER                             │
-│                                                                 │
+┌────────────────────────────────────────────────────────────────┐
+│                        USER BROWSER                            │
+│                                                                │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────┐  │
-│  │  Globe View  │───▶│Building View │───▶│  Camera View     │  │
+│  │  Globe View  │──▶│Building View │──▶│  Camera View     │  │
 │  │  (CesiumJS)  │    │(Camera Pins) │    │(Three.js Splat)  │  │
 │  │              │    │              │    │                  │  │
 │  │ Satellite    │    │ OR-Tools     │    │ FNAF switcher    │  │
 │  │ Earth        │    │ placement    │    │ Chat prompt UI   │  │
 │  │ Click bldg   │    │ result pins  │    │ Video playback   │  │
 │  └──────┬───────┘    └──────┬───────┘    └────────┬─────────┘  │
-│         │                  │                      │            │
-└─────────┼──────────────────┼──────────────────────┼────────────┘
-          │     HTTP API     │                      │
-          ▼                  ▼                      ▼
+│         │                   │                     │            │
+└─────────┼───────────────────┼─────────────────────┼────────────┘
+          │     HTTP API      │                     │
+          ▼                   ▼                     ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     FastAPI (Port 8000)                         │
 │                                                                 │
-│  ┌─────────────┐  ┌──────────────────┐  ┌───────────────────┐  │
-│  │   Session   │  │  Placement Model │  │  Simulation Svc   │  │
-│  │   Store     │  │  (OR-Tools)      │  │  (Qwen local)     │  │
-│  │  (in-memory)│  │                  │  │                   │  │
-│  │  sessions{} │  │  Coverage optim  │  │  Frame capture    │  │
-│  │  buildings  │  │  greedy + ILP    │  │  → Qwen video gen │  │
-│  │  cameras    │  │  returns (x,y,z) │  │  → video file     │  │
-│  └─────────────┘  └──────────────────┘  └───────────────────┘  │
+│  ┌─────────────┐  ┌──────────────────┐  ┌───────────────────┐   │
+│  │   Session   │  │  Placement Model │  │  Simulation Svc   │   │
+│  │   Store     │  │  (OR-Tools)      │  │  (Wan local)      │   │
+│  │  (in-memory)│  │                  │  │                   │   │
+│  │  sessions{} │  │  Coverage optim  │  │  Frame capture    │   │
+│  │  buildings  │  │  greedy + ILP    │  │  → Qwen video gen │   │
+│  │  cameras    │  │  returns (x,y,z) │  │  → video file     │   │
+│  └─────────────┘  └──────────────────┘  └───────────────────┘   │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
           │
