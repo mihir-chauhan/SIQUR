@@ -35,15 +35,10 @@ export default function GlobeView() {
     alt: "800",
   });
 
-  // Intro overlay: show until BOTH the 4s timer has elapsed AND Cesium is ready
-  const [timerDone, setTimerDone] = useState(false);
+  // Intro overlay: show until user clicks AND Cesium is ready
+  const [userDismissed, setUserDismissed] = useState(false);
   const [cesiumReady, setCesiumReady] = useState(false);
-  const introVisible = !(timerDone && cesiumReady);
-
-  useEffect(() => {
-    const t = setTimeout(() => setTimerDone(true), 4000);
-    return () => clearTimeout(t);
-  }, []);
+  const introVisible = !userDismissed || !cesiumReady;
 
   const handleBuildingSelect = useCallback(
     async (building: Building) => {
@@ -321,8 +316,9 @@ export default function GlobeView() {
             initial={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.04 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute inset-0 z-50 flex flex-col items-center justify-center"
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center cursor-pointer"
             style={{ backgroundColor: "var(--color-bg)" }}
+            onClick={() => cesiumReady && setUserDismissed(true)}
           >
             {/* Corner brackets */}
             <span
@@ -411,8 +407,21 @@ export default function GlobeView() {
                   letterSpacing: "0.1em",
                 }}
               >
-                LOADING CESIUM GLOBE ENGINE...
+                {cesiumReady ? "SYSTEM READY" : "LOADING CESIUM GLOBE ENGINE..."}
               </p>
+
+              {cesiumReady && (
+                <p
+                  className="font-mono text-sm mt-6 tracking-[0.3em] uppercase animate-pulse cursor-pointer"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--color-accent-cyan)",
+                    letterSpacing: "0.2em",
+                  }}
+                >
+                  [ CLICK ANYWHERE TO ENTER ]
+                </p>
+              )}
             </section>
 
             {/* Coordinates (bottom) */}
