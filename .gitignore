@@ -35,7 +35,7 @@ __pycache__/
 *.mp4
 *.avi
 *.mov
-*.splat
+# *.splat — these are served by the frontend, keep tracked
 
 # ── Test artifacts ────────────────────────────────────────────
 .playwright-mcp/
