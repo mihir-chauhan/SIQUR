@@ -334,14 +334,16 @@ export default function BuildingView() {
   return (
     <main
       style={{
-        minHeight: "100vh",
-        backgroundColor: "var(--color-bg)",
+        backgroundColor: "rgba(10, 10, 10, 0.85)",
+        backdropFilter: "blur(8px)",
         color: "var(--color-text)",
         display: "flex",
         flexDirection: "column",
-        padding: "24px",
-        gap: "24px",
+        padding: "16px",
+        gap: "16px",
         position: "relative",
+        borderRadius: "6px",
+        border: "1px solid rgba(0, 229, 255, 0.15)",
       }}
     >
       {/* Page-level HUD corners */}
