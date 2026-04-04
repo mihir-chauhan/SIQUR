@@ -184,6 +184,38 @@ export default function GlobeView() {
           },
         });
 
+        const westLafayetteCondition = new Cesium.DistanceDisplayCondition(5000, 50_000_000);
+        const buildingsCondition = new Cesium.DistanceDisplayCondition(0, 5000);
+
+        // Add West Lafayette global marker
+        v.entities.add({
+          id: "WEST_LAFAYETTE",
+          name: "WEST LAFAYETTE",
+          position: Cesium.Cartesian3.fromDegrees(-86.9150, 40.4280, 0),
+          point: {
+            pixelSize: 18,
+            color: Cesium.Color.fromCssColorString("#ff3c3c"),
+            outlineColor: Cesium.Color.fromCssColorString("#ff3c3c").withAlpha(0.3),
+            outlineWidth: 10,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            distanceDisplayCondition: westLafayetteCondition,
+          },
+          label: {
+            text: "WEST LAFAYETTE",
+            font: "16px 'Space Mono', monospace",
+            fillColor: Cesium.Color.fromCssColorString("#ff3c3c"),
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -28),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            distanceDisplayCondition: westLafayetteCondition,
+          },
+        });
+
         // Add building markers
         for (const building of PRELOADED_BUILDINGS) {
           const position = Cesium.Cartesian3.fromDegrees(
@@ -205,6 +237,7 @@ export default function GlobeView() {
               outlineWidth: 8,
               disableDepthTestDistance: Number.POSITIVE_INFINITY,
               heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              distanceDisplayCondition: buildingsCondition,
             },
             label: {
               text: building.name.toUpperCase(),
@@ -217,6 +250,7 @@ export default function GlobeView() {
               pixelOffset: new Cesium.Cartesian2(0, -24),
               disableDepthTestDistance: Number.POSITIVE_INFINITY,
               heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              distanceDisplayCondition: buildingsCondition,
             },
           });
 
@@ -235,6 +269,7 @@ export default function GlobeView() {
               ).withAlpha(0.3),
               outlineWidth: 1,
               heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              distanceDisplayCondition: buildingsCondition,
             },
           });
         }
@@ -247,6 +282,20 @@ export default function GlobeView() {
           (click: any) => {
             const picked = v.scene.pick(click.position);
             if (Cesium.defined(picked) && picked.id && picked.id.id) {
+              if (picked.id.id === "WEST_LAFAYETTE") {
+                v.camera.flyTo({
+                  destination: Cesium.Cartesian3.fromDegrees(-86.9150, 40.4280, 1500),
+                  orientation: {
+                    heading: Cesium.Math.toRadians(0),
+                    pitch: Cesium.Math.toRadians(-75),
+                    roll: 0,
+                  },
+                  duration: 3.0,
+                  easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+                });
+                return;
+              }
+
               const building = PRELOADED_BUILDINGS.find(
                 (b: Building) => b.id === picked.id.id
               );
@@ -264,6 +313,12 @@ export default function GlobeView() {
           (movement: any) => {
             const picked = v.scene.pick(movement.endPosition);
             if (Cesium.defined(picked) && picked.id && picked.id.id) {
+              if (picked.id.id === "WEST_LAFAYETTE") {
+                containerRef.current!.style.cursor = "pointer";
+                setHoveredBuilding(null);
+                return;
+              }
+
               const building = PRELOADED_BUILDINGS.find(
                 (b: Building) => b.id === picked.id.id
               );
