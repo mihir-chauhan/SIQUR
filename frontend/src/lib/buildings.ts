@@ -1,5 +1,6 @@
 import type { Building } from "./types";
 
+// Real GPS coordinates from OpenStreetMap Nominatim
 // Coordinate offsets reference (at ~lat 40.4°):
 //   1° lat  ≈ 111,000 m  →  1 m ≈ 0.000009009° lat
 //   1° lng  ≈  84,500 m  →  1 m ≈ 0.000011834° lng
@@ -8,54 +9,49 @@ export const PRELOADED_BUILDINGS: Building[] = [
   {
     id: "purdue-lawson",
     name: "Lawson Computer Science Building",
-    lat: 40.4274,
-    lng: -86.9167,
-    // Roughly 80 m (E-W) × 40 m (N-S) with an L-shaped notch cut from the NE corner
-    // 80 m lng offset  ≈ 0.000947°   |  40 m lat offset ≈ 0.000360°
-    // 50 m lng offset  ≈ 0.000592°   |  25 m lat offset ≈ 0.000225°
+    lat: 40.4278,
+    lng: -86.9170,
+    // ~80m E-W × 40m N-S, L-shaped
     footprint_polygon: [
-      [40.42722, -86.91718], // SW corner
-      [40.42722, -86.91623], // SE corner
-      [40.42745, -86.91623], // ESE step (L notch bottom)
-      [40.42745, -86.91671], // ENE step (L notch inner corner)
-      [40.42758, -86.91671], // NE of main wing top
-      [40.42758, -86.91718], // NW corner
+      [40.42762, -86.91748], // SW
+      [40.42762, -86.91653], // SE
+      [40.42785, -86.91653], // ESE step
+      [40.42785, -86.91701], // L notch inner
+      [40.42798, -86.91701], // NE main wing
+      [40.42798, -86.91748], // NW
     ],
     splat_asset: "lawson.splat",
   },
   {
     id: "purdue-pmu",
     name: "Purdue Memorial Union",
-    lat: 40.4256,
-    lng: -86.9094,
-    // Roughly 120 m (E-W) × 60 m (N-S) irregular complex
-    // 120 m lng offset ≈ 0.001420°   |  60 m lat offset ≈ 0.000540°
-    //  60 m lng offset ≈ 0.000710°   |  30 m lat offset ≈ 0.000270°
+    lat: 40.4247,
+    lng: -86.9106,
+    // ~120m E-W × 60m N-S, irregular complex
     footprint_polygon: [
-      [40.42533, -86.91011], // SW
-      [40.42533, -86.90869], // SE
-      [40.42560, -86.90869], // ESE notch start
-      [40.42560, -86.90940], // ESE notch inner
-      [40.42587, -86.90940], // NE of east wing
-      [40.42587, -86.91011], // NW of east wing
-      [40.42573, -86.91011], // step back W
-      [40.42573, -86.91050], // NW corner of west wing
-      [40.42533, -86.91050], // SW of west wing back to start
+      [40.42443, -86.91131], // SW
+      [40.42443, -86.90989], // SE
+      [40.42470, -86.90989], // ESE notch
+      [40.42470, -86.91060], // ESE notch inner
+      [40.42497, -86.91060], // NE east wing
+      [40.42497, -86.91131], // NW east wing
+      [40.42483, -86.91131], // step back W
+      [40.42483, -86.91170], // NW corner west wing
+      [40.42443, -86.91170], // SW west wing
     ],
     splat_asset: "pmu.splat",
   },
   {
     id: "purdue-armstrong",
-    name: "Armstrong Hall",
-    lat: 40.4268,
-    lng: -86.9145,
-    // Roughly 60 m (E-W) × 30 m (N-S) simple rectangle
-    // 60 m lng offset ≈ 0.000710°   |  30 m lat offset ≈ 0.000270°
+    name: "Neil Armstrong Hall of Engineering",
+    lat: 40.4314,
+    lng: -86.9193,
+    // ~80m E-W × 50m N-S, rectangular with wing
     footprint_polygon: [
-      [40.42666, -86.91485], // SW
-      [40.42666, -86.91414], // SE
-      [40.42693, -86.91414], // NE
-      [40.42693, -86.91485], // NW
+      [40.43118, -86.91977], // SW
+      [40.43118, -86.91883], // SE
+      [40.43163, -86.91883], // NE
+      [40.43163, -86.91977], // NW
     ],
     splat_asset: "armstrong.splat",
   },

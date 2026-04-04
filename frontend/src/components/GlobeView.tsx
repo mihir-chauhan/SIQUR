@@ -12,13 +12,36 @@ import GlobeStatusBar from "@/components/GlobeStatusBar";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 // Stable reference for building select to avoid re-running the Cesium init effect
-const buildingSelectRef: { current: ((b: Building) => void) | null } = { current: null };
+const buildingSelectRef: { current: ((b: Building) => void) | null } = {
+  current: null,
+};
 
 interface CursorCoords {
   lat: string;
   lng: string;
   alt: string;
 }
+
+// ─── Boot sequence line config ──────────────────────────────────────────
+interface BootLine {
+  timestamp: string;
+  text: string;
+  type: "success" | "info" | "highlight";
+}
+
+const BOOT_LINES: Omit<BootLine, "timestamp">[] = [
+  { text: "✓ satellite uplink established", type: "success" },
+  { text: "✓ terrain mesh loaded", type: "success" },
+  { text: "✓ building registry synced", type: "success" },
+  { text: "✓ camera placement engine ready", type: "success" },
+  { text: "✓ gaussian splat decoder initialized", type: "success" },
+  { text: "HUD systems initializing...", type: "info" },
+  { text: "Vision modes: STANDARD | NV | FLIR active", type: "highlight" },
+  { text: "Connecting to surveillance feeds...", type: "info" },
+  { text: "✓ System operational — 3 targets acquired", type: "success" },
+];
+
+const TITLE_TEXT = "MINORITY REPORT";
 
 export default function GlobeView() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,30 +60,42 @@ export default function GlobeView() {
     alt: "800",
   });
 
-  // Boot sequence
-  interface BootLine { timestamp: string; text: string; type: "success" | "info" | "highlight"; }
+  // Boot sequence state
   const [bootLines, setBootLines] = useState<BootLine[]>([]);
   const [bootComplete, setBootComplete] = useState(false);
   const [userDismissed, setUserDismissed] = useState(false);
   const [cesiumReady, setCesiumReady] = useState(false);
+  const [titleRevealed, setTitleRevealed] = useState(false);
+  const [progressPct, setProgressPct] = useState(0);
   const introVisible = !userDismissed || !cesiumReady;
 
+  // Animate title reveal
   useEffect(() => {
-    const ts = () => { const d = new Date(); return `${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}:${String(d.getUTCSeconds()).padStart(2,"0")}`; };
-    const lines: Omit<BootLine, "timestamp">[] = [
-      { text: "✓ satellite uplink established", type: "success" },
-      { text: "✓ terrain mesh loaded", type: "success" },
-      { text: "✓ building registry synced", type: "success" },
-      { text: "✓ camera placement engine ready", type: "success" },
-      { text: "✓ gaussian splat decoder initialized", type: "success" },
-      { text: "HUD systems initializing...", type: "info" },
-      { text: "Vision modes: STANDARD | NV | FLIR active", type: "highlight" },
-      { text: "Connecting to surveillance feeds...", type: "info" },
-      { text: "✓ System operational — 3 targets acquired", type: "success" },
-    ];
+    const t = setTimeout(() => setTitleRevealed(true), 200);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Boot sequence with progress
+  useEffect(() => {
+    const ts = () => {
+      const d = new Date();
+      return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}:${String(d.getUTCSeconds()).padStart(2, "0")}`;
+    };
     const timers: ReturnType<typeof setTimeout>[] = [];
-    lines.forEach((line, i) => { timers.push(setTimeout(() => { setBootLines(prev => [...prev, { ...line, timestamp: ts() }]); }, i * 300)); });
-    timers.push(setTimeout(() => setBootComplete(true), lines.length * 300 + 400));
+    BOOT_LINES.forEach((line, i) => {
+      timers.push(
+        setTimeout(() => {
+          setBootLines((prev) => [...prev, { ...line, timestamp: ts() }]);
+          setProgressPct(((i + 1) / BOOT_LINES.length) * 100);
+        }, 800 + i * 350)
+      );
+    });
+    timers.push(
+      setTimeout(
+        () => setBootComplete(true),
+        800 + BOOT_LINES.length * 350 + 600
+      )
+    );
     return () => timers.forEach(clearTimeout);
   }, []);
 
@@ -93,22 +128,24 @@ export default function GlobeView() {
     [selectingBuilding, router]
   );
 
-  // Keep the stable ref in sync so the Cesium click handler always calls the latest version
+  // Keep the stable ref in sync
   buildingSelectRef.current = handleBuildingSelect;
 
+  // ─── Cesium initialization ──────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!containerRef.current) return;
 
-    let viewer: { destroy: () => void; isDestroyed: () => boolean } | null = null;
+    let viewer: { destroy: () => void; isDestroyed: () => boolean } | null =
+      null;
     let destroyed = false;
 
     async function initCesium() {
       try {
         const Cesium = await import("cesium");
 
-        // Point to our copied static assets (Workers, Assets, Widgets, ThirdParty)
-        (window as unknown as Record<string, unknown>).CESIUM_BASE_URL = "/cesium";
+        (window as unknown as Record<string, unknown>).CESIUM_BASE_URL =
+          "/cesium";
 
         const ionToken = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
         if (ionToken) {
@@ -119,10 +156,6 @@ export default function GlobeView() {
 
         if (destroyed || !containerRef.current) return;
 
-        // Create the viewer matching WorldView OSS patterns:
-        // baseLayer: false prevents loading default Bing imagery (avoids Ion token requirement)
-        // scene3DOnly: true simplifies rendering
-        // requestRenderMode: false ensures continuous rendering (no black screen from missed frames)
         const v = new Cesium.Viewer(containerRef.current, {
           animation: false,
           baseLayerPicker: false,
@@ -150,14 +183,17 @@ export default function GlobeView() {
         viewer = v;
         viewerRef.current = v;
 
-        // Use satellite imagery if Ion token is set, otherwise dark CartoDB tiles
+        // Imagery layer
         if (ionToken) {
-          // Ion token present: use default Bing Maps aerial satellite imagery
-          v.imageryLayers.addImageryProvider(
+          const imageryLayer = v.imageryLayers.addImageryProvider(
             await Cesium.IonImageryProvider.fromAssetId(2)
           );
+          // Darken and desaturate the satellite imagery
+          imageryLayer.brightness = 0.6;
+          imageryLayer.contrast = 1.15;
+          imageryLayer.saturation = 0.4;
+          imageryLayer.gamma = 0.85;
         } else {
-          // No token: fall back to dark CartoDB tiles
           v.imageryLayers.removeAll();
           v.imageryLayers.addImageryProvider(
             new Cesium.UrlTemplateImageryProvider({
@@ -169,26 +205,44 @@ export default function GlobeView() {
           );
         }
 
-        // Dark globe styling
-        v.scene.backgroundColor = Cesium.Color.fromCssColorString("#0a0a0a");
-        v.scene.globe.baseColor = Cesium.Color.fromCssColorString("#0d1117");
+        // Darker, grayer globe styling
+        v.scene.backgroundColor =
+          Cesium.Color.fromCssColorString("#060608");
+        v.scene.globe.baseColor =
+          Cesium.Color.fromCssColorString("#0a0c10");
         v.scene.fog.enabled = false;
         v.scene.globe.showGroundAtmosphere = false;
         v.scene.globe.enableLighting = false;
 
-        // Remove default sun/moon
         if (v.scene.sun) v.scene.sun.show = false;
         if (v.scene.moon) v.scene.moon.show = false;
 
-        // Fly to Purdue campus — top-down view to show all building markers
-        v.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(-86.9130, 40.4265, 1200),
+        // ★ Add 3D OSM Buildings tileset for 3D building visualization
+        if (ionToken) {
+          try {
+            const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(96188);
+            v.scene.primitives.add(tileset);
+            // Style buildings with a dark, semi-transparent look
+            tileset.style = new Cesium.Cesium3DTileStyle({
+              color: {
+                conditions: [
+                  ["true", "color('rgba(0, 180, 220, 0.35)')"],
+                ],
+              },
+            });
+          } catch (e) {
+            console.warn("[Globe] Could not load 3D buildings tileset:", e);
+          }
+        }
+
+        // ★ START FROM FULL EARTH VIEW — way zoomed out in space
+        v.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(-86.9130, 40.4265, 20_000_000),
           orientation: {
             heading: Cesium.Math.toRadians(0),
-            pitch: Cesium.Math.toRadians(-75),
+            pitch: Cesium.Math.toRadians(-90),
             roll: 0,
           },
-          duration: 0,
         });
 
         // Add building markers
@@ -199,7 +253,6 @@ export default function GlobeView() {
             0
           );
 
-          // Pin entity
           v.entities.add({
             id: building.id,
             name: building.name,
@@ -207,8 +260,9 @@ export default function GlobeView() {
             point: {
               pixelSize: 14,
               color: Cesium.Color.fromCssColorString("#00e5ff"),
-              outlineColor: Cesium.Color.fromCssColorString("#00e5ff")
-                .withAlpha(0.3),
+              outlineColor: Cesium.Color.fromCssColorString(
+                "#00e5ff"
+              ).withAlpha(0.3),
               outlineWidth: 8,
               disableDepthTestDistance: Number.POSITIVE_INFINITY,
               heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
@@ -237,9 +291,9 @@ export default function GlobeView() {
                 0.08
               ),
               outline: true,
-              outlineColor: Cesium.Color.fromCssColorString("#00e5ff").withAlpha(
-                0.3
-              ),
+              outlineColor: Cesium.Color.fromCssColorString(
+                "#00e5ff"
+              ).withAlpha(0.3),
               outlineWidth: 1,
               heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
             },
@@ -324,6 +378,31 @@ export default function GlobeView() {
     };
   }, []);
 
+  // ─── Fly-in animation when user dismisses intro ──────────────────────
+  useEffect(() => {
+    if (!userDismissed || !cesiumReady || !viewerRef.current) return;
+
+    const v = viewerRef.current as {
+      camera: {
+        flyTo: (opts: unknown) => void;
+      };
+    };
+
+    // Import Cesium dynamically to get access to helper functions
+    import("cesium").then((Cesium) => {
+      v.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(-86.9150, 40.4280, 1500),
+        orientation: {
+          heading: Cesium.Math.toRadians(0),
+          pitch: Cesium.Math.toRadians(-75),
+          roll: 0,
+        },
+        duration: 4.0,
+        easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+      });
+    });
+  }, [userDismissed, cesiumReady]);
+
   const hoveredBuildingData = PRELOADED_BUILDINGS.find(
     (b) => b.id === hoveredBuilding
   );
@@ -340,74 +419,205 @@ export default function GlobeView() {
         style={{ backgroundColor: "#0a0a0a" }}
       />
 
-      {/* Intro loading overlay — shown until timer (4s) AND Cesium are both ready */}
+      {/* ─── Intro loading overlay ─────────────────────────────────────── */}
       <AnimatePresence>
         {introVisible && (
           <motion.div
             key="intro-overlay"
             initial={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.04 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0 z-50 flex flex-col items-center justify-center cursor-pointer"
             style={{ backgroundColor: "var(--color-bg)" }}
             onClick={() => cesiumReady && setUserDismissed(true)}
           >
+            {/* Animated dot grid background */}
+            <div
+              className="absolute inset-0 dot-grid-animated"
+              style={{ opacity: 0.4 }}
+            />
+
+            {/* Expanding ring behind title */}
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: "200px",
+                height: "200px",
+                marginTop: "-160px",
+                borderRadius: "50%",
+                border: "1px solid rgba(0, 229, 255, 0.15)",
+                animation: "expand-ring 4s ease-out infinite",
+                pointerEvents: "none",
+              }}
+            />
+
             {/* Corner brackets */}
-            <span
-              aria-hidden
-              className="pointer-events-none absolute top-6 left-6 h-8 w-8 border-t-2 border-l-2"
-              style={{ borderColor: "var(--color-accent-cyan)", opacity: 0.5 }}
-            />
-            <span
-              aria-hidden
-              className="pointer-events-none absolute top-6 right-6 h-8 w-8 border-t-2 border-r-2"
-              style={{ borderColor: "var(--color-accent-cyan)", opacity: 0.5 }}
-            />
-            <span
-              aria-hidden
-              className="pointer-events-none absolute bottom-6 left-6 h-8 w-8 border-b-2 border-l-2"
-              style={{ borderColor: "var(--color-accent-cyan)", opacity: 0.5 }}
-            />
-            <span
-              aria-hidden
-              className="pointer-events-none absolute bottom-6 right-6 h-8 w-8 border-b-2 border-r-2"
-              style={{ borderColor: "var(--color-accent-cyan)", opacity: 0.5 }}
-            />
+            {[
+              { top: 16, left: 16, bt: "2px", bl: "2px" },
+              { top: 16, right: 16, bt: "2px", br: "2px" },
+              { bottom: 16, left: 16, bb: "2px", bl: "2px" },
+              { bottom: 16, right: 16, bb: "2px", br: "2px" },
+            ].map((pos, i) => (
+              <span
+                key={i}
+                aria-hidden
+                className="pointer-events-none absolute"
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderColor: "var(--color-accent-cyan)",
+                  borderStyle: "solid",
+                  opacity: 0.4,
+                  ...Object.fromEntries(
+                    Object.entries(pos).map(([k, v]) => {
+                      if (k.startsWith("b"))
+                        return [`border${k.slice(1).replace(/^(.)/, (c: string) => c.toUpperCase())}Width`, v];
+                      return [k, typeof v === "number" ? `${v}px` : v];
+                    })
+                  ),
+                }}
+              />
+            ))}
 
             {/* Terminal boot sequence */}
-            <section className="flex flex-col items-start gap-4 px-12 max-w-2xl w-full" style={{ fontFamily: "var(--font-mono)" }}>
-              <div className="mb-4">
-                <h1 className="glow-cyan font-bold tracking-[0.15em] uppercase text-lg" style={{ color: "var(--color-accent-cyan)" }}>
-                  MINORITY REPORT // SPATIAL INTELLIGENCE SYSTEM
+            <section
+              className="flex flex-col items-start gap-4 px-12 max-w-2xl w-full relative"
+              style={{ fontFamily: "var(--font-mono)", zIndex: 10 }}
+            >
+              <div className="mb-2">
+                {/* Animated letter-by-letter title reveal */}
+                <h1
+                  className="font-bold tracking-[0.15em] uppercase text-lg flex overflow-hidden"
+                  style={{ color: "var(--color-accent-cyan)", height: "1.8em" }}
+                >
+                  {TITLE_TEXT.split("").map((char, i) => (
+                    <motion.span
+                      key={i}
+                      initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+                      animate={
+                        titleRevealed
+                          ? { opacity: 1, y: 0, filter: "blur(0px)" }
+                          : {}
+                      }
+                      transition={{
+                        delay: i * 0.05,
+                        duration: 0.4,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                      className="glow-cyan inline-block"
+                      style={{
+                        minWidth: char === " " ? "0.35em" : undefined,
+                      }}
+                    >
+                      {char}
+                    </motion.span>
+                  ))}
                 </h1>
-                <p className="text-xs mt-1" style={{ color: "#555" }}>by Catapult — Purdue University</p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
+                  className="text-xs mt-1"
+                  style={{ color: "#555" }}
+                >
+                  by Catapult — Purdue University
+                </motion.p>
               </div>
 
-              <div className="h-px w-full" style={{ background: "linear-gradient(90deg, var(--color-accent-cyan), transparent)", opacity: 0.4 }} />
+              <div
+                className="h-px w-full"
+                style={{
+                  background:
+                    "linear-gradient(90deg, var(--color-accent-cyan), transparent)",
+                  opacity: 0.4,
+                }}
+              />
 
+              {/* Boot lines */}
               <div className="flex flex-col gap-1 text-xs w-full min-h-[200px]">
                 {bootLines.map((line, i) => (
-                  <div key={i} style={{ color: line.type === "success" ? "#00ff41" : line.type === "highlight" ? "#00e5ff" : "#555" }}>
-                    <span style={{ color: "#555" }}>[{line.timestamp}]</span>{" "}
-                    {line.type === "success" && <span style={{ color: "#00ff41" }}>{line.text}</span>}
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    style={{
+                      color:
+                        line.type === "success"
+                          ? "#00ff41"
+                          : line.type === "highlight"
+                            ? "#00e5ff"
+                            : "#555",
+                    }}
+                  >
+                    <span style={{ color: "#333" }}>[{line.timestamp}]</span>{" "}
+                    {line.type === "success" && (
+                      <span style={{ color: "#00ff41" }}>{line.text}</span>
+                    )}
                     {line.type === "info" && <span>{line.text}</span>}
-                    {line.type === "highlight" && <span className="glow-cyan" style={{ color: "#00e5ff" }}>{line.text}</span>}
-                  </div>
+                    {line.type === "highlight" && (
+                      <span
+                        className="glow-cyan"
+                        style={{ color: "#00e5ff" }}
+                      >
+                        {line.text}
+                      </span>
+                    )}
+                  </motion.div>
                 ))}
               </div>
 
-              {bootComplete && (
-                <div className="w-full text-center mt-4">
-                  <p className="text-sm tracking-[0.3em] uppercase animate-pulse" style={{ color: "var(--color-accent-cyan)" }}>
-                    [ CLICK TO ENTER ]
-                  </p>
-                </div>
-              )}
+              {/* Progress bar */}
+              <div
+                style={{
+                  width: "100%",
+                  height: "2px",
+                  background: "rgba(0, 229, 255, 0.08)",
+                  borderRadius: "1px",
+                  overflow: "hidden",
+                  marginTop: "-4px",
+                }}
+              >
+                <motion.div
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${progressPct}%` }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  style={{
+                    height: "100%",
+                    background:
+                      "linear-gradient(90deg, var(--color-accent-cyan), var(--color-accent-green))",
+                    boxShadow: "0 0 10px rgba(0, 229, 255, 0.6)",
+                    borderRadius: "1px",
+                  }}
+                />
+              </div>
+
+              {/* Click to enter */}
+              <AnimatePresence>
+                {bootComplete && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    className="w-full text-center mt-4"
+                  >
+                    <p
+                      className="text-sm tracking-[0.3em] uppercase breathing-glow"
+                      style={{ color: "var(--color-accent-cyan)" }}
+                    >
+                      [ CLICK TO ENTER ]
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </section>
 
-            {/* Coordinates (bottom) */}
+            {/* Static coordinates at bottom */}
             <div
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 font-mono text-xs tracking-widest"
+              className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 font-mono text-xs tracking-widest"
               style={{
                 fontFamily: "var(--font-mono)",
                 color: "var(--color-text-dim)",
@@ -427,14 +637,14 @@ export default function GlobeView() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar + Status Bar — shown after intro dismisses */}
+      {/* ─── Sidebar + Status Bar ─────────────────────────────────────── */}
       <AnimatePresence>
         {ready && !introVisible && (
           <motion.div
             key="chrome"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
             className="absolute inset-0"
             style={{ zIndex: 25, pointerEvents: "none" }}
           >
@@ -446,13 +656,13 @@ export default function GlobeView() {
         )}
       </AnimatePresence>
 
-      {/* HUD Overlay Elements */}
+      {/* ─── HUD Overlay Elements ─────────────────────────────────────── */}
       <AnimatePresence>
-        {ready && (
+        {ready && !introVisible && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1.2 }}
+            transition={{ duration: 1.2, delay: 0.5 }}
             className="pointer-events-none absolute inset-0"
           >
             {/* TOP SECRET Banner */}
@@ -475,43 +685,51 @@ export default function GlobeView() {
             </div>
 
             {/* Corner brackets */}
-            <span
-              aria-hidden
-              className="absolute top-10 left-6 h-8 w-8 border-t-2 border-l-2"
-              style={{
-                borderColor: "var(--color-accent-cyan)",
-                opacity: 0.4,
-              }}
-            />
-            <span
-              aria-hidden
-              className="absolute top-10 right-6 h-8 w-8 border-t-2 border-r-2"
-              style={{
-                borderColor: "var(--color-accent-cyan)",
-                opacity: 0.4,
-              }}
-            />
-            <span
-              aria-hidden
-              className="absolute bottom-10 left-6 h-8 w-8 border-b-2 border-l-2"
-              style={{
-                borderColor: "var(--color-accent-cyan)",
-                opacity: 0.4,
-              }}
-            />
-            <span
-              aria-hidden
-              className="absolute bottom-10 right-6 h-8 w-8 border-b-2 border-r-2"
-              style={{
-                borderColor: "var(--color-accent-cyan)",
-                opacity: 0.4,
-              }}
-            />
+            {[
+              {
+                top: "40px",
+                left: "24px",
+                borderWidth: "2px 0 0 2px",
+              },
+              {
+                top: "40px",
+                right: "24px",
+                borderWidth: "2px 2px 0 0",
+              },
+              {
+                bottom: "56px",
+                left: "24px",
+                borderWidth: "0 0 2px 2px",
+              },
+              {
+                bottom: "56px",
+                right: "24px",
+                borderWidth: "0 2px 2px 0",
+              },
+            ].map((pos, i) => (
+              <span
+                key={i}
+                aria-hidden
+                className="absolute"
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderStyle: "solid",
+                  borderColor: "var(--color-accent-cyan)",
+                  opacity: 0.35,
+                  ...pos,
+                }}
+              />
+            ))}
 
-            {/* System status (top left) */}
+            {/* System status (top left beyond sidebar) */}
             <div
-              className="absolute top-12 left-10 flex flex-col gap-1 font-mono text-xs"
-              style={{ fontFamily: "var(--font-mono)" }}
+              className="absolute flex flex-col gap-1 font-mono text-xs"
+              style={{
+                fontFamily: "var(--font-mono)",
+                top: "48px",
+                left: "264px",
+              }}
             >
               <span
                 className="hud-pulse"
@@ -538,14 +756,115 @@ export default function GlobeView() {
               </span>
             </div>
 
+            {/* Targeting Reticle — center of viewport */}
+            <div
+              className="absolute"
+              style={{
+                top: "50%",
+                left: "calc(50% + 120px)",
+                transform: "translate(-50%, -50%)",
+                pointerEvents: "none",
+              }}
+            >
+              <svg
+                width="60"
+                height="60"
+                viewBox="0 0 60 60"
+                fill="none"
+                style={{ opacity: 0.2 }}
+              >
+                {/* Cross hairs */}
+                <line
+                  x1="30"
+                  y1="0"
+                  x2="30"
+                  y2="22"
+                  stroke="#00e5ff"
+                  strokeWidth="0.5"
+                />
+                <line
+                  x1="30"
+                  y1="38"
+                  x2="30"
+                  y2="60"
+                  stroke="#00e5ff"
+                  strokeWidth="0.5"
+                />
+                <line
+                  x1="0"
+                  y1="30"
+                  x2="22"
+                  y2="30"
+                  stroke="#00e5ff"
+                  strokeWidth="0.5"
+                />
+                <line
+                  x1="38"
+                  y1="30"
+                  x2="60"
+                  y2="30"
+                  stroke="#00e5ff"
+                  strokeWidth="0.5"
+                />
+                {/* Outer circle */}
+                <circle
+                  cx="30"
+                  cy="30"
+                  r="25"
+                  stroke="#00e5ff"
+                  strokeWidth="0.5"
+                  fill="none"
+                />
+                {/* Inner circle */}
+                <circle
+                  cx="30"
+                  cy="30"
+                  r="4"
+                  stroke="#00e5ff"
+                  strokeWidth="0.5"
+                  fill="none"
+                />
+                {/* Tick marks */}
+                <line x1="30" y1="5" x2="30" y2="9" stroke="#00e5ff" strokeWidth="1" />
+                <line x1="30" y1="51" x2="30" y2="55" stroke="#00e5ff" strokeWidth="1" />
+                <line x1="5" y1="30" x2="9" y2="30" stroke="#00e5ff" strokeWidth="1" />
+                <line x1="51" y1="30" x2="55" y2="30" stroke="#00e5ff" strokeWidth="1" />
+              </svg>
+              {/* Spinning outer ring */}
+              <svg
+                width="80"
+                height="80"
+                viewBox="0 0 80 80"
+                fill="none"
+                style={{
+                  position: "absolute",
+                  top: "-10px",
+                  left: "-10px",
+                  opacity: 0.1,
+                  animation: "reticle-spin 30s linear infinite",
+                }}
+              >
+                <circle
+                  cx="40"
+                  cy="40"
+                  r="36"
+                  stroke="#00e5ff"
+                  strokeWidth="0.5"
+                  strokeDasharray="6 10"
+                  fill="none"
+                />
+              </svg>
+            </div>
+
             {/* Building selector hint */}
             <div
-              className="absolute left-1/2 -translate-x-1/2 font-mono text-xs"
+              className="absolute left-1/2 font-mono text-xs"
               style={{
                 fontFamily: "var(--font-mono)",
                 color: "var(--color-accent-cyan)",
-                opacity: 0.7,
-                bottom: "5rem",
+                opacity: 0.6,
+                bottom: "58px",
+                transform: "translateX(calc(-50% + 120px))",
               }}
             >
               SELECT TARGET BUILDING TO PROCEED
@@ -553,10 +872,11 @@ export default function GlobeView() {
 
             {/* Coordinates readout (bottom) */}
             <div
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-6 font-mono text-xs tracking-widest"
+              className="absolute bottom-4 left-1/2 flex items-center gap-6 font-mono text-xs tracking-widest"
               style={{
                 fontFamily: "var(--font-mono)",
                 color: "var(--color-text-dim)",
+                transform: "translateX(calc(-50% + 120px))",
               }}
             >
               <span>LAT {coords.lat}&#176; N</span>
@@ -588,23 +908,28 @@ export default function GlobeView() {
         )}
       </AnimatePresence>
 
-      {/* Hovered building tooltip */}
+      {/* ─── Hovered building tooltip ─────────────────────────────────── */}
       <AnimatePresence>
-        {hoveredBuildingData && (
+        {hoveredBuildingData && !introVisible && (
           <motion.div
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15 }}
-            className="pointer-events-none absolute top-24 left-1/2 -translate-x-1/2 glow-cyan-box px-4 py-2 font-mono text-xs"
+            className="pointer-events-none absolute glow-cyan-box px-4 py-3 font-mono text-xs"
             style={{
               fontFamily: "var(--font-mono)",
               color: "var(--color-accent-cyan)",
-              backgroundColor: "rgba(10, 10, 10, 0.9)",
-              border: "1px solid rgba(0, 229, 255, 0.2)",
+              backgroundColor: "rgba(10, 10, 10, 0.92)",
+              border: "1px solid rgba(0, 229, 255, 0.25)",
+              borderRadius: "3px",
+              top: "100px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 30,
             }}
           >
-            <span className="glow-cyan">
+            <span className="glow-cyan" style={{ letterSpacing: "0.1em" }}>
               TARGET: {hoveredBuildingData.name.toUpperCase()}
             </span>
             <span
@@ -618,14 +943,14 @@ export default function GlobeView() {
         )}
       </AnimatePresence>
 
-      {/* Selecting overlay */}
+      {/* ─── Selecting overlay ────────────────────────────────────────── */}
       <AnimatePresence>
         {selectingBuilding && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="absolute inset-0 flex items-center justify-center"
-            style={{ backgroundColor: "rgba(0, 0, 0, 0.6)", zIndex: 50 }}
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.7)", zIndex: 50 }}
           >
             <div
               className="glow-cyan-box px-8 py-4 font-mono text-sm text-center"
@@ -633,6 +958,7 @@ export default function GlobeView() {
                 fontFamily: "var(--font-mono)",
                 backgroundColor: "rgba(10, 10, 10, 0.95)",
                 border: "1px solid rgba(0, 229, 255, 0.3)",
+                borderRadius: "3px",
               }}
             >
               <span
@@ -646,7 +972,7 @@ export default function GlobeView() {
         )}
       </AnimatePresence>
 
-      {/* Error overlay */}
+      {/* ─── Error overlay ────────────────────────────────────────────── */}
       <AnimatePresence>
         {error && (
           <motion.div
@@ -661,6 +987,7 @@ export default function GlobeView() {
                 fontFamily: "var(--font-mono)",
                 backgroundColor: "rgba(10, 10, 10, 0.95)",
                 border: "1px solid rgba(255, 60, 60, 0.4)",
+                borderRadius: "3px",
               }}
             >
               <span
@@ -672,12 +999,13 @@ export default function GlobeView() {
               <span style={{ color: "var(--color-text)" }}>{error}</span>
               <button
                 onClick={() => setError(null)}
-                className="block mx-auto mt-4 px-4 py-1 font-mono text-xs tracking-wider cursor-pointer"
+                className="block mx-auto mt-4 px-4 py-1 font-mono text-xs tracking-wider cursor-pointer hud-button"
                 style={{
                   fontFamily: "var(--font-mono)",
                   color: "var(--color-accent-cyan)",
                   border: "1px solid rgba(0, 229, 255, 0.3)",
                   backgroundColor: "transparent",
+                  borderRadius: "2px",
                 }}
               >
                 DISMISS
