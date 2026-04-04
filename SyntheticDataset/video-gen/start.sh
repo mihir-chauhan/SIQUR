@@ -1,36 +1,43 @@
 #!/usr/bin/env bash
+# ── Start both worker and app in one terminal ───────────────────────────────
+# For production / separate terminals use start_worker.sh + start_app.sh.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKEND="$SCRIPT_DIR/backend"
-VENV="$SCRIPT_DIR/.venv"
+source "$SCRIPT_DIR/.venv/bin/activate"
+cd "$SCRIPT_DIR/backend"
 
-# ── Python environment ────────────────────────────────────────
-if [[ ! -d "$VENV" ]]; then
-  echo "[start] Creating virtual environment…"
-  python3 -m venv "$VENV"
-fi
-
-source "$VENV/bin/activate"
-
-echo "[start] Installing / verifying dependencies…"
-pip install -q --upgrade pip
-pip install -q -r "$BACKEND/requirements.txt"
-
-# ── Launch server ─────────────────────────────────────────────
-HOST="${HOST:-0.0.0.0}"
-PORT="${PORT:-8000}"
+MODEL_ID="${MODEL_ID:-Wan-AI/Wan2.2-I2V-A14B-Diffusers}"
+WORKER_PORT="${WORKER_PORT:-8001}"
+APP_PORT="${PORT:-8000}"
 
 echo ""
-echo "  VideoGen server starting"
-echo "  Local:   http://localhost:$PORT"
-echo "  Network: http://$(hostname -I | awk '{print $1}'):$PORT"
+echo "  VideoGen"
+echo "  Model  : $MODEL_ID"
+echo "  App    : http://localhost:$APP_PORT"
 echo ""
 
-cd "$BACKEND"
-exec uvicorn main:app \
-  --host "$HOST" \
-  --port "$PORT" \
+cleanup() {
+  echo ""
+  echo "[start] shutting down…"
+  kill "$WORKER_PID" 2>/dev/null || true
+  wait "$WORKER_PID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+# Start worker in background
+env MODEL_ID="$MODEL_ID" uvicorn worker:app \
+  --host 127.0.0.1 --port "$WORKER_PORT" \
+  --log-level info --timeout-keep-alive 600 \
+  --ws-ping-interval 20 --ws-ping-timeout 60 &
+WORKER_PID=$!
+
+# Give worker a moment to bind before app starts
+sleep 1
+
+# Start app in foreground (--reload lets you edit frontend/app.py without restart)
+exec uvicorn app:app \
+  --host 0.0.0.0 --port "$APP_PORT" \
   --log-level info \
-  --timeout-keep-alive 300 \
-  --ws-max-size 104857600
+  --reload --reload-dir . \
+  --timeout-keep-alive 300

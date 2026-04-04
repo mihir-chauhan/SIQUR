@@ -481,8 +481,8 @@
       <summary>Advanced settings</summary>
       <div class="adv-grid">
         <div class="adv-field">
-          <label>Frames</label>
-          <input type="number" id="num-frames" value="81" min="17" max="129" step="8"/>
+          <label>Frames (17=~1s, 81=~5s)</label>
+          <input type="number" id="num-frames" value="17" min="17" max="129" step="8"/>
         </div>
         <div class="adv-field">
           <label>FPS</label>
@@ -721,10 +721,9 @@ function endVideoStream() {
 function downloadVideo() {
   if (!videoBlob) return;
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(videoBlob);
-  a.download = `videogen_${Date.now()}.mp4`;
+  a.href = videoBlob;   // already a URL string like /outputs/output_123.mp4
+  a.download = videoBlob.split('/').pop();
   a.click();
-  URL.revokeObjectURL(a.href);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -797,21 +796,32 @@ function handleMessage(msg) {
     }
 
     case 'video_start':
-      setStatus(`Streaming video — <span class="highlight">${msg.frames} frames @ ${msg.fps} fps</span>`);
-      setProgress(0, 0);
-      initMediaSource();
-      showVideo();
+      // legacy — ignored now that we use file-based delivery
       break;
 
-    case 'done':
-      setStatus(`Done ✓`);
+    case 'done': {
+      setStatus('Done ✓');
       setProgress(0, 0);
       $('step-counter').textContent = '';
       setGpu('idle');
-      endVideoStream();
       finishGeneration(true);
+
+      if (msg.url) {
+        const video = $('video-el');
+        video.src = msg.url;
+        video.load();
+        video.play().catch(() => {});
+        showVideo();
+        videoBlob = msg.url;   // reuse for download link
+        $('download-btn').style.display = '';
+      }
+
       showToast('Video ready!');
       break;
+    }
+
+    case 'ping':
+      break; // keepalive — ignore
 
     case 'error':
       setStatus(msg.message, 'err');
