@@ -129,14 +129,13 @@ body {
 }
 
 /* ─── Cesium Overrides ──────────────────────────────────────────────── */
-.cesium-viewer,
-.cesium-viewer-cesiumWidgetContainer,
-.cesium-widget,
-.cesium-widget canvas {
-  width: 100% !important;
-  height: 100% !important;
+.cesium-viewer {
   position: absolute !important;
-  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  overflow: hidden !important;
 }
 
 .cesium-viewer .cesium-widget-credits {
