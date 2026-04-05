@@ -26,7 +26,7 @@ export default function V2BuildingPage() {
     }}>
       {/* Back button */}
       <button
-        onClick={() => router.push("/v2")}
+        onClick={() => router.push("/v2/globe")}
         style={{
           position: "absolute",
           top: 24,
