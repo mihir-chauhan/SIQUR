@@ -1,0 +1,124 @@
+\documentclass[9pt,letterpaper,twocolumn]{extarticle}
+
+\usepackage[top=0.45in, bottom=0.4in, left=0.45in, right=0.45in, headsep=6pt, footskip=12pt]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{ac}{HTML}{0077B6}
+\definecolor{mg}{HTML}{666666}
+
+\titleformat{\section}{\normalsize\bfseries\color{ac}}{}{}{}[\vspace{-2pt}]
+\titlespacing*{\section}{0pt}{5pt}{2pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{ac}\leaders\hrule height \headrulewidth\hfill}}
+\fancyhead[L]{\scriptsize\textbf{\textcolor{ac}{SIQUR}} \textcolor{mg}{$|$ Technical Memo}}
+\fancyhead[R]{\scriptsize\textcolor{mg}{April 2026}}
+\fancyfoot[C]{\scriptsize\textcolor{mg}{See everything. Miss nothing.}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2pt}
+\setlength{\columnsep}{14pt}
+\setlength{\abovedisplayskip}{3pt}
+\setlength{\belowdisplayskip}{3pt}
+\setlength{\abovedisplayshortskip}{2pt}
+\setlength{\belowdisplayshortskip}{2pt}
+\setlist{nosep, leftmargin=1em}
+
+\begin{document}
+
+\twocolumn[{%
+\begin{center}
+\vspace{-4pt}
+{\Large\bfseries\textcolor{ac}{SIQUR}}\\[2pt]
+{\small Optimal Camera Placement, 3D Spatial UI, and Crowdsourced Forensic Intelligence}\\[4pt]
+{\scriptsize\textcolor{mg}{R.\ Muppa \quad D.\ Chen \quad M.\ Chauhan \quad D.\ Wang \quad R.\ Indupuri \quad$\cdot$\quad Purdue University}}\\[3pt]
+\textcolor{ac}{\rule{\textwidth}{0.4pt}}
+\end{center}
+\vspace{4pt}
+}]
+
+\section*{The Problem}
+
+Over 1 billion CCTV cameras are deployed worldwide, yet placement relies on installer intuition rather than mathematical optimization. The result: predictable blind spots, wasted hardware budgets, and zero feedback from post-incident review back into system design. SIQUR closes this loop with three integrated components: \textbf{(1)}~mathematically optimal camera placement via combinatorial optimization, \textbf{(2)}~a photorealistic 3D spatial interface built on Gaussian splatting for immersive tactical awareness, and \textbf{(3)}~OpenClaw, a crowdsourced forensic annotation protocol that converts community investigation into ML training data.
+
+\section*{Camera Placement Model}
+
+We formalize camera placement as a 3D variant of the \emph{Art Gallery Problem} (Chv\'{a}tal, 1975), which proves that $\lfloor n/3 \rfloor$ guards always suffice to cover a simple polygon with $n$ vertices. For a building polytope $\mathcal{P} \subset \mathbb{R}^3$, we discretize the interior into a coverage grid $G = \{g_1, \ldots, g_n\}$ and define candidate camera positions $C = \{c_1, \ldots, c_m\}$ on wall surfaces at mounting height $h = 2.5$\,m. Each camera $c_i$ has pose parameters $\boldsymbol{\theta}_i = (\phi, \psi, \alpha, r)$ representing yaw, pitch, field-of-view angle, and effective range. The \textbf{visibility function} is defined as:
+%
+\begin{equation}
+v(c_i, g_j) = \begin{cases} 1 & \|c_i - g_j\| \leq r \;\wedge\; \angle(c_i, g_j) \leq \frac{\alpha}{2} \;\wedge\; \text{clear}(c_i, g_j) \\ 0 & \text{otherwise} \end{cases}
+\end{equation}
+%
+where $\text{clear}(c_i, g_j)$ denotes an unoccluded line of sight, verified via raycasting against $\mathcal{P}$. The placement objective reduces to a \textbf{Maximum Coverage Location Problem}, equivalent to weighted Set Cover and therefore NP-hard (Feige, 1998):
+%
+\begin{equation}
+\max_{S \subseteq C,\; |S| \leq k} \;\; \mathcal{C}(S) = \sum_{j=1}^{n} w_j \cdot \mathbb{1}\Big[\exists\, c_i \in S : v(c_i, g_j) = 1\Big]
+\end{equation}
+%
+where $w_j$ is the priority weight of grid point $j$ (elevated near building entries, high-traffic corridors, and asset zones), and $k$ is the user-specified camera budget. The standard greedy algorithm achieves an approximation ratio of $(1 - 1/e) \approx 0.632$. We augment this with a \textbf{genetic algorithm} (Yildiz et al., 2014) operating on binary chromosomes $\mathbf{x} \in \{0,1\}^m$ with fitness function:
+%
+\begin{equation}
+f(\mathbf{x}) = \frac{\sum_{j} w_j \cdot \mathbb{1}\big[\exists\, i : x_i = 1 \,\wedge\, v(c_i, g_j) = 1\big]}{\sum_{j} w_j} - \lambda \max\big(0,\, \|\mathbf{x}\|_1 - k\big)
+\end{equation}
+%
+with tournament selection, single-point crossover ($p_c = 0.8$), bit-flip mutation ($p_m = 0.02$), converging within ${\sim}200$ generations. The output coverage ratio $\rho \in [0,1]$ is surfaced to the user as a placement quality metric.
+
+\section*{3D Spatial Interface}
+
+Building environments are captured via photogrammetry and represented as \textbf{3D Gaussian Splats} (Kerbl et al., SIGGRAPH 2023). Each scene primitive $\mathcal{G}_k$ is parameterized by position $\boldsymbol{\mu}_k$, covariance $\boldsymbol{\Sigma}_k$, opacity $\alpha_k$, and spherical harmonic color $\mathbf{c}_k$. The rendered pixel color is computed via differentiable alpha compositing:
+%
+\begin{equation}
+C(\mathbf{p}) = \sum_{k=1}^{K} \mathbf{c}_k \, \alpha_k \prod_{j=1}^{k-1}(1 - \alpha_j) \cdot \exp\!\left(-\tfrac{1}{2}\Delta\mathbf{p}_k^\top \boldsymbol{\Sigma}_k'^{-1} \Delta\mathbf{p}_k\right)
+\end{equation}
+%
+where primed quantities denote 2D screen-space projections. This enables real-time rendering at ${>}30$\,fps with sub-centimeter visual fidelity, allowing operators to navigate any placed camera's exact viewpoint. A Mapbox GL satellite layer provides global context, with cinematic iris-wipe transitions from orbital zoom to building interior.
+
+\section*{OpenClaw: Crowdsourced Forensics}
+
+After an incident, relevant camera feeds are exposed through OpenClaw, a structured crowdsourced investigation interface. Community participants annotate temporal segments, tag persons of interest, and flag anomalous events. Each annotation is a tuple $(t, \mathbf{b}, \ell, p_u)$: timestamp, bounding box, semantic label, and annotator confidence. Following the dual-use computation paradigm (von Ahn et al., 2008), consensus labels are computed as:
+%
+\begin{equation}
+\hat{\ell}_t = \arg\max_{\ell} \sum_{u \in U_t} p_u \cdot \mathbb{1}[\ell_u = \ell]
+\end{equation}
+%
+High-agreement annotations feed a continual learning pipeline for anomaly detection models, creating a \textbf{flywheel}: more incidents analyzed $\to$ better training data $\to$ stronger models $\to$ fewer blind spots $\to$ faster resolution.
+
+\section*{Architecture}
+
+\vspace{2pt}
+{\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Component} & \textbf{Technology} \\
+\midrule
+Placement Engine & OR-Tools + GA, Python, FastAPI \\
+3D Scene Rendering & Gaussian Splatting, Three.js \\
+Satellite Globe & Mapbox GL \\
+Frontend & Next.js, Framer Motion \\
+Video Simulation & Qwen 2.5, NVIDIA DGX \\
+\bottomrule
+\end{tabular}}
+
+\vspace{6pt}
+\noindent\textcolor{ac}{\rule{\columnwidth}{0.3pt}}
+
+\vspace{2pt}
+{\scriptsize\textbf{References}\par\vspace{1pt}
+\noindent [1] Chv\'{a}tal, \textit{J.\ Comb.\ Theory B}, 1975.\;
+[2] Feige, \textit{J.\ ACM}, 1998.\;
+[3] Kerbl et al., \textit{ACM TOG}, 2023.\;
+[4] Yildiz et al., \textit{IEEE Trans.\ Comp.}, 2014.\;
+[5] von Ahn et al., \textit{Science}, 2008.\par}
+
+\end{document}
