@@ -133,7 +133,7 @@ export default function GlobePage() {
 
           {/* Right Section: Tactical View */}
           <div style={{ width: "150px", textAlign: "right", padding: "20px", opacity: 0.6 }}>
-            <div style={{ color: "#00e5ff", fontSize: "8px", fontFamily: "var(--font-space-mono), monospace", marginBottom: "8px" }}>REGION_SCAN</div>
+            <div style={{ color: "#00e5ff", fontSize: "8px", fontFamily: "var(--font-space-mono), monospace", marginBottom: "8px" }}>CURRENT LOCATION</div>
             <div style={{ fontSize: "10px", color: "#666", fontFamily: "var(--font-space-mono), monospace" }}>
               LAT: 40.4290<br/>
               LNG: -86.9148<br/>

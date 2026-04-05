@@ -273,10 +273,10 @@ export function MapboxGlobe({
 
     mapRef.current.flyTo({
       center: [lng, lat],
-      zoom: 17,
-      pitch: 60,
-      bearing: -17,
-      speed: 1.2,
+      zoom: 19.5,
+      pitch: 75,
+      bearing: -25,
+      speed: 0.8,
       essential: true,
       easing: (t: number) => {
         // Fast start, slow middle, fast end (cubic ease-in-out)
