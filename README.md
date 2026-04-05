@@ -95,31 +95,17 @@ The system simulates those events across all camera feeds and runs the trained m
 
 ## Architecture
 
-SIQUR uses a modular architecture that connects a modern web frontend with specialized backend pipelines for optimization, synthetic data generation, model training, and inference.
+SIQUR utilizes a modular architecture that connects a modern web frontend with specialized backend pipelines for spatial optimization, synthetic data generation, machine learning, and real-time inference.
 
-### High-Level System Diagram
+![SIQUR System Architecture](https://imgur.com/oWIYmI8)
 
-```mermaid
-flowchart LR
-    A[User] --> B[Next.js Frontend]
+### System Components & Data Flow
 
-    B --> C[3D Globe + Building Selection]
-    B --> D[Building Interior Viewer]
-    B --> E[Training Interface]
-    B --> F[Evaluation Interface]
-
-    C --> G[Placement Backend]
-    D --> G
-    E --> H[Synthetic Dataset Pipeline]
-    H --> I[Per-Camera Model Training]
-    I --> J[Exported Camera Models]
-    F --> K[Scenario Simulation Engine]
-    J --> K
-    K --> L[Threat Classification Results]
-
-    G --> M[Optimized Camera Layout]
-    M --> B
-    L --> B
+* **Client Layer (Next.js Frontend):** The primary interface where users navigate the 3D map, render building interiors via Gaussian splatting, configure system parameters, and monitor live scenario evaluations.
+* **Placement Optimization Backend:** Receives the user's coverage targets and spatial constraints, running them through a Google OR-Tools algorithm to compute and return the mathematically optimal camera layout.
+* **Synthetic Data Pipeline:** Utilizing the coordinates from the placement engine, this module programmatically generates tailored synthetic training datasets from the exact 3D perspective of every deployed camera.
+* **AI Training Module:** Ingests the synthetic data to train bespoke, per-camera classification models. This ensures the neural networks are highly specialized to the unique lighting, angle, and depth of their specific deployment locations.
+* **Simulation & Inference Engine:** Feeds prompt-driven synthetic security scenarios (e.g., intrusions, fights) into the trained models. It processes the feeds in real time, classifies threats, and returns the actionable telemetry back to the frontend dashboard for user review.
 
 ## Running Locally
 
