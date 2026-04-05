@@ -32,7 +32,7 @@ export default function LayersSidebar({
         style={{
           position: "absolute",
           top: 0,
-          left: 0,
+          left: 48,
           zIndex: 20,
         }}
       >
@@ -63,9 +63,9 @@ export default function LayersSidebar({
       style={{
         position: "absolute",
         top: 0,
-        left: 0,
+        left: 48,
         bottom: 0,
-        width: "240px",
+        width: "220px",
         zIndex: 20,
         backgroundColor: "rgba(10, 10, 10, 0.9)",
         backdropFilter: "blur(12px)",

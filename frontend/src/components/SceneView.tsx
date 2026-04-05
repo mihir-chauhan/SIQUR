@@ -78,6 +78,7 @@ export default function SceneView({
   const cleanupRef = useRef<(() => void) | null>(null);
   const placementModeRef = useRef(false);
   const [splatReady, setSplatReady] = useState(false);
+
   const onCameraPlacedRef = useRef(onCameraPlaced);
   const onCameraClickedRef = useRef(onCameraClicked);
   const splatVisibleRef = useRef(splatVisible ?? true);
@@ -542,7 +543,7 @@ export default function SceneView({
           style={{
             position: "absolute",
             inset: 0,
-            zIndex: 10,
+            zIndex: 30,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -588,6 +589,7 @@ export default function SceneView({
           >
             PROCESSING ENVIRONMENT DATA
           </div>
+
           <style>{`
             @keyframes spin {
               to { transform: rotate(360deg); }
