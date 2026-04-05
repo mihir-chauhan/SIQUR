@@ -24,7 +24,7 @@ export function AsciiSphere() {
       const width = container.clientWidth;
       const height = container.clientHeight;
 
-      const camera = new THREE.PerspectiveCamera(70, width / height, 1, 1000);
+      const camera = new THREE.PerspectiveCamera(70, width / height, 1, 2000);
       camera.position.y = 150;
       camera.position.z = 500;
 
@@ -39,17 +39,21 @@ export function AsciiSphere() {
       light2.position.set(-500, -500, -500);
       scene.add(light2);
 
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+      scene.add(ambientLight);
+
       const sphere = new THREE.Mesh(
         new THREE.SphereGeometry(200, 20, 10),
         new THREE.MeshPhongMaterial({ flatShading: true })
       );
       scene.add(sphere);
 
+      // Large ground plane so ASCII fills the entire viewport
       const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(400, 400),
-        new THREE.MeshBasicMaterial({ color: 0xe0e0e0 })
+        new THREE.PlaneGeometry(2000, 2000),
+        new THREE.MeshBasicMaterial({ color: 0x222222 })
       );
-      plane.position.y = -200;
+      plane.position.y = -220;
       plane.rotation.x = -Math.PI / 2;
       scene.add(plane);
 
@@ -61,12 +65,16 @@ export function AsciiSphere() {
       effect.setSize(width, height);
       effect.domElement.style.color = "white";
       effect.domElement.style.backgroundColor = "black";
-      effect.domElement.style.position = "absolute";
-      effect.domElement.style.inset = "0";
       effect.domElement.style.overflow = "hidden";
       effect.domElement.style.margin = "0";
       effect.domElement.style.padding = "0";
       effect.domElement.style.lineHeight = "1";
+      // Center the ASCII table within the container and fill any gaps with black
+      effect.domElement.style.display = "flex";
+      effect.domElement.style.alignItems = "center";
+      effect.domElement.style.justifyContent = "center";
+      effect.domElement.style.width = "100%";
+      effect.domElement.style.height = "100%";
 
       if (disposedRef.current) {
         webglRenderer.dispose();
@@ -130,7 +138,10 @@ export function AsciiSphere() {
       ref={containerRef}
       style={{
         position: "absolute",
-        inset: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         overflow: "hidden",
         background: "#000",
         zIndex: 0,
