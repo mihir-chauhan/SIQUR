@@ -27,7 +27,7 @@ Built by Mihir Chauhan, David Chen, Rohan Muppa, and David Wang at Purdue Univer
 
 ## User Flow
 
-`flowchart TD
+flowchart TD
     A[Landing Page\n/] -->|Click to start| B[Satellite Globe\n/v2/globe]
     B -->|Select building marker| C[Building Configuration\n/building]
 
