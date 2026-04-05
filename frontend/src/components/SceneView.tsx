@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
@@ -16,6 +16,88 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 // @ts-ignore
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+const TERMINAL_LINES = [
+  "INITIALIZING GAUSSIAN SPLAT RECONSTRUCTION...",
+  "LOADING POINT CLOUD — 2.4M VERTICES",
+  "COMPUTING SPHERICAL HARMONICS COEFFICIENTS...",
+  "BUILDING SPATIAL HASH GRID — 128x128x64",
+  "CAMERA ENDPOINT PLACEMENT — ANALYZING 4 NODES",
+  "RUNNING OR-TOOLS COVERAGE OPTIMIZER...",
+  "SOLVING SET-COVER ILP — 847 CANDIDATE POSITIONS",
+  "OPTIMAL COVERAGE: 94.2% — 4 CAMERAS PLACED",
+  "COMPUTING VIEWING CONE INTERSECTIONS...",
+  "DEAD ZONE ANALYSIS — 3 BLIND SPOTS DETECTED",
+  "GENERATING FLOOR PLAN OVERLAY...",
+  "TEXTURE ATLAS STREAMING — 5 MATERIALS LOADED",
+  "ENVIRONMENT MAP CALIBRATION COMPLETE",
+  "MESH TOPOLOGY VALIDATION — 736K FACES",
+  "BVH ACCELERATION TREE — DEPTH 14 NODES",
+  "RAYCASTING ENGINE INITIALIZED",
+  "SECURITY PERIMETER BOUNDARY DEFINED",
+  "THREAT VECTOR ANALYSIS — 12 ENTRY POINTS",
+  "FIELD OF VIEW OPTIMIZATION — 4 CONES PLACED",
+  "NEURAL SURVEILLANCE KERNEL READY",
+  "SYNTHETIC DATASET GENERATOR — STANDBY",
+  "FINALIZING 3D SCENE COMPOSITION...",
+];
+
+function LoadingTerminal() {
+  const [lines, setLines] = useState<string[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let idx = 0;
+    const interval = setInterval(() => {
+      const now = new Date();
+      const ts = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+      const line = `[${ts}] ${TERMINAL_LINES[idx % TERMINAL_LINES.length]}`;
+      setLines((prev) => [...prev.slice(-11), line]);
+      idx++;
+    }, 450);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [lines]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        marginTop: 32,
+        width: 420,
+        maxHeight: 180,
+        overflow: "hidden",
+        fontFamily: "var(--font-mono, monospace)",
+        fontSize: 9,
+        lineHeight: 1.8,
+        letterSpacing: "0.08em",
+        textAlign: "left",
+      }}
+    >
+      {lines.map((line, i) => {
+        const isLatest = i === lines.length - 1;
+        const fade = Math.max(0.12, (i + 1) / lines.length);
+        return (
+          <div
+            key={`${i}-${line}`}
+            style={{
+              color: isLatest ? "rgba(0, 229, 255, 0.85)" : `rgba(0, 229, 255, ${fade * 0.5})`,
+              whiteSpace: "nowrap",
+              transition: "color 300ms ease",
+            }}
+          >
+            {line}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 /**
  * SceneView — Full-viewport 3D renderer.
@@ -588,6 +670,10 @@ export default function SceneView({
           >
             PROCESSING ENVIRONMENT DATA
           </div>
+
+          {/* Terminal log feed */}
+          <LoadingTerminal />
+
           <style>{`
             @keyframes spin {
               to { transform: rotate(360deg); }
