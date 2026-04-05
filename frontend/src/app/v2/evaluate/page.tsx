@@ -75,7 +75,7 @@ function CameraPovPlaceholder({ camera, index }: { camera: Camera; index: number
       </svg>
 
       {/* HUD overlays */}
-      <div style={{ position: "absolute", top: 10, left: 12, zIndex: 5, fontFamily: "monospace", fontSize: 10, color: "rgba(0,229,255,0.6)", letterSpacing: "0.1em" }}>
+      <div style={{ position: "absolute", top: 10, left: 12, zIndex: 5, fontFamily: "var(--font-space-mono, monospace)", fontSize: 10, color: "rgba(0,229,255,0.6)", letterSpacing: "0.1em" }}>
         CAM {String(index + 1).padStart(2, "0")} // FOV {camera.fov.toFixed(0)}°
       </div>
       <div style={{ position: "absolute", top: 10, right: 12, zIndex: 5, display: "flex", alignItems: "center", gap: 6 }}>
@@ -86,12 +86,12 @@ function CameraPovPlaceholder({ camera, index }: { camera: Camera; index: number
           display: "inline-block",
           transition: "background 0.1s",
         }} />
-        <span style={{ fontFamily: "monospace", fontSize: 10, color: "#ef4444", letterSpacing: "0.1em" }}>REC</span>
+        <span style={{ fontFamily: "var(--font-space-mono, monospace)", fontSize: 10, color: "#ef4444", letterSpacing: "0.1em" }}>REC</span>
       </div>
-      <div style={{ position: "absolute", bottom: 10, left: 12, zIndex: 5, fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: "0.05em" }}>
+      <div style={{ position: "absolute", bottom: 10, left: 12, zIndex: 5, fontFamily: "var(--font-space-mono, monospace)", fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: "0.05em" }}>
         YAW {camera.rotation.yaw.toFixed(1)}° · PITCH {camera.rotation.pitch.toFixed(1)}°
       </div>
-      <div style={{ position: "absolute", bottom: 10, right: 12, zIndex: 5, fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: "0.05em" }}>
+      <div style={{ position: "absolute", bottom: 10, right: 12, zIndex: 5, fontFamily: "var(--font-space-mono, monospace)", fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: "0.05em" }}>
         {ts}
       </div>
     </div>
@@ -130,26 +130,26 @@ function GeneratingOverlay() {
       {/* Spinner */}
       <div style={{
         width: 44, height: 44, borderRadius: "50%",
-        border: "2px solid rgba(251,191,36,0.12)",
-        borderTopColor: "#fbbf24",
+        border: "2px solid rgba(0,229,255,0.12)",
+        borderTopColor: "#00e5ff",
         animation: "ev-spin 0.9s linear infinite",
         marginBottom: 24,
       }} />
       <div style={{
-        fontFamily: "monospace", fontSize: 11, letterSpacing: "0.3em",
-        color: "#fbbf24", marginBottom: 20, fontWeight: 700,
+        fontFamily: "var(--font-space-mono, monospace)", fontSize: 11, letterSpacing: "0.3em",
+        color: "#00e5ff", marginBottom: 20, fontWeight: 700,
       }}>
         GENERATING SYNTHETIC SCENARIO{dots}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-start", minWidth: 280 }}>
         {steps.map((s, i) => (
           <div key={i} style={{
-            fontFamily: "monospace", fontSize: 9, letterSpacing: "0.08em",
-            color: i < step ? "rgba(251,191,36,0.5)" : i === step ? "rgba(251,191,36,0.9)" : "rgba(255,255,255,0.1)",
+            fontFamily: "var(--font-space-mono, monospace)", fontSize: 9, letterSpacing: "0.08em",
+            color: i < step ? "rgba(0,229,255,0.5)" : i === step ? "rgba(0,229,255,0.9)" : "rgba(255,255,255,0.1)",
             display: "flex", alignItems: "center", gap: 8,
             transition: "color 0.3s",
           }}>
-            <span style={{ color: i < step ? "#fbbf24" : i === step ? "#fbbf24" : "rgba(255,255,255,0.1)" }}>
+            <span style={{ color: i < step ? "#00e5ff" : i === step ? "#00e5ff" : "rgba(255,255,255,0.1)" }}>
               {i < step ? "✓" : i === step ? "›" : "·"}
             </span>
             {s}
@@ -168,6 +168,7 @@ export default function EvaluatePage() {
   const [simState, setSimState] = useState<SimState>("idle");
   const [classification, setClassification] = useState<"fight" | "normal" | null>(null);
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  const [validationMsg, setValidationMsg] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -185,8 +186,13 @@ export default function EvaluatePage() {
   };
 
   const handleSubmit = () => {
+    if (!selectedCamera || !prompt.trim()) return;
     const cls = classifyPrompt(prompt);
-    if (!cls || !selectedCamera) return;
+    if (!cls) {
+      setValidationMsg("INCLUDE SCENARIO TYPE: FIGHT / NORMAL");
+      setTimeout(() => setValidationMsg(null), 3000);
+      return;
+    }
 
     setSimState("generating");
     setVideoSrc(null);
@@ -210,36 +216,36 @@ export default function EvaluatePage() {
     }
   };
 
-  const borderColor = classification === "fight" ? "#ef4444" : classification === "normal" ? "#22c55e" : "rgba(0,229,255,0.15)";
+  const borderColor = classification === "fight" ? "#ef4444" : classification === "normal" ? "#10b981" : "rgba(0,229,255,0.15)";
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", background: "#0a0a0a", display: "flex" }}
+      style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", background: "#0a0e14", display: "flex" }}
     >
       <ModeSidebar />
 
       {/* Camera list panel */}
       <div style={{
         position: "absolute", top: 0, left: 48, bottom: 0, width: 200,
-        borderRight: "1px solid rgba(251,191,36,0.08)",
+        borderRight: "1px solid rgba(0,229,255,0.08)",
         background: "rgba(6,6,6,0.95)",
         display: "flex", flexDirection: "column",
         zIndex: 10,
       }}>
         <div style={{
           height: 40, display: "flex", alignItems: "center", paddingLeft: 14,
-          borderBottom: "1px solid rgba(251,191,36,0.08)",
+          borderBottom: "1px solid rgba(0,229,255,0.08)",
         }}>
-          <span style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: "0.25em", color: "#fbbf24" }}>
+          <span style={{ fontFamily: "var(--font-space-mono, monospace)", fontSize: 9, letterSpacing: "0.25em", color: "#00e5ff" }}>
             CAMERAS ({cameras.length})
           </span>
         </div>
         <div style={{ flex: 1, overflowY: "auto" }}>
           {cameras.length === 0 ? (
-            <div style={{ padding: "24px 14px", fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>
+            <div style={{ padding: "24px 14px", fontFamily: "var(--font-space-mono, monospace)", fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>
               NO CAMERAS PLACED
             </div>
           ) : (
@@ -252,9 +258,9 @@ export default function EvaluatePage() {
                   style={{
                     display: "flex", alignItems: "center", gap: 10,
                     width: "100%", padding: "10px 14px",
-                    background: active ? "rgba(251,191,36,0.08)" : "transparent",
+                    background: active ? "rgba(0,229,255,0.08)" : "transparent",
                     border: "none",
-                    borderLeft: active ? "2px solid #fbbf24" : "2px solid transparent",
+                    borderLeft: active ? "2px solid #00e5ff" : "2px solid transparent",
                     cursor: "pointer",
                     textAlign: "left",
                     transition: "all 0.15s",
@@ -263,20 +269,20 @@ export default function EvaluatePage() {
                   {/* Camera icon */}
                   <div style={{
                     width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-                    background: active ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",
+                    background: active ? "rgba(0,229,255,0.15)" : "rgba(255,255,255,0.04)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active ? "#fbbf24" : "rgba(255,255,255,0.3)"} strokeWidth="1.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active ? "#00e5ff" : "rgba(255,255,255,0.3)"} strokeWidth="1.5">
                       <rect x="2" y="3" width="20" height="18" rx="2" />
                       <circle cx="12" cy="12" r="3" />
                       <path d="M2 8h20" />
                     </svg>
                   </div>
                   <div>
-                    <div style={{ fontFamily: "monospace", fontSize: 10, color: active ? "#fbbf24" : "rgba(255,255,255,0.5)", letterSpacing: "0.08em" }}>
+                    <div style={{ fontFamily: "var(--font-space-mono, monospace)", fontSize: 10, color: active ? "#00e5ff" : "rgba(255,255,255,0.5)", letterSpacing: "0.08em" }}>
                       CAM {String(i + 1).padStart(2, "0")}
                     </div>
-                    <div style={{ fontFamily: "monospace", fontSize: 8, color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em", marginTop: 2 }}>
+                    <div style={{ fontFamily: "var(--font-space-mono, monospace)", fontSize: 8, color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em", marginTop: 2 }}>
                       {(cam.placement_score * 100).toFixed(0)}% CVG
                     </div>
                   </div>
@@ -295,11 +301,11 @@ export default function EvaluatePage() {
         {/* Top bar */}
         <div style={{
           height: 40, display: "flex", alignItems: "center", justifyContent: "center",
-          borderBottom: "1px solid rgba(251,191,36,0.08)",
+          borderBottom: "1px solid rgba(0,229,255,0.08)",
           background: "rgba(6,6,6,0.9)",
           flexShrink: 0,
         }}>
-          <span style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.3em", color: "#fbbf24" }}>
+          <span style={{ fontFamily: "var(--font-space-mono, monospace)", fontSize: 10, letterSpacing: "0.3em", color: "#00e5ff" }}>
             EVALUATE // SCENARIO SIMULATION // THREAT CLASSIFICATION
           </span>
         </div>
@@ -377,7 +383,7 @@ export default function EvaluatePage() {
                           <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                           <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                         </svg>
-                        <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700, letterSpacing: "0.2em", color: "#ef4444" }}>
+                        <span style={{ fontFamily: "var(--font-space-mono, monospace)", fontSize: 12, fontWeight: 700, letterSpacing: "0.2em", color: "#ef4444" }}>
                           VIOLENCE DETECTED
                         </span>
                       </motion.div>
@@ -400,11 +406,11 @@ export default function EvaluatePage() {
                           display: "flex", alignItems: "center", gap: 10,
                         }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
                           <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
                           <polyline points="22 4 12 14.01 9 11.01"/>
                         </svg>
-                        <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700, letterSpacing: "0.2em", color: "#22c55e" }}>
+                        <span style={{ fontFamily: "var(--font-space-mono, monospace)", fontSize: 12, fontWeight: 700, letterSpacing: "0.2em", color: "#10b981" }}>
                           ACTIVITY NORMAL
                         </span>
                       </motion.div>
@@ -420,7 +426,7 @@ export default function EvaluatePage() {
                         border: "1px solid rgba(255,255,255,0.1)",
                         borderRadius: 4,
                         color: "rgba(255,255,255,0.4)",
-                        fontFamily: "monospace", fontSize: 9, letterSpacing: "0.15em",
+                        fontFamily: "var(--font-space-mono, monospace)", fontSize: 9, letterSpacing: "0.15em",
                         cursor: "pointer",
                       }}
                     >
@@ -436,10 +442,10 @@ export default function EvaluatePage() {
               display: "flex", alignItems: "center", justifyContent: "center",
               flexDirection: "column", gap: 8,
             }}>
-              <div style={{ fontFamily: "monospace", fontSize: 12, color: "rgba(251,191,36,0.4)", letterSpacing: "0.2em" }}>
+              <div style={{ fontFamily: "var(--font-space-mono, monospace)", fontSize: 12, color: "rgba(0,229,255,0.4)", letterSpacing: "0.2em" }}>
                 NO CAMERAS PLACED
               </div>
-              <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.15)", letterSpacing: "0.1em" }}>
+              <div style={{ fontFamily: "var(--font-space-mono, monospace)", fontSize: 9, color: "rgba(255,255,255,0.15)", letterSpacing: "0.1em" }}>
                 GO TO PLACEMENT VIEW TO POSITION CAMERAS
               </div>
             </div>
@@ -449,51 +455,73 @@ export default function EvaluatePage() {
         {/* Prompt bar */}
         <div style={{
           flexShrink: 0,
-          borderTop: "1px solid rgba(251,191,36,0.08)",
+          borderTop: "1px solid rgba(0,229,255,0.08)",
           background: "rgba(6,6,6,0.95)",
           padding: "12px 16px",
-          display: "flex", gap: 10, alignItems: "center",
+          display: "flex", flexDirection: "column", gap: 0,
         }}>
-          <input
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={simState === "generating" || !selectedCamera}
-            placeholder={selectedCamera ? 'Describe a scenario to test the AI model...' : "Select a camera first"}
-            style={{
-              flex: 1,
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(251,191,36,0.15)",
-              borderRadius: 6,
-              padding: "9px 14px",
-              color: "rgba(255,255,255,0.8)",
-              fontFamily: "monospace",
-              fontSize: 12,
-              outline: "none",
-              letterSpacing: "0.04em",
-            }}
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={simState === "generating" || !selectedCamera || !prompt.trim()}
-            style={{
-              padding: "9px 20px",
-              background: simState === "generating" || !selectedCamera || !prompt.trim()
-                ? "rgba(251,191,36,0.06)"
-                : "rgba(251,191,36,0.15)",
-              border: "1px solid rgba(251,191,36,0.3)",
-              borderRadius: 6,
-              color: simState === "generating" || !selectedCamera || !prompt.trim() ? "rgba(251,191,36,0.3)" : "#fbbf24",
-              fontFamily: "monospace",
-              fontSize: 10,
-              letterSpacing: "0.15em",
-              cursor: simState === "generating" || !selectedCamera || !prompt.trim() ? "not-allowed" : "pointer",
-              transition: "all 0.2s",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {simState === "generating" ? "GENERATING..." : "SIMULATE"}
-          </button>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <input
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={simState === "generating" || !selectedCamera}
+              placeholder={selectedCamera ? 'Describe a scenario to test the AI model...' : "Select a camera first"}
+              style={{
+                flex: 1,
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(0,229,255,0.15)",
+                borderRadius: 6,
+                padding: "9px 14px",
+                color: "rgba(255,255,255,0.8)",
+                fontFamily: "var(--font-space-mono, monospace)",
+                fontSize: 12,
+                outline: "none",
+                letterSpacing: "0.04em",
+              }}
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={simState === "generating" || !selectedCamera || !prompt.trim()}
+              style={{
+                padding: "9px 20px",
+                background: simState === "generating" || !selectedCamera || !prompt.trim()
+                  ? "rgba(0,229,255,0.06)"
+                  : "rgba(0,229,255,0.15)",
+                border: "1px solid rgba(0,229,255,0.3)",
+                borderRadius: 6,
+                color: simState === "generating" || !selectedCamera || !prompt.trim() ? "rgba(0,229,255,0.3)" : "#00e5ff",
+                fontFamily: "var(--font-space-mono, monospace)",
+                fontSize: 10,
+                letterSpacing: "0.15em",
+                cursor: simState === "generating" || !selectedCamera || !prompt.trim() ? "not-allowed" : "pointer",
+                transition: "all 0.2s",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {simState === "generating" ? "GENERATING..." : "SIMULATE"}
+            </button>
+          </div>
+          <AnimatePresence>
+            {validationMsg && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  fontFamily: "var(--font-space-mono, monospace)",
+                  fontSize: 9,
+                  letterSpacing: "0.15em",
+                  color: "#ef4444",
+                  marginTop: 6,
+                  paddingLeft: 2,
+                }}
+              >
+                {validationMsg}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </motion.div>

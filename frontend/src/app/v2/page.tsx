@@ -33,7 +33,13 @@ export default function V2Page() {
   const [view, setView]                    = useState<ViewState>("hero");
   const [transitionPhase, setTransitionPhase] = useState(0);
 
+  const [glitchIndex, setGlitchIndex] = useState(-1);
+  const [disrupted, setDisrupted] = useState(false);
+  const prevCharsRef = useRef(0);
+  const disruptedRef = useRef(false);
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   // ─── Boot sequence (pure timeouts — no 60fps interval) ────────────
@@ -77,9 +83,42 @@ export default function V2Page() {
     return () => clearTimeout(t);
   }, [sloganVisible]);
 
+  // ─── Chromatic aberration on newly typed letters ───────────────────
+  useEffect(() => {
+    if (displayedChars > prevCharsRef.current && displayedChars <= TITLE.length) {
+      const newIdx = displayedChars - 1;
+      setGlitchIndex(newIdx);
+      const t = setTimeout(() => setGlitchIndex(-1), 250);
+      prevCharsRef.current = displayedChars;
+      return () => clearTimeout(t);
+    }
+    prevCharsRef.current = displayedChars;
+  }, [displayedChars]);
+
+  // ─── Signal disruption handler ────────────────────────────────────
+  const handleButtonHover = useCallback(() => {
+    if (disruptedRef.current) return;
+    disruptedRef.current = true;
+    setDisrupted(true);
+    setTimeout(() => {
+      setDisrupted(false);
+      // Allow re-trigger after mouse leaves and re-enters
+    }, 350);
+  }, []);
+
+  const handleButtonLeave = useCallback(() => {
+    // Only re-enable disruption if we're not mid-transition
+    if (view === "hero") {
+      disruptedRef.current = false;
+    }
+  }, [view]);
+
   // ─── Transition: zoom through ──────────────────────────────────────
   const handleEnter = useCallback(() => {
     if (view !== "hero") return;
+    // Kill any active disruption effect so it doesn't show during transition
+    disruptedRef.current = true;
+    setDisrupted(false);
     setView("transitioning");
     setTransitionPhase(1);
     setTimeout(() => setTransitionPhase(2), 400);
@@ -94,12 +133,14 @@ export default function V2Page() {
 
   return (
     <div
+      ref={rootRef}
       style={{
         position: "fixed",
         top: 0, left: 0, right: 0, bottom: 0,
         background: "#000",
         zIndex: 10000,
         overflow: "hidden",
+        cursor: "crosshair",
       }}
     >
       <style>{`
@@ -155,6 +196,23 @@ export default function V2Page() {
           0%, 100% { box-shadow: 0 0 20px rgba(0,229,255,0.12), inset 0 0 20px rgba(0,229,255,0.05); }
           50%      { box-shadow: 0 0 30px rgba(0,229,255,0.22), inset 0 0 25px rgba(0,229,255,0.08); }
         }
+
+        @keyframes signal-jitter {
+          0%   { transform: translateX(-20px) skewX(-0.5deg); }
+          20%  { transform: translate(-18px, 1px) skewX(0.3deg); }
+          40%  { transform: translate(-22px, -1px) skewX(-0.3deg); }
+          60%  { transform: translate(-19px, 1px) skewX(0.2deg); }
+          80%  { transform: translate(-21px, 0) skewX(-0.1deg); }
+          100% { transform: translateX(-20px) skewX(0deg); }
+        }
+
+        .hero-disrupted {
+          animation: signal-jitter 0.35s ease-out 1 !important;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .hero-disrupted { animation: none !important; }
+        }
       `}</style>
 
       {/* ═══ LAYER 0: ASCII sphere ═══ */}
@@ -168,7 +226,7 @@ export default function V2Page() {
             position: "absolute",
             inset: 0,
             transformOrigin: "center center",
-            opacity: transitionPhase >= 2 ? 0 : 0.7,
+            opacity: transitionPhase >= 2 ? 0 : 0.8,
             transform: transitionPhase >= 2 ? "scale(6)" : "scale(1)",
             willChange: transitionPhase >= 1 ? "transform, opacity" : "auto",
             transition: transitionPhase >= 2
@@ -181,12 +239,6 @@ export default function V2Page() {
           }}
         >
           <AsciiSphere />
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            background: "radial-gradient(ellipse at center, rgba(0, 229, 255, 0.04) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }} />
         </div>
       )}
 
@@ -199,15 +251,16 @@ export default function V2Page() {
           position: "absolute",
           inset: 0,
           zIndex: 2,
-          background: "radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.85) 100%)",
-          opacity: transitionPhase >= 2 ? 0 : 1,
-          transition: "opacity 600ms ease",
+          background: "radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.75) 100%)",
+          opacity: 1,
+          transition: "none",
           pointerEvents: "none",
         }}
       />
 
       {/* ═══ LAYER 3: Hero text ═══ */}
       <div
+        className={disrupted ? "hero-disrupted" : ""}
         style={{
           position: "absolute",
           inset: 0,
@@ -217,7 +270,7 @@ export default function V2Page() {
           alignItems: "center",
           justifyContent: "center",
           opacity: showHeroText && isBooted ? 1 : 0,
-          transform: transitionPhase >= 1 ? "translateY(-40px)" : "translateY(0)",
+          transform: transitionPhase >= 1 ? "translate(-20px, -40px)" : "translateX(-20px)",
           transition: transitionPhase >= 1
             ? "opacity 400ms ease, transform 700ms cubic-bezier(0.4, 0, 1, 1)"
             : bootPhase === "ready"
@@ -228,19 +281,36 @@ export default function V2Page() {
       >
         <h1
           style={{
-            fontSize: "clamp(4.5rem, 12vw, 10rem)",
+            fontSize: "clamp(5.5rem, 14vw, 13rem)",
             fontWeight: 700,
             color: "#fff",
-            letterSpacing: "-0.04em",
-            lineHeight: 0.95,
-            fontFamily: "var(--font-display), system-ui, sans-serif",
-            textShadow: "0 2px 40px rgba(0,0,0,0.8), 0 0 80px rgba(0,229,255,0.07), 0 0 160px rgba(0,229,255,0.04)",
+            letterSpacing: "-0.03em",
+            lineHeight: 0.9,
+            fontFamily: "var(--font-heading), system-ui, sans-serif",
+            textShadow: "0 4px 60px rgba(0,0,0,0.9)",
             minHeight: "1.1em",
           }}
         >
-          {titleText.split("").map((char, i) => (
-            <span key={i} style={{ color: char === "I" || char === "Q" ? "#00e5ff" : "#fff" }}>{char}</span>
-          ))}
+          {titleText.split("").map((char, i) => {
+            const isGlitching = i === glitchIndex;
+            const baseColor = char === "I" || char === "Q" ? "#00e5ff" : "#fff";
+            return (
+              <span
+                key={i}
+                style={{
+                  color: baseColor,
+                  textShadow: isGlitching
+                    ? "-3px 1px 0 rgba(255,0,60,0.7), 3px -1px 0 rgba(0,229,255,0.7), 0 0 20px rgba(0,229,255,0.4)"
+                    : undefined,
+                  transition: "text-shadow 0.15s ease-out",
+                  display: "inline-block",
+                  transform: isGlitching ? "translateX(1px)" : "none",
+                }}
+              >
+                {char}
+              </span>
+            );
+          })}
           <span
             style={{
               opacity: showCursor ? 1 : 0,
@@ -266,14 +336,14 @@ export default function V2Page() {
 
         <p
           style={{
-            marginTop: "28px",
-            fontSize: "clamp(0.9375rem, 1.6vw, 1.125rem)",
-            color: "rgba(0, 229, 255, 0.55)",
+            marginTop: "40px",
+            fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
+            color: "rgba(0, 229, 255, 0.5)",
             fontFamily: "var(--font-space-mono), monospace",
-            letterSpacing: "0.15em",
+            letterSpacing: "0.2em",
             lineHeight: 1.6,
             textTransform: "lowercase",
-            textShadow: "0 2px 20px rgba(0,0,0,0.9), 0 0 40px rgba(0,229,255,0.1)",
+            textShadow: "0 2px 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,229,255,0.08)",
             transition: "opacity 800ms ease",
             opacity: sloganVisible ? 1 : 0,
           }}
@@ -284,15 +354,15 @@ export default function V2Page() {
         <button
           onClick={handleEnter}
           style={{
-            marginTop: "64px",
-            fontSize: "0.85rem",
+            marginTop: "72px",
+            fontSize: "0.95rem",
             fontWeight: 600,
             color: "#00e5ff",
-            background: "rgba(0, 10, 15, 0.9)",
-            border: "1px solid rgba(0, 229, 255, 0.5)",
-            backdropFilter: "blur(16px)",
+            background: "rgba(0, 10, 15, 0.85)",
+            border: "2px solid rgba(0, 229, 255, 0.45)",
+            backdropFilter: "blur(20px)",
             borderRadius: "9999px",
-            padding: "14px 44px",
+            padding: "16px 56px",
             cursor: "pointer",
             fontFamily: "var(--font-space-mono), monospace",
             letterSpacing: "0.2em",
@@ -306,16 +376,31 @@ export default function V2Page() {
             e.currentTarget.style.animation = "none";
             e.currentTarget.style.boxShadow = "0 0 40px rgba(0, 229, 255, 0.3), 0 0 80px rgba(0, 229, 255, 0.12), inset 0 0 30px rgba(0, 229, 255, 0.08)";
             e.currentTarget.style.transform = "scale(1.05)";
+            handleButtonHover();
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.5)";
             e.currentTarget.style.animation = "btn-glow-pulse 3s ease-in-out infinite";
             e.currentTarget.style.transform = "scale(1)";
+            handleButtonLeave();
           }}
         >
           click to start
         </button>
       </div>
+
+      {/* ═══ LAYER 5: CRT scanlines ═══ */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 10,
+          pointerEvents: "none",
+          background: "repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px)",
+          opacity: 0.4,
+        }}
+      />
+
     </div>
   );
 }

@@ -46,7 +46,9 @@ export default function GlobePage() {
     (marker: { id: string; location: [number, number] }) => {
       if (activeTarget) return;
       if (marker.id !== "hall-ds-ai") {
-        return; // Rest don't do anything
+        setRestrictedToast(marker.id);
+        setTimeout(() => setRestrictedToast(null), 2500);
+        return;
       }
       const data = LOCATION_DB[marker.id] || { name: "Unknown", coordinates: "N/A" };
       setActiveTarget({ ...marker, ...data });
@@ -60,7 +62,7 @@ export default function GlobePage() {
   }, []);
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 10000, overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 10000, overflow: "hidden", fontSize: "110%" }}>
       {/* Globe */}
       <div style={{ position: "absolute", inset: 0 }}>
         <MapboxGlobe
@@ -79,24 +81,23 @@ export default function GlobePage() {
         {/* Top Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-              <div style={{ width: 12, height: 12, border: "2px solid #00e5ff", borderRadius: "2px", position: "relative" }}>
-                <div style={{ position: "absolute", inset: "2px", background: "#00e5ff", animation: "pulse 2s infinite" }} />
-              </div>
-              <span style={{ color: "#00e5ff", fontFamily: "var(--font-space-mono), monospace", fontSize: "14px", fontWeight: "bold", letterSpacing: "0.2em" }}>
-                AI_CAMERA_PLACEMENT_PLANNER_v2.0
+            <div style={{ marginBottom: "6px" }}>
+              <span style={{ fontFamily: "var(--font-display), system-ui, sans-serif", fontSize: "2.5rem", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: "var(--leading-tight)" }}>
+                {"SIQUR".split("").map((ch, i) => (
+                  <span key={i} style={{ color: ch === "I" || ch === "Q" ? "#00e5ff" : "#fff" }}>{ch}</span>
+                ))}
               </span>
             </div>
-            <span style={{ color: flyToTarget ? "#00e5ff" : "#444", fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", letterSpacing: "0.15em", transition: "color 300ms", textTransform: "uppercase" }}>
-              {flyToTarget ? ">> TARGET_NODE_LOCKED // OPTIMIZING_VIEWING_CONES" : ">> SEARCHING_FOR_OPTIMAL_SURVEILLANCE_NODES // AWAITING_INPUT"}
+            <span style={{ color: "rgba(0, 229, 255, 0.4)", fontFamily: "var(--font-space-mono), monospace", fontSize: "var(--text-md)", letterSpacing: "var(--tracking-wide)" }}>
+              see everything. miss nothing.
             </span>
           </div>
 
           <div style={{ textAlign: "right" }}>
-            <div style={{ color: "#00e5ff", fontFamily: "var(--font-space-mono), monospace", fontSize: "11px", letterSpacing: "0.1em", marginBottom: "4px" }}>
+            <div style={{ color: "#00e5ff", fontFamily: "var(--font-space-mono), monospace", fontSize: "var(--text-base)", letterSpacing: "var(--tracking-wide)", marginBottom: "4px" }}>
               SYSTEM_STATUS: <span style={{ color: "#10b981" }}>ACTIVE</span>
             </div>
-            <div style={{ color: "#444", fontFamily: "var(--font-space-mono), monospace", fontSize: "9px", letterSpacing: "0.1em" }}>
+            <div style={{ color: "#444", fontFamily: "var(--font-space-mono), monospace", fontSize: "var(--text-sm)", letterSpacing: "var(--tracking-wide)" }}>
               OR_TOOLS_COMPUTE_GRID: ONLINE
             </div>
           </div>
@@ -105,25 +106,25 @@ export default function GlobePage() {
         {/* Middle Section: Coordinates & Stats */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flex: 1 }}>
           {/* Left Sidebar: Live Coordinates */}
-          <div style={{ width: "200px", padding: "20px", background: "linear-gradient(90deg, rgba(0, 229, 255, 0.05) 0%, transparent 100%)", borderLeft: "1px solid rgba(0, 229, 255, 0.2)", pointerEvents: "auto" }}>
-            <div style={{ color: "#00e5ff", fontSize: "10px", fontFamily: "var(--font-space-mono), monospace", marginBottom: "12px", borderBottom: "1px solid rgba(0, 229, 255, 0.2)", paddingBottom: "4px" }}>
-              ACTIVE_COORDINATES
+          <div style={{ width: "220px", padding: "20px", background: "linear-gradient(90deg, rgba(0, 229, 255, 0.05) 0%, transparent 100%)", borderLeft: "1px solid rgba(0, 229, 255, 0.2)", pointerEvents: "auto" }}>
+            <div style={{ color: "#00e5ff", fontSize: "var(--text-sm)", fontFamily: "var(--font-space-mono), monospace", marginBottom: "12px", borderBottom: "1px solid rgba(0, 229, 255, 0.2)", paddingBottom: "4px", letterSpacing: "var(--tracking-wide)" }}>
+              ACTIVE COORDINATES
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {PURDUE_MARKERS.map((m) => (
-                <div 
-                  key={m.id} 
+                <div
+                  key={m.id}
                   onClick={() => handleMarkerClick(m)}
-                  style={{ 
+                  style={{
                     cursor: m.id === "hall-ds-ai" ? "pointer" : "not-allowed",
                     opacity: 1,
                     transition: "all 0.2s ease"
                   }}
                 >
-                  <div style={{ color: "#00e5ff", fontSize: "9px", fontFamily: "var(--font-space-mono), monospace" }}>
+                  <div style={{ color: "#00e5ff", fontSize: "var(--text-sm)", fontFamily: "var(--font-space-mono), monospace" }}>
                     ID: {m.id.toUpperCase()}
                   </div>
-                  <div style={{ color: "rgba(0, 229, 255, 0.6)", fontSize: "8px", fontFamily: "var(--font-space-mono), monospace" }}>
+                  <div style={{ color: "rgba(0, 229, 255, 0.6)", fontSize: "var(--text-xs)", fontFamily: "var(--font-space-mono), monospace" }}>
                     {m.location[0].toFixed(4)}N, {Math.abs(m.location[1]).toFixed(4)}W
                   </div>
                 </div>
@@ -132,9 +133,9 @@ export default function GlobePage() {
           </div>
 
           {/* Right Section: Tactical View */}
-          <div style={{ width: "150px", textAlign: "right", padding: "20px", opacity: 0.6 }}>
-            <div style={{ color: "#00e5ff", fontSize: "8px", fontFamily: "var(--font-space-mono), monospace", marginBottom: "8px" }}>CURRENT LOCATION</div>
-            <div style={{ fontSize: "10px", color: "#666", fontFamily: "var(--font-space-mono), monospace" }}>
+          <div style={{ width: "160px", textAlign: "right", padding: "20px", opacity: 0.6 }}>
+            <div style={{ color: "#00e5ff", fontSize: "var(--text-xs)", fontFamily: "var(--font-space-mono), monospace", marginBottom: "8px", letterSpacing: "var(--tracking-wide)" }}>CURRENT LOCATION</div>
+            <div style={{ fontSize: "var(--text-sm)", color: "#666", fontFamily: "var(--font-space-mono), monospace", lineHeight: "var(--leading-relaxed)" }}>
               LAT: 40.4290<br/>
               LNG: -86.9148<br/>
               ALT: 187M
@@ -142,20 +143,28 @@ export default function GlobePage() {
           </div>
         </div>
 
-        {/* Bottom Section: Logs */}
+        {/* Bottom Section: Building Data */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <div style={{ width: "350px", background: "rgba(0,0,0,0.5)", padding: "12px", border: "1px solid rgba(0, 229, 255, 0.1)", backdropFilter: "blur(4px)" }}>
-            <div style={{ color: "#00e5ff", fontSize: "8px", fontFamily: "var(--font-space-mono), monospace", marginBottom: "6px" }}>NEURAL_CAMERA_PLANNER_LOG</div>
-            <div style={{ fontSize: "8px", fontFamily: "var(--font-space-mono), monospace", color: "#444", display: "flex", flexDirection: "column", gap: "2px" }}>
-              <div>[OK] ANALYZING SECTOR_7_INFRASTRUCTURE</div>
-              <div>[OK] GENETIC_ALGORITHM: GENERATION_242_COMPLETE</div>
-              <div>[WARN] DEAD_ZONE_DETECTED: WEST_WING_HALLWAY</div>
-              <div style={{ color: "#00e5ff" }}>[INFO] OPERATOR_INPUT_REQUIRED: SELECT_PLACEMENT_NODE</div>
+          <div style={{ width: "420px", background: "rgba(0,0,0,0.5)", padding: "16px", border: "1px solid rgba(0, 229, 255, 0.1)", backdropFilter: "blur(4px)", borderRadius: "2px" }}>
+            <div style={{ color: "#00e5ff", fontSize: "var(--text-sm)", fontFamily: "var(--font-space-mono), monospace", marginBottom: "10px", borderBottom: "1px solid rgba(0, 229, 255, 0.15)", paddingBottom: "6px", letterSpacing: "var(--tracking-wider)" }}>SITE OVERVIEW</div>
+            <div style={{ fontSize: "var(--text-base)", fontFamily: "var(--font-space-mono), monospace", color: "rgba(0, 229, 255, 0.5)", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>BUILDINGS RENDERED</span>
+                <span style={{ color: "#00e5ff" }}>4</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>BUILDINGS AVAILABLE</span>
+                <span style={{ color: "#10b981" }}>1</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>3D SCANS LOADED</span>
+                <span style={{ color: "#00e5ff" }}>1</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>IMAGES CAPTURED</span>
+                <span style={{ color: "#00e5ff" }}>847</span>
+              </div>
             </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-             <div style={{ color: "#00e5ff", fontSize: "10px", fontFamily: "var(--font-space-mono), monospace" }}>SECTOR_COVERAGE</div>
-             <div style={{ color: "#222", fontSize: "80px", fontFamily: "var(--font-space-mono), monospace", lineHeight: 0.8, userSelect: "none" }}>0%</div>
           </div>
         </div>
       </div>
@@ -186,7 +195,7 @@ export default function GlobePage() {
                   marginTop: "12px", width: "100%", padding: "10px 16px",
                   background: "rgba(0, 229, 255, 0.08)", border: "1px solid rgba(0, 229, 255, 0.25)",
                   borderRadius: "8px", color: "#00e5ff",
-                  fontFamily: "var(--font-space-mono), monospace", fontSize: "11px",
+                  fontFamily: "var(--font-space-mono), monospace", fontSize: "13px",
                   letterSpacing: "0.2em", cursor: "pointer", textTransform: "uppercase" as const,
                 }}
               >
@@ -202,7 +211,7 @@ export default function GlobePage() {
         <div style={{
           position: "absolute", bottom: "80px", left: "50%", transform: "translateX(-50%)", zIndex: 20,
           padding: "12px 24px", background: "rgba(10,10,10,0.9)", border: "1px solid rgba(255,60,60,0.3)",
-          borderRadius: "8px", fontFamily: "var(--font-space-mono), monospace", fontSize: "11px",
+          borderRadius: "8px", fontFamily: "var(--font-space-mono), monospace", fontSize: "13px",
           color: "rgba(255,60,60,0.8)", letterSpacing: "0.15em", textTransform: "uppercase" as const,
         }}>
           ⚠ {restrictedToast} // CLASSIFIED — ACCESS RESTRICTED

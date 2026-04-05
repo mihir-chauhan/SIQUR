@@ -28,16 +28,17 @@ export default function TrainingPage() {
   // Terminal lines
   useEffect(() => {
     let idx = 0;
+    let phaseTimeout: ReturnType<typeof setTimeout>;
     const timer = setInterval(() => {
       if (idx < TRAINING_LINES.length) {
         setVisibleLines((prev) => [...prev, TRAINING_LINES[idx]]);
         idx++;
       } else {
         clearInterval(timer);
-        setTimeout(() => setPhase("feed"), 600);
+        phaseTimeout = setTimeout(() => setPhase("feed"), 600);
       }
     }, 450);
-    return () => clearInterval(timer);
+    return () => { clearInterval(timer); clearTimeout(phaseTimeout); };
   }, []);
 
   // Progress bar
@@ -181,7 +182,7 @@ export default function TrainingPage() {
                     {feedReady[i] && (
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981" }} />
-                        <span style={{ color: "#10b981", fontSize: 7, letterSpacing: "0.1em" }}>ONLINE</span>
+                        <span style={{ color: "#10b981", fontSize: 9, letterSpacing: "0.1em" }}>ONLINE</span>
                       </div>
                     )}
                   </div>
@@ -189,19 +190,19 @@ export default function TrainingPage() {
                   {/* Bottom: status */}
                   <div>
                     {!feedReady[i] && (
-                      <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 8, letterSpacing: "0.1em" }}>
+                      <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 9, letterSpacing: "0.1em" }}>
                         CONNECTING...
                       </span>
                     )}
                     {feedReady[i] && (
                       <div style={{ display: "flex", gap: 16 }}>
-                        <span style={{ color: "rgba(0, 229, 255, 0.4)", fontSize: 7, letterSpacing: "0.1em" }}>
+                        <span style={{ color: "rgba(0, 229, 255, 0.4)", fontSize: 9, letterSpacing: "0.1em" }}>
                           AI: ACTIVE
                         </span>
-                        <span style={{ color: "rgba(0, 229, 255, 0.4)", fontSize: 7, letterSpacing: "0.1em" }}>
+                        <span style={{ color: "rgba(0, 229, 255, 0.4)", fontSize: 9, letterSpacing: "0.1em" }}>
                           FPS: 24
                         </span>
-                        <span style={{ color: "rgba(0, 229, 255, 0.4)", fontSize: 7, letterSpacing: "0.1em" }}>
+                        <span style={{ color: "rgba(0, 229, 255, 0.4)", fontSize: 9, letterSpacing: "0.1em" }}>
                           RES: 2K
                         </span>
                       </div>
@@ -223,13 +224,38 @@ export default function TrainingPage() {
       )}
 
       {/* Progress bar */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 2, background: "rgba(0, 229, 255, 0.08)", zIndex: 10 }}>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 3, background: "rgba(0, 229, 255, 0.08)", zIndex: 10, display: "flex", alignItems: "center" }}>
         <div style={{
           height: "100%", width: `${progress * 100}%`,
           background: "#00e5ff", transition: "width 0.05s linear",
           boxShadow: "0 0 8px rgba(0, 229, 255, 0.5)",
+          flex: "none",
         }} />
+        <span style={{
+          color: "rgba(0, 229, 255, 0.5)", fontSize: 9, fontFamily: "var(--font-space-mono, monospace)",
+          letterSpacing: "0.1em", marginLeft: 8, whiteSpace: "nowrap",
+        }}>
+          {Math.round(progress * 100)}%
+        </span>
       </div>
+
+      {/* Skip button */}
+      <button
+        onClick={() => router.push("/v2/evaluate")}
+        style={{
+          position: "fixed", bottom: 20, right: 20, zIndex: 20,
+          background: "none", border: "none",
+          color: "#00e5ff", fontSize: 10,
+          fontFamily: "var(--font-space-mono, monospace)",
+          letterSpacing: "0.15em", cursor: "pointer",
+          opacity: 0.4, transition: "opacity 0.2s ease",
+          padding: 0,
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.4")}
+      >
+        SKIP →
+      </button>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
