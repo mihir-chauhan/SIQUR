@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
@@ -27,6 +27,12 @@ export interface SceneObjects {
   objGroup: THREE.Group | null;
 }
 
+export interface SceneHandle {
+  captureCamera: () => { position: { x: number; y: number; z: number }; yaw: number } | null;
+  spawnMarker: (id: string, pos: { x: number; y: number; z: number }, yaw: number) => THREE.Group | null;
+  getMarker: (id: string) => THREE.Object3D | null;
+}
+
 export interface CameraPlacement {
   position: THREE.Vector3;
   normal: THREE.Vector3;
@@ -45,9 +51,12 @@ export default function SceneView({
   objPosition,
   objRotation,
   objScale,
+  hardcodedCameras,
+  sceneRef,
   onObjectsReady,
   onCameraPlaced,
   onCameraClicked,
+  onSplatLoaded,
 }: {
   splatPath: string;
   objPath?: string;
@@ -58,13 +67,17 @@ export default function SceneView({
   objPosition?: { x: number; y: number; z: number };
   objRotation?: { x: number; y: number; z: number };
   objScale?: { x: number; y: number; z: number };
+  hardcodedCameras?: Array<{ id: string; pos: { x: number; y: number; z: number }; yaw: number }>;
+  sceneRef?: React.MutableRefObject<SceneHandle | null>;
   onObjectsReady?: (objects: SceneObjects) => void;
   onCameraPlaced?: (placement: CameraPlacement) => void;
   onCameraClicked?: (cameraId: string) => void;
+  onSplatLoaded?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const placementModeRef = useRef(false);
+  const [splatReady, setSplatReady] = useState(false);
   const onCameraPlacedRef = useRef(onCameraPlaced);
   const onCameraClickedRef = useRef(onCameraClicked);
   const splatVisibleRef = useRef(splatVisible ?? true);
@@ -124,7 +137,7 @@ export default function SceneView({
       viewer
         .addSplatScene(splatPath, {
           splatAlphaRemovalThreshold: 5,
-          showLoadingUI: true,
+          showLoadingUI: false,
           progressiveLoad: true,
         })
         .then(() => {
@@ -135,6 +148,8 @@ export default function SceneView({
             sceneObjects.splatGroup = splatMesh;
             if (onObjectsReady) onObjectsReady(sceneObjects);
           }
+          setSplatReady(true);
+          if (onSplatLoaded) onSplatLoaded();
         })
         .catch((err: unknown) => {
           console.error("[SceneView] Splat load error:", err);
@@ -194,10 +209,34 @@ export default function SceneView({
       const renderer: THREE.WebGLRenderer = (viewer as unknown as { renderer: THREE.WebGLRenderer }).renderer;
       const camera: THREE.PerspectiveCamera = (viewer as unknown as { camera: THREE.PerspectiveCamera }).camera;
 
+      // Expose capture + spawn functions via ref
+      if (sceneRef) {
+        sceneRef.current = {
+          captureCamera: () => {
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            const yaw = ((Math.atan2(dir.x, dir.z) * 180) / Math.PI + 360) % 360;
+            return {
+              position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+              yaw,
+            };
+          },
+          spawnMarker: (id: string, pos: { x: number; y: number; z: number }, yaw: number) => {
+            return createMarker(id, pos, yaw);
+          },
+          getMarker: (id: string) => {
+            for (const [obj, mid] of markerIdMap) {
+              if (mid === id) return obj;
+            }
+            return null;
+          },
+        };
+      }
+
       // --- WASD + Mouse Look (FPS style) ---
       const keys: Record<string, boolean> = {};
       const euler = new THREE.Euler(0, 0, 0, "YXZ");
-      const baseSpeed = 7.5; // units/sec — fast enough for large scenes
+      const baseSpeed = 1.875; // units/sec — fast enough for large scenes
       const shiftMultiplier = 3; // 3x speed when holding shift
       const lookSpeed = 0.004;
       let isDragging = false;
@@ -234,6 +273,44 @@ export default function SceneView({
       });
       const markerIdMap = new Map<THREE.Object3D, string>();
       let camCounter = 0;
+
+      // Shared function: spawn a camera marker at pos facing yaw
+      function createMarker(id: string, pos: { x: number; y: number; z: number }, yaw: number): THREE.Group {
+        const d = Math.PI / 180;
+        const yawRad = yaw * d;
+        const inward = new THREE.Vector3(Math.sin(yawRad), 0, Math.cos(yawRad)).normalize();
+        const defDir = new THREE.Vector3(0, -1, 0);
+        const q = new THREE.Quaternion().setFromUnitVectors(defDir, inward);
+
+        const mg = new THREE.Group();
+        mg.position.set(pos.x, pos.y, pos.z);
+
+        mg.add(new THREE.Mesh(markerGeo, markerMat.clone()));
+
+        const c = new THREE.Mesh(coneGeo.clone(), coneMat.clone());
+        c.quaternion.copy(q);
+        c.name = "cone";
+        mg.add(c);
+
+        const le = inward.clone().multiplyScalar(3);
+        const lg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), le]);
+        const lm = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+        const al = new THREE.Line(lg, lm);
+        al.name = "aimline";
+        mg.add(al);
+
+        threeScene.add(mg);
+        markerIdMap.set(mg, id);
+        return mg;
+      }
+
+      // Spawn hardcoded camera markers
+      if (hardcodedCameras) {
+        for (const hc of hardcodedCameras) {
+          createMarker(hc.id, hc.pos, hc.yaw);
+          camCounter = Math.max(camCounter, parseInt(hc.id.replace("cam_", "")) || 0);
+        }
+      }
 
       const onKeyDown = (e: KeyboardEvent) => {
         keys[e.key.toLowerCase()] = true;
@@ -314,7 +391,23 @@ export default function SceneView({
               const defaultDir = new THREE.Vector3(0, -1, 0);
               const coneQuat = new THREE.Quaternion().setFromUnitVectors(defaultDir, inwardDir);
               cone.quaternion.copy(coneQuat);
+              cone.name = "cone";
               markerGroup.add(cone);
+
+              // Aim line — uses same inwardDir as the cone
+              const lineEnd = inwardDir.clone().multiplyScalar(3);
+              const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                lineEnd,
+              ]);
+              const lineMat = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.5,
+              });
+              const aimLine = new THREE.Line(lineGeo, lineMat);
+              aimLine.name = "aimline";
+              markerGroup.add(aimLine);
 
               threeScene.add(markerGroup);
 
@@ -386,12 +479,13 @@ export default function SceneView({
         // Forward/back direction based on where camera is looking
         const forward = new THREE.Vector3();
         camera.getWorldDirection(forward);
-        forward.y = 0;
-        forward.normalize();
 
-        // Right direction (up is -Y in this scene)
+        // Right direction — strafe stays horizontal
+        const flatForward = forward.clone();
+        flatForward.y = 0;
+        flatForward.normalize();
         const right = new THREE.Vector3();
-        right.crossVectors(forward, new THREE.Vector3(0, -1, 0)).normalize();
+        right.crossVectors(flatForward, new THREE.Vector3(0, -1, 0)).normalize();
 
         if (keys["w"]) camera.position.addScaledVector(forward, speed);
         if (keys["s"]) camera.position.addScaledVector(forward, -speed);
@@ -429,16 +523,82 @@ export default function SceneView({
   }, [splatPath, objPath, mtlPath]);
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: 0,
-        background: "#0a0a0a",
-      }}
-    />
+    <>
+      <div
+        ref={containerRef}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 0,
+          background: "#0a0a0a",
+        }}
+      />
+
+      {/* Custom loading overlay — replaces the library's gray box */}
+      {!splatReady && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "radial-gradient(ellipse at center, rgba(0, 20, 30, 0.95) 0%, rgba(10, 10, 10, 0.98) 70%)",
+            pointerEvents: "none",
+          }}
+        >
+          {/* Scanning ring animation */}
+          <div
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              border: "2px solid rgba(0, 229, 255, 0.15)",
+              borderTopColor: "rgba(0, 229, 255, 0.8)",
+              animation: "spin 1.2s linear infinite",
+              marginBottom: 32,
+              boxShadow: "0 0 20px rgba(0, 229, 255, 0.15), inset 0 0 20px rgba(0, 229, 255, 0.05)",
+            }}
+          />
+          <div
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: "0.35em",
+              color: "#00e5ff",
+              textShadow: "0 0 12px rgba(0, 229, 255, 0.5), 0 0 30px rgba(0, 229, 255, 0.2)",
+              animation: "pulse-text 2s ease-in-out infinite",
+            }}
+          >
+            RUNNING AI ANALYSIS
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 9,
+              letterSpacing: "0.25em",
+              color: "rgba(0, 229, 255, 0.35)",
+              marginTop: 12,
+            }}
+          >
+            PROCESSING ENVIRONMENT DATA
+          </div>
+          <style>{`
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+            @keyframes pulse-text {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.5; }
+            }
+          `}</style>
+        </div>
+      )}
+    </>
   );
 }

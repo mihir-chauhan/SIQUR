@@ -183,7 +183,7 @@ export default function GlobePage() {
                 }}
               />
               <button
-                onClick={() => { window.location.href = "/v2/building"; }}
+                onClick={() => { window.location.href = "/building"; }}
                 style={{
                   marginTop: "12px", width: "100%", padding: "10px 16px",
                   background: "rgba(0, 229, 255, 0.08)", border: "1px solid rgba(0, 229, 255, 0.25)",

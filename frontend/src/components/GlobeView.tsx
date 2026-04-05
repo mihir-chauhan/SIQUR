@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { PRELOADED_BUILDINGS } from "@/lib/buildings";
 import { createSession, setBuilding } from "@/lib/api";
-import { setSessionId, setSelectedBuilding } from "@/lib/session";
+import { setSessionId, setSelectedBuilding, setPlacedCameras } from "@/lib/session";
 import type { Building } from "@/lib/types";
 import GlobeSidebar from "@/components/GlobeSidebar";
 import GlobeStatusBar from "@/components/GlobeStatusBar";
@@ -53,6 +53,7 @@ export default function GlobeView() {
         const session = await createSession();
         setSessionId(session.session_id);
         setSelectedBuilding(building.id);
+        setPlacedCameras([]); // Clear cameras from previous session
 
         await setBuilding(session.session_id, {
           building_id: building.id,
