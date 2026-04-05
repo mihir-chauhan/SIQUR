@@ -27,16 +27,6 @@ __pycache__/
 *.pyc
 .venv/
 
-# ── Binary assets (don't track in git) ────────────────────────
-*.png
-*.jpg
-*.jpeg
-*.JPG
-*.mp4
-*.avi
-*.mov
-# *.splat — these are served by the frontend, keep tracked
-
 # ── Test artifacts ────────────────────────────────────────────
 .playwright-mcp/
 screenshots/
