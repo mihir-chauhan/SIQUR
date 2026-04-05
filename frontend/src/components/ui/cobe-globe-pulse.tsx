@@ -66,7 +66,8 @@ export function GlobePulse({
   useEffect(() => {
     if (!focusLocation) return
     const [lat, lng] = focusLocation
-    targetPhiRef.current = -lng * (Math.PI / 180) + Math.PI
+    // Correct cobe phi formula: phi = -PI/2 - (lng * PI/180)
+    targetPhiRef.current = -Math.PI / 2 - (lng * Math.PI / 180)
     targetThetaRef.current = lat * (Math.PI / 180)
     isAnimatingToTargetRef.current = true
     isPausedRef.current = false
@@ -115,45 +116,38 @@ export function GlobePulse({
     })
     function animate() {
       if (isAnimatingToTargetRef.current) {
-        const lerpFactor = 0.06
-        const totalPhi = phi + phiOffsetRef.current
-        const totalTheta = 0.2 + thetaOffsetRef.current
+        // Directly lerp phi to target (not via offsets — avoids accumulated drift)
+        let dphi = targetPhiRef.current - phi
+        // Shortest path normalization
+        dphi = ((dphi + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI
+        phi += dphi * 0.08
 
-        const dphi = targetPhiRef.current - totalPhi
-        const dtheta = targetThetaRef.current - totalTheta
+        const dtheta = targetThetaRef.current - currentThetaRef.current
+        currentThetaRef.current += dtheta * 0.08
 
-        // Normalize dphi to [-PI, PI] for shortest rotation path
-        const normalizedDphi = ((dphi + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI
-
-        phiOffsetRef.current += normalizedDphi * lerpFactor
-        thetaOffsetRef.current += dtheta * lerpFactor
-
-        const remainingPhi = Math.abs(targetPhiRef.current - (phi + phiOffsetRef.current))
-        const remainingTheta = Math.abs(targetThetaRef.current - (0.2 + thetaOffsetRef.current))
-
-        // Normalize remaining phi check
-        const normRemPhi = Math.abs(((remainingPhi + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI)
-
-        if (normRemPhi < 0.01 && remainingTheta < 0.01) {
-          // Snap to target
-          phiOffsetRef.current = targetPhiRef.current - phi
-          thetaOffsetRef.current = targetThetaRef.current - 0.2
+        // Convergence check
+        let rem = targetPhiRef.current - phi
+        rem = ((rem + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI
+        if (Math.abs(rem) < 0.005 && Math.abs(dtheta) < 0.005) {
+          phi = targetPhiRef.current
+          currentThetaRef.current = targetThetaRef.current
           isAnimatingToTargetRef.current = false
           isPausedRef.current = true
+          phiOffsetRef.current = 0
+          thetaOffsetRef.current = 0
         }
-      } else if (!isPausedRef.current && !pausedProp) {
-        phi += speed
+
+        globe!.update({ phi, theta: currentThetaRef.current })
+      } else {
+        if (!isPausedRef.current && !pausedProp) {
+          phi += speed
+        }
+        const finalPhi = phi + phiOffsetRef.current + dragOffset.current.phi
+        const finalTheta = currentThetaRef.current + thetaOffsetRef.current + dragOffset.current.theta
+        currentPhiRef.current = finalPhi
+
+        globe!.update({ phi: finalPhi, theta: finalTheta })
       }
-
-      const finalPhi = phi + phiOffsetRef.current + dragOffset.current.phi
-      const finalTheta = 0.2 + thetaOffsetRef.current + dragOffset.current.theta
-      currentPhiRef.current = finalPhi
-      currentThetaRef.current = finalTheta
-
-      globe!.update({
-        phi: finalPhi,
-        theta: finalTheta,
-      })
       animationId = requestAnimationFrame(animate)
     }
       animate()
@@ -199,7 +193,7 @@ export function GlobePulse({
           key={m.id}
           style={{
             position: "absolute",
-            // @ts-expect-error CSS Anchor Positioning
+            // @ts-ignore CSS Anchor Positioning
             positionAnchor: `--cobe-${m.id}`,
             bottom: "anchor(center)",
             left: "anchor(center)",
@@ -217,7 +211,7 @@ export function GlobePulse({
           onClick={(e) => {
             e.stopPropagation()
             const [lat, lng] = m.location
-            targetPhiRef.current = -lng * (Math.PI / 180) + Math.PI
+            targetPhiRef.current = -Math.PI / 2 - (lng * Math.PI / 180)
             targetThetaRef.current = lat * (Math.PI / 180)
             isAnimatingToTargetRef.current = true
             isPausedRef.current = false

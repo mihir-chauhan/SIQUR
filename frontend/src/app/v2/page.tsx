@@ -2,20 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 const AsciiSphere = dynamic(
   () => import("@/components/ui/ascii-sphere").then((m) => m.AsciiSphere),
-  { ssr: false }
-);
-
-const GlobePulse = dynamic(
-  () => import("@/components/ui/cobe-globe-pulse").then((m) => m.GlobePulse),
-  { ssr: false }
-);
-
-const LocationMap = dynamic(
-  () => import("@/components/ui/expand-map").then((m) => m.LocationMap),
   { ssr: false }
 );
 
@@ -29,19 +19,7 @@ const BOOT_DURATION = 2000;
 const BOOT_FLICKER_END = 2200;
 const TYPE_START = 2400;
 
-// Single Purdue marker
-const PURDUE_MARKERS = [
-  { id: "purdue", location: [40.4237, -86.9212] as [number, number], delay: 0 },
-];
-
-const LOCATION_DB: Record<string, { name: string; coordinates: string }> = {
-  purdue: {
-    name: "West Lafayette, IN // Purdue University",
-    coordinates: "40.4237° N, 86.9212° W",
-  },
-};
-
-type ViewState = "hero" | "transitioning" | "globe";
+type ViewState = "hero" | "transitioning";
 
 export default function V2Page() {
   // Boot
@@ -55,20 +33,11 @@ export default function V2Page() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scanRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const router = useRouter();
+
   // View state
   const [view, setView] = useState<ViewState>("hero");
   const [transitionPhase, setTransitionPhase] = useState(0);
-  // 0=idle, 1=text out, 2=ASCII zooms + globe fades in, 3=globe full, 4=HUD in
-
-  // Globe
-  const [globePaused, setGlobePaused] = useState(false);
-  const [focusLocation, setFocusLocation] = useState<[number, number] | null>(null);
-  const [activeTarget, setActiveTarget] = useState<{
-    id: string;
-    name: string;
-    coordinates: string;
-    location: [number, number];
-  } | null>(null);
 
   // ─── Boot sequence ─────────────────────────────────────────────────
   useEffect(() => {
@@ -136,49 +105,21 @@ export default function V2Page() {
     // Phase 1: text lifts out
     setTransitionPhase(1);
 
-    // Phase 2: ASCII zooms forward, globe fades in underneath
+    // Phase 2: ASCII zooms forward
     setTimeout(() => setTransitionPhase(2), 400);
 
-    // Phase 3: ASCII gone, globe at full size
-    setTimeout(() => setTransitionPhase(3), 1400);
-
-    // Phase 4: HUD elements appear, view switches to globe
+    // Phase 3: Route to globe explicitly
     setTimeout(() => {
-      setTransitionPhase(4);
-      setView("globe");
-    }, 1800);
-  }, [view]);
-
-  // ─── Globe marker click ────────────────────────────────────────────
-  const handleMarkerClick = useCallback(
-    (marker: { id: string; location: [number, number] }) => {
-      const data = LOCATION_DB[marker.id] || { name: "Unknown", coordinates: "N/A" };
-      setActiveTarget({ ...marker, ...data });
-      // Don't pause yet — let the animation run, it will pause after rotating
-    },
-    []
-  );
-
-  // Clicking anywhere on the globe selects Purdue and rotates to it
-  const handleGlobeClick = useCallback(() => {
-    if (activeTarget || view !== "globe") return;
-    const marker = PURDUE_MARKERS[0];
-    setFocusLocation(marker.location);
-    // Show the info panel after rotation finishes (~1.5s)
-    setTimeout(() => {
-      const data = LOCATION_DB[marker.id] || { name: "Unknown", coordinates: "N/A" };
-      setActiveTarget({ ...marker, ...data });
-      setGlobePaused(true);
-    }, 1500);
-  }, [activeTarget, view]);
+      setTransitionPhase(3);
+      router.push("/v2/globe");
+    }, 1400);
+  }, [view, router]);
 
   const titleText = TITLE.slice(0, displayedChars);
   const showCursor = displayedChars < TITLE.length && bootPhase === "ready";
   const isBooted = bootPhase === "ready" || bootPhase === "flickering";
 
   const showAscii = view === "hero" || (view === "transitioning" && transitionPhase < 3);
-  const showGlobe = transitionPhase >= 2;
-  const showHUD = transitionPhase >= 4;
   const showHeroText = view === "hero";
 
   return (
@@ -247,40 +188,7 @@ export default function V2Page() {
         />
       )}
 
-      {/* ═══ LAYER 1: Cobe globe (underneath ASCII, scales up) ═══ */}
-      {showGlobe && (
-        <div
-          onClick={handleGlobeClick}
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1,
-            opacity: transitionPhase >= 3 ? 1 : 0,
-            transition: "opacity 800ms ease",
-            cursor: view === "globe" && !activeTarget ? "pointer" : "default",
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "720px",
-              transform: transitionPhase >= 3 ? "scale(1)" : "scale(0.4)",
-              transition: "transform 1200ms cubic-bezier(0.16, 1, 0.3, 1)",
-              opacity: 0.85,
-            }}
-          >
-            <GlobePulse
-              markers={PURDUE_MARKERS}
-              onMarkerClick={handleMarkerClick}
-              paused={globePaused}
-              focusLocation={focusLocation}
-            />
-          </div>
-        </div>
-      )}
+
 
       {/* ═══ LAYER 2: Dark vignette (hero only) ═══ */}
       <div
@@ -384,8 +292,6 @@ export default function V2Page() {
             textTransform: "uppercase",
             transition: "opacity 800ms ease, color 200ms ease, border-color 200ms ease",
             opacity: buttonVisible ? 1 : 0,
-            pointerEvents: buttonVisible ? "auto" : "none",
-            outline: "none",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.color = "rgba(255,255,255,0.6)";
@@ -400,127 +306,8 @@ export default function V2Page() {
         </button>
       </div>
 
-      {/* ═══ LAYER 4: Globe HUD overlay ═══ */}
-      {showHUD && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 10,
-            pointerEvents: "none",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            padding: "32px",
-          }}
-        >
-          {/* Top bar */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}
-          >
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <span
-                style={{
-                  color: "#33ccaa",
-                  fontFamily: "var(--font-space-mono), monospace",
-                  fontSize: "12px",
-                  letterSpacing: "0.3em",
-                  fontWeight: 500,
-                }}
-              >
-                GLOBAL_OVERSEER v2.4
-              </span>
-              <span
-                style={{
-                  color: "#555",
-                  fontFamily: "var(--font-space-mono), monospace",
-                  fontSize: "10px",
-                  letterSpacing: "0.2em",
-                  marginTop: "4px",
-                }}
-              >
-                AWAITING TARGET SELECTION...
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "#10b981",
-                  boxShadow: "0 0 10px rgba(16,185,129,0.8)",
-                  animation: "pulse 2s ease-in-out infinite",
-                }}
-              />
-              <span
-                style={{
-                  color: "#666",
-                  fontFamily: "var(--font-space-mono), monospace",
-                  fontSize: "10px",
-                  letterSpacing: "0.2em",
-                }}
-              >
-                SAT-LINK ONLINE
-              </span>
-            </div>
-          </motion.div>
 
-          {/* Location panel */}
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              transform: "translateY(-50%)",
-              left: "64px",
-              pointerEvents: "auto",
-            }}
-          >
-            <AnimatePresence mode="wait">
-              {activeTarget && (
-                <motion.div
-                  key={activeTarget.id}
-                  initial={{ opacity: 0, x: -50, scale: 0.9 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -20, scale: 0.95 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  style={{
-                    boxShadow: "0 25px 50px rgba(16,185,129,0.15)",
-                    borderRadius: "16px",
-                  }}
-                >
-                  <LocationMap
-                    location={activeTarget.name}
-                    coordinates={activeTarget.coordinates}
-                    onClose={() => {
-                      setActiveTarget(null);
-                      setGlobePaused(false);
-                    }}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      )}
 
-      {/* Background glow for globe view */}
-      {showGlobe && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "radial-gradient(ellipse at center, rgba(16,185,129,0.04) 0%, black 70%)",
-            pointerEvents: "none",
-            zIndex: 0,
-            opacity: transitionPhase >= 3 ? 1 : 0,
-            transition: "opacity 1000ms ease",
-          }}
-        />
-      )}
     </div>
   );
 }

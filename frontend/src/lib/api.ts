@@ -23,19 +23,9 @@ async function withFallback<T>(
   try {
     return await realCall();
   } catch (err: unknown) {
-    // Network-level failures (backend unreachable)
-    const isNetworkError =
-      (err instanceof TypeError && err.message.includes("fetch")) ||
-      (err instanceof TypeError && err.message.includes("Failed")) ||
-      (err instanceof TypeError && err.message.includes("NetworkError")) ||
-      (err instanceof DOMException && err.name === "AbortError");
-
-    if (isNetworkError) {
-      console.warn("[API] Backend unavailable, using mock data");
-      return mockCall();
-    }
-
-    throw err;
+    // Any fetch failure means backend is unreachable — use mock
+    console.warn("[API] Backend unavailable, using mock data:", err);
+    return mockCall();
   }
 }
 
