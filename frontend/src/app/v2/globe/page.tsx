@@ -116,14 +116,14 @@ export default function GlobePage() {
                   onClick={() => handleMarkerClick(m)}
                   style={{ 
                     cursor: m.id === "hall-ds-ai" ? "pointer" : "not-allowed",
-                    opacity: m.id === "hall-ds-ai" ? 1 : 0.4,
+                    opacity: 1,
                     transition: "all 0.2s ease"
                   }}
                 >
-                  <div style={{ color: m.id === "hall-ds-ai" ? "#00e5ff" : "#666", fontSize: "9px", fontFamily: "var(--font-space-mono), monospace" }}>
+                  <div style={{ color: "#00e5ff", fontSize: "9px", fontFamily: "var(--font-space-mono), monospace" }}>
                     ID: {m.id.toUpperCase()}
                   </div>
-                  <div style={{ color: "#444", fontSize: "8px", fontFamily: "var(--font-space-mono), monospace" }}>
+                  <div style={{ color: "rgba(0, 229, 255, 0.6)", fontSize: "8px", fontFamily: "var(--font-space-mono), monospace" }}>
                     {m.location[0].toFixed(4)}N, {Math.abs(m.location[1]).toFixed(4)}W
                   </div>
                 </div>
