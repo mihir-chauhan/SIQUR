@@ -394,123 +394,34 @@ export default function BuildingView() {
             gap: "12px",
           }}
         >
-          {/* Camera budget card */}
-          <div
-            className="glow-cyan-box"
+          {/* Train camera models button */}
+          <button
+            onClick={() => { window.location.href = "/v2/training"; }}
             style={{
-              position: "relative",
-              backgroundColor: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: "11px",
+              letterSpacing: "0.2em",
+              color: "#00e5ff",
+              background: "rgba(0, 229, 255, 0.08)",
+              border: "1px solid rgba(0, 229, 255, 0.3)",
               borderRadius: "4px",
-              padding: "20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              padding: "14px",
+              cursor: "pointer",
+              transition: "all 200ms ease",
+              width: "100%",
+              textTransform: "uppercase" as const,
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(0, 229, 255, 0.15)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0, 229, 255, 0.6)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(0, 229, 255, 0.08)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0, 229, 255, 0.3)";
             }}
           >
-            <HudCorners />
-
-            <label
-              htmlFor="camera-budget"
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: "9px",
-                letterSpacing: "0.35em",
-                color: "var(--color-accent-cyan)",
-                textTransform: "uppercase",
-              }}
-            >
-              CAMERA BUDGET
-            </label>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <input
-                id="camera-budget"
-                ref={inputRef}
-                type="number"
-                min={1}
-                max={50}
-                value={cameraCount}
-                onChange={e =>
-                  setCameraCount(
-                    Math.min(50, Math.max(1, parseInt(e.target.value, 10) || 1))
-                  )
-                }
-                disabled={placing}
-                style={{
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: "1.6rem",
-                  fontWeight: 700,
-                  color: "var(--color-accent-cyan)",
-                  background: "rgba(0,229,255,0.04)",
-                  border: "1px solid rgba(0,229,255,0.3)",
-                  borderRadius: "3px",
-                  padding: "10px 12px",
-                  width: "100%",
-                  outline: "none",
-                  textAlign: "center",
-                  letterSpacing: "0.1em",
-                }}
-              />
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: "9px",
-                  color: "var(--color-text-dim)",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                <span>MIN: 1</span>
-                <span>MAX: 50</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleDeploy}
-              disabled={placing}
-              className="glow-cyan-box"
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: "11px",
-                letterSpacing: "0.25em",
-                color: placing ? "var(--color-text-dim)" : "var(--color-accent-cyan)",
-                background: placing
-                  ? "rgba(0,229,255,0.03)"
-                  : "rgba(0,229,255,0.07)",
-                border: placing
-                  ? "1px solid rgba(0,229,255,0.1)"
-                  : "1px solid rgba(0,229,255,0.35)",
-                borderRadius: "3px",
-                padding: "12px 16px",
-                cursor: placing ? "not-allowed" : "pointer",
-                transition: "all 200ms cubic-bezier(0.16, 1, 0.3, 1)",
-                width: "100%",
-                textTransform: "uppercase" as const,
-              }}
-              onMouseEnter={e => {
-                if (!placing) {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.14)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.6)";
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 16px rgba(0,229,255,0.2)";
-                }
-              }}
-              onMouseLeave={e => {
-                if (!placing) {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.07)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.35)";
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 1px rgba(0,229,255,0.25), 0 0 16px rgba(0,229,255,0.10)";
-                }
-              }}
-            >
-              {placing ? (
-                <span className="hud-pulse">OPTIMIZING PLACEMENT...</span>
-              ) : (
-                "DEPLOY CAMERAS"
-              )}
-            </button>
-          </div>
+            TRAIN CAMERA MODELS
+          </button>
 
           {/* Post-placement info card */}
           <AnimatePresence>

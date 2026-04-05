@@ -34,8 +34,334 @@ const DEFAULT_LAYERS: Layer[] = [
   { id: "cam_h4", name: "Camera 4", type: "camera", visible: true },
 ];
 
+/* ── Surveillance Configuration Screen ── */
+const PRIORITY_ZONE_OPTIONS = [
+  "Main Entrances",
+  "Emergency Exits",
+  "Hallways",
+  "Server/Data Rooms",
+  "Stairwells",
+] as const;
+
+function ConfigScreen({
+  onSubmit,
+}: {
+  onSubmit: (config: {
+    cameraCount: number;
+    coverageTarget: number;
+    priorityZones: string[];
+    overlapReq: number;
+  }) => void;
+}) {
+  const [cameraCount, setCameraCount] = useState(4);
+  const [coverageTarget, setCoverageTarget] = useState(85);
+  const [priorityZones, setPriorityZones] = useState<string[]>([
+    "Main Entrances",
+    "Hallways",
+  ]);
+  const [overlapReq, setOverlapReq] = useState(15);
+
+  const toggleZone = (zone: string) => {
+    setPriorityZones((prev) =>
+      prev.includes(zone) ? prev.filter((z) => z !== zone) : [...prev, zone]
+    );
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontFamily: "var(--font-space-mono, monospace)",
+    fontSize: "10px",
+    fontWeight: 700,
+    letterSpacing: "0.3em",
+    color: "rgba(0, 229, 255, 0.6)",
+    textTransform: "uppercase",
+    marginBottom: "8px",
+    display: "block",
+  };
+
+  const sectionStyle: React.CSSProperties = {
+    marginBottom: "28px",
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        background: "radial-gradient(ellipse at 50% 30%, #0f1923 0%, #0a0e14 70%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "var(--font-space-mono, monospace)",
+      }}
+    >
+      {/* Scan lines overlay */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.015) 2px, rgba(0, 229, 255, 0.015) 4px)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: "580px",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          padding: "48px 40px 36px",
+          border: "1px solid rgba(0, 229, 255, 0.15)",
+          borderRadius: "2px",
+          background: "rgba(10, 14, 20, 0.95)",
+          boxShadow:
+            "0 0 60px rgba(0, 229, 255, 0.06), inset 0 0 60px rgba(0, 229, 255, 0.02)",
+        }}
+      >
+        {/* Corner accents */}
+        {[
+          { top: -1, left: -1 },
+          { top: -1, right: -1 },
+          { bottom: -1, left: -1 },
+          { bottom: -1, right: -1 },
+        ].map((pos, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              width: "12px",
+              height: "12px",
+              borderColor: "rgba(0, 229, 255, 0.4)",
+              borderStyle: "solid",
+              borderWidth: 0,
+              ...(pos.top !== undefined && { top: pos.top, borderTopWidth: "1px" }),
+              ...(pos.bottom !== undefined && { bottom: pos.bottom, borderBottomWidth: "1px" }),
+              ...(pos.left !== undefined && { left: pos.left, borderLeftWidth: "1px" }),
+              ...(pos.right !== undefined && { right: pos.right, borderRightWidth: "1px" }),
+            } as React.CSSProperties}
+          />
+        ))}
+
+        {/* Title */}
+        <div style={{ textAlign: "center", marginBottom: "36px" }}>
+          <h1
+            style={{
+              fontFamily: "var(--font-space-mono, monospace)",
+              fontSize: "16px",
+              fontWeight: 700,
+              letterSpacing: "0.3em",
+              color: "#00e5ff",
+              margin: 0,
+              textTransform: "uppercase",
+              textShadow: "0 0 20px rgba(0, 229, 255, 0.3)",
+            }}
+          >
+            SURVEILLANCE CONFIGURATION
+          </h1>
+          <p
+            style={{
+              fontFamily: "var(--font-space-mono, monospace)",
+              fontSize: "10px",
+              letterSpacing: "0.25em",
+              color: "rgba(255, 255, 255, 0.25)",
+              margin: "8px 0 0",
+              textTransform: "uppercase",
+            }}
+          >
+            CONFIGURE PLACEMENT PARAMETERS
+          </p>
+        </div>
+
+        {/* Camera Count */}
+        <div style={sectionStyle}>
+          <label style={labelStyle}>CAMERA UNITS</label>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <input
+              type="range"
+              min={1}
+              max={12}
+              value={cameraCount}
+              onChange={(e) => setCameraCount(Number(e.target.value))}
+              style={{
+                flex: 1,
+                accentColor: "#00e5ff",
+                height: "2px",
+                cursor: "pointer",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-space-mono, monospace)",
+                fontSize: "20px",
+                fontWeight: 700,
+                color: "#00e5ff",
+                minWidth: "32px",
+                textAlign: "right",
+              }}
+            >
+              {cameraCount}
+            </span>
+          </div>
+        </div>
+
+        {/* Coverage Target */}
+        <div style={sectionStyle}>
+          <label style={labelStyle}>COVERAGE TARGET</label>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <input
+              type="range"
+              min={50}
+              max={100}
+              value={coverageTarget}
+              onChange={(e) => setCoverageTarget(Number(e.target.value))}
+              style={{
+                flex: 1,
+                accentColor: "#00e5ff",
+                height: "2px",
+                cursor: "pointer",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-space-mono, monospace)",
+                fontSize: "20px",
+                fontWeight: 700,
+                color: "#00e5ff",
+                minWidth: "48px",
+                textAlign: "right",
+              }}
+            >
+              {coverageTarget}%
+            </span>
+          </div>
+        </div>
+
+        {/* Priority Zones */}
+        <div style={sectionStyle}>
+          <label style={labelStyle}>PRIORITY ZONES</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            {PRIORITY_ZONE_OPTIONS.map((zone) => {
+              const active = priorityZones.includes(zone);
+              return (
+                <button
+                  key={zone}
+                  onClick={() => toggleZone(zone)}
+                  style={{
+                    fontFamily: "var(--font-space-mono, monospace)",
+                    fontSize: "10px",
+                    letterSpacing: "0.15em",
+                    textTransform: "uppercase",
+                    padding: "8px 14px",
+                    border: active
+                      ? "1px solid rgba(0, 229, 255, 0.6)"
+                      : "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "2px",
+                    background: active
+                      ? "rgba(0, 229, 255, 0.1)"
+                      : "rgba(255, 255, 255, 0.03)",
+                    color: active ? "#00e5ff" : "rgba(255, 255, 255, 0.4)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {active ? "\u25A0 " : "\u25A1 "}
+                  {zone}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Overlap Requirement */}
+        <div style={sectionStyle}>
+          <label style={labelStyle}>CAMERA OVERLAP</label>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <input
+              type="range"
+              min={0}
+              max={40}
+              value={overlapReq}
+              onChange={(e) => setOverlapReq(Number(e.target.value))}
+              style={{
+                flex: 1,
+                accentColor: "#00e5ff",
+                height: "2px",
+                cursor: "pointer",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-space-mono, monospace)",
+                fontSize: "20px",
+                fontWeight: 700,
+                color: "#00e5ff",
+                minWidth: "48px",
+                textAlign: "right",
+              }}
+            >
+              {overlapReq}%
+            </span>
+          </div>
+        </div>
+
+        {/* Submit */}
+        <button
+          onClick={() =>
+            onSubmit({
+              cameraCount,
+              coverageTarget,
+              priorityZones,
+              overlapReq,
+            })
+          }
+          style={{
+            width: "100%",
+            fontFamily: "var(--font-space-mono, monospace)",
+            fontSize: "13px",
+            fontWeight: 700,
+            letterSpacing: "0.25em",
+            textTransform: "uppercase",
+            padding: "16px 0",
+            marginTop: "8px",
+            border: "1px solid rgba(0, 229, 255, 0.5)",
+            borderRadius: "2px",
+            background: "rgba(0, 229, 255, 0.08)",
+            color: "#00e5ff",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+            textShadow: "0 0 12px rgba(0, 229, 255, 0.4)",
+            boxShadow: "0 0 30px rgba(0, 229, 255, 0.08)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(0, 229, 255, 0.15)";
+            e.currentTarget.style.boxShadow = "0 0 40px rgba(0, 229, 255, 0.15)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(0, 229, 255, 0.08)";
+            e.currentTarget.style.boxShadow = "0 0 30px rgba(0, 229, 255, 0.08)";
+          }}
+        >
+          &#9654; INITIALIZE PLACEMENT
+        </button>
+      </div>
+
+      {/* Custom scrollbar styling */}
+      <style>{`
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.2); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 229, 255, 0.4); }
+      `}</style>
+    </div>
+  );
+}
+
 export default function BuildingPage() {
   const router = useRouter();
+  const [configDone, setConfigDone] = useState(false);
   const [layers, setLayers] = useState<Layer[]>(DEFAULT_LAYERS);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [placementMode, setPlacementMode] = useState(false);
@@ -375,6 +701,16 @@ export default function BuildingPage() {
     ? scales[selectedLayerId] ?? { x: 1, y: 1, z: 1 }
     : { x: 1, y: 1, z: 1 };
 
+  if (!configDone) {
+    return (
+      <ConfigScreen
+        onSubmit={() => {
+          setConfigDone(true);
+        }}
+      />
+    );
+  }
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -420,6 +756,35 @@ export default function BuildingPage() {
             }
           }}
         />
+
+        {/* Building name header */}
+        <div style={{
+          position: "absolute",
+          top: 16,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 20,
+          textAlign: "center",
+          pointerEvents: "none",
+        }}>
+          <span style={{
+            color: "#33ccaa",
+            fontFamily: "var(--font-space-mono, monospace)",
+            fontSize: "12px",
+            letterSpacing: "0.3em",
+          }}>
+            HALL OF DATA SCIENCE AND AI
+          </span>
+          <br />
+          <span style={{
+            color: "#555",
+            fontFamily: "var(--font-space-mono, monospace)",
+            fontSize: "10px",
+            letterSpacing: "0.2em",
+          }}>
+            INTERIOR SCAN // 3D RECONSTRUCTION
+          </span>
+        </div>
 
         {/* Mode switcher (far left) */}
         <ModeSidebar onTransitionStart={() => setModeTransition(true)} />
@@ -569,6 +934,83 @@ export default function BuildingPage() {
               onToggleCone={selectedLayerId ? (v) => handleToggleCone(selectedLayerId, v) : undefined}
               onSave={selectedLayerId && layers.find((l) => l.id === selectedLayerId)?.type === "camera" ? handleSave : undefined}
             />
+          </div>
+
+          {/* Deployment Analytics — hidden until splats finish loading */}
+          <div style={{ display: sceneReady ? "block" : "none", padding: "16px", borderBottom: "1px solid rgba(0, 229, 255, 0.08)" }}>
+            <div style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: "9px",
+              fontWeight: 700,
+              letterSpacing: "0.3em",
+              color: "rgba(0, 229, 255, 0.5)",
+              marginBottom: "12px",
+            }}>
+              DEPLOYMENT ANALYTICS
+            </div>
+
+            {/* Sector Coverage */}
+            <div style={{ marginBottom: "10px" }}>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", letterSpacing: "0.2em", color: "rgba(0, 229, 255, 0.4)", textTransform: "uppercase", marginBottom: "4px" }}>
+                Sector Coverage
+              </div>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "20px", fontWeight: 700, color: "#00e5ff", lineHeight: 1 }}>
+                87.4%
+              </div>
+              <div style={{ marginTop: "4px", height: "2px", background: "rgba(0, 229, 255, 0.1)", borderRadius: "1px", overflow: "hidden" }}>
+                <div style={{ width: "87.4%", height: "100%", background: "#00e5ff", borderRadius: "1px" }} />
+              </div>
+            </div>
+
+            {/* Cameras Active */}
+            <div style={{ padding: "8px 0", borderTop: "1px solid rgba(0, 229, 255, 0.08)" }}>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", letterSpacing: "0.2em", color: "rgba(0, 229, 255, 0.4)", textTransform: "uppercase", marginBottom: "4px" }}>
+                Cameras Active
+              </div>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "14px", fontWeight: 600, color: "#e0e0e0" }}>
+                4 / 4
+              </div>
+            </div>
+
+            {/* Blind Spots */}
+            <div style={{ padding: "8px 0", borderTop: "1px solid rgba(0, 229, 255, 0.08)" }}>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", letterSpacing: "0.2em", color: "rgba(0, 229, 255, 0.4)", textTransform: "uppercase", marginBottom: "4px" }}>
+                Blind Spots
+              </div>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "14px", fontWeight: 600, color: "#f59e0b" }}>
+                2 detected
+              </div>
+            </div>
+
+            {/* Dead Zone Ratio */}
+            <div style={{ padding: "8px 0", borderTop: "1px solid rgba(0, 229, 255, 0.08)" }}>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", letterSpacing: "0.2em", color: "rgba(0, 229, 255, 0.4)", textTransform: "uppercase", marginBottom: "4px" }}>
+                Dead Zone Ratio
+              </div>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "14px", fontWeight: 600, color: "#10b981" }}>
+                3.1%
+              </div>
+            </div>
+
+            {/* Priority Zones */}
+            <div style={{ padding: "8px 0", borderTop: "1px solid rgba(0, 229, 255, 0.08)" }}>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", letterSpacing: "0.2em", color: "rgba(0, 229, 255, 0.4)", textTransform: "uppercase", marginBottom: "4px" }}>
+                Priority Zones
+              </div>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "14px", fontWeight: 600, color: "#e0e0e0" }}>
+                3 / 5 secured
+              </div>
+            </div>
+
+            {/* Overlap Index */}
+            <div style={{ padding: "8px 0", borderTop: "1px solid rgba(0, 229, 255, 0.08)" }}>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", letterSpacing: "0.2em", color: "rgba(0, 229, 255, 0.4)", textTransform: "uppercase", marginBottom: "4px" }}>
+                Overlap Index
+              </div>
+              <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "14px", fontWeight: 600, color: "#e0e0e0" }}>
+                18.2%
+              </div>
+            </div>
           </div>
 
           {/* Floor plan + budget — hidden until splats finish loading */}

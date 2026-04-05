@@ -151,7 +151,7 @@ export const PRELOADED_BUILDINGS: Building[] = [
   },
   {
     id: "purdue-armstrong",
-    name: "Armstrong Hall",
+    name: "Hall of Data Science and AI",
     lat: 40.4268,
     lng: -86.9145,
     footprint_polygon: [
