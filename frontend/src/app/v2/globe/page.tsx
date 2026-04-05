@@ -146,7 +146,7 @@ export default function GlobePage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div style={{ width: "350px", background: "rgba(0,0,0,0.5)", padding: "12px", border: "1px solid rgba(0, 229, 255, 0.1)", backdropFilter: "blur(4px)" }}>
             <div style={{ color: "#00e5ff", fontSize: "8px", fontFamily: "var(--font-space-mono), monospace", marginBottom: "6px" }}>NEURAL_CAMERA_PLANNER_LOG</div>
-            <div style={{ height: "40px", overflow: "hidden", fontSize: "8px", fontFamily: "var(--font-space-mono), monospace", color: "#444", display: "flex", flexDirection: "column", gap: "2px" }}>
+            <div style={{ fontSize: "8px", fontFamily: "var(--font-space-mono), monospace", color: "#444", display: "flex", flexDirection: "column", gap: "2px" }}>
               <div>[OK] ANALYZING SECTOR_7_INFRASTRUCTURE</div>
               <div>[OK] GENETIC_ALGORITHM: GENERATION_242_COMPLETE</div>
               <div>[WARN] DEAD_ZONE_DETECTED: WEST_WING_HALLWAY</div>
