@@ -9,7 +9,7 @@ const AsciiSphere = dynamic(
   { ssr: false }
 );
 
-const TITLE = "Siqor";
+const TITLE = "SIQUR";
 const SLOGAN = "See everything. Miss nothing.";
 const TYPE_SPEED = 150;
 const SLOGAN_DELAY = 400;
@@ -238,7 +238,9 @@ export default function V2Page() {
             minHeight: "1.1em",
           }}
         >
-          {titleText}
+          {titleText.split("").map((char, i) => (
+            <span key={i} style={{ color: char === "I" || char === "Q" ? "#00e5ff" : "#fff" }}>{char}</span>
+          ))}
           <span
             style={{
               opacity: showCursor ? 1 : 0,

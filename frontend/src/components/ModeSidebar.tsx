@@ -18,15 +18,17 @@ export default function ModeSidebar({ onTransitionStart }: ModeSidebarProps) {
   const pathname = usePathname();
 
   const isWatchman = pathname === "/v2/watchman";
-  const isPlacement = !isWatchman;
+  const isEvaluate = pathname === "/v2/evaluate";
+  const isPlacement = !isWatchman && !isEvaluate;
 
-  const handleSwitch = (target: "placement" | "watchman") => {
+  const handleSwitch = (target: "placement" | "watchman" | "evaluate") => {
     if (target === "placement" && !isPlacement) {
       router.push("/building");
     } else if (target === "watchman" && !isWatchman) {
       if (onTransitionStart) onTransitionStart();
-      // Small delay so transition animation shows before route change
       setTimeout(() => router.push("/v2/watchman"), 600);
+    } else if (target === "evaluate" && !isEvaluate) {
+      router.push("/v2/evaluate");
     }
   };
 
@@ -92,6 +94,48 @@ export default function ModeSidebar({ onTransitionStart }: ModeSidebarProps) {
       {/* Divider */}
       <div style={{ width: 20, height: 1, backgroundColor: "rgba(255,255,255,0.06)" }} />
 
+      {/* Evaluate mode icon */}
+      <button
+        onClick={() => handleSwitch("evaluate")}
+        title="Evaluate"
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: isEvaluate ? 8 : 18,
+          border: "none",
+          background: isEvaluate
+            ? "rgba(251, 191, 36, 0.15)"
+            : "rgba(255, 255, 255, 0.04)",
+          cursor: isEvaluate ? "default" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s ease",
+          position: "relative",
+        }}
+      >
+        {isEvaluate && (
+          <div
+            style={{
+              position: "absolute",
+              left: -10,
+              width: 3,
+              height: 20,
+              borderRadius: 2,
+              backgroundColor: "#fbbf24",
+            }}
+          />
+        )}
+        {/* Shield/check icon */}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isEvaluate ? "#fbbf24" : "rgba(255,255,255,0.35)"} strokeWidth="1.5">
+          <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      </button>
+
+      {/* Divider */}
+      <div style={{ width: 20, height: 1, backgroundColor: "rgba(255,255,255,0.06)" }} />
+
       {/* Watchman mode icon */}
       <button
         onClick={() => handleSwitch("watchman")}
@@ -112,7 +156,6 @@ export default function ModeSidebar({ onTransitionStart }: ModeSidebarProps) {
           position: "relative",
         }}
       >
-        {/* Active indicator bar */}
         {isWatchman && (
           <div
             style={{
@@ -125,7 +168,6 @@ export default function ModeSidebar({ onTransitionStart }: ModeSidebarProps) {
             }}
           />
         )}
-        {/* Eye/path icon */}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isWatchman ? "#10b981" : "rgba(255,255,255,0.35)"} strokeWidth="1.5">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
           <circle cx="12" cy="12" r="3" />

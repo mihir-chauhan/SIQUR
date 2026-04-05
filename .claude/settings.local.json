@@ -39,7 +39,13 @@
       "Bash(kill -9 35272)",
       "Bash(curl -s http://127.0.0.1:8001/health)",
       "Bash(kill 60799)",
-      "Bash(tee /tmp/dataset_gen.log)"
+      "Bash(tee /tmp/dataset_gen.log)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(mkdir -p /home/mihir/Data/MinorityReport/frontend/public/videos)",
+      "Bash(ln -sf \"$\\(pwd\\)/Watchman/test_footage/intruder_breakin.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_0.mp4)",
+      "Bash(ln -sf \"$\\(pwd\\)/SyntheticDataset/outputs/cam3-2__night_theft.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_1.mp4)",
+      "Bash(ln -sf \"$\\(pwd\\)/SyntheticDataset/outputs/cam2-2__daylight_theft.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_2.mp4)",
+      "Bash(ln -sf \"$\\(pwd\\)/SyntheticDataset/outputs/cam3-2__overcast_disturbance.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_3.mp4)"
     ]
   },
   "disabledMcpjsonServers": [
