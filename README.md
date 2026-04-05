@@ -110,38 +110,91 @@ SIQUR utilizes a modular architecture that connects a modern web frontend with s
 * **AI Training Module:** Ingests the synthetic data to train bespoke, per-camera classification models. This ensures the neural networks are highly specialized to the unique lighting, angle, and depth of their specific deployment locations.
 * **Simulation & Inference Engine:** Feeds prompt-driven synthetic security scenarios (e.g., intrusions, fights) into the trained models. It processes the feeds in real time, classifies threats, and returns the actionable telemetry back to the frontend dashboard for user review.
 
-## Running Locally
-
-```bash
-# Frontend
+### Running Locally
+Frontend
 cd frontend
 npm install
 npm run dev
-# http://localhost:3000
 
-# Backend (camera placement + AI)
-cd backend
-pip install -r requirements.txt
-# See individual backend module READMEs
-```
+By default, the frontend runs at:
 
-## Project Structure
+[http://localhost:**3000**](http://localhost:**3000**) Backend cd backend pip install -r requirements.txt
 
-```
-SIQUR/
-  frontend/           Next.js app
-    src/app/           Pages (v2/globe, building, v2/training, v2/evaluate)
-    src/components/    SceneView, CameraView, BuildingView, MapboxGlobe
-    public/splats/     Gaussian splat files (.spz)
-    public/models/     OBJ/MTL interior meshes + textures
-  backend/
-    CameraPlacementAlgorithm/   OR Tools optimizer
-    SyntheticDataset/           Training data generation
-    bespoke-camera-ai/          Per camera model training
-    Watchman/                   Real time inference engine
-    MetaSAM/                    Segmentation pipeline
-```
+Some backend modules may have their own setup steps, dependencies, or runtime instructions. Check the local **README** or module documentation inside each backend folder for service-specific details.
 
-## Team
+### Repository Structure
+**SIQUR**/
+    frontend/                         # Next.js application
+    src/app/                        # Route-based pages
+    v2/globe/                     # Satellite globe building selection
+    building/                     # Building configuration + 3D view
+    v2/training/                  # Training workflow
+    v2/evaluate/                  # Evaluation workflow
+    src/components/                 # Reusable UI and visualization components
+    SceneView/
+    CameraView/
+    BuildingView/
+    MapboxGlobe/
+    public/splats/                  # Gaussian splat assets (.spz)
+    public/models/                  # **OBJ**/**MTL** interior meshes and textures
 
-Team Catapult, Purdue University
+    backend/
+    CameraPlacementAlgorithm/       # OR-Tools optimization pipeline
+    SyntheticDataset/               # Synthetic data generation pipeline
+    bespoke-camera-ai/              # Per-camera training system
+    Watchman/                       # Real-time inference engine
+    MetaSAM/                        # Segmentation pipeline
+    
+
+
+### Backend Modules
+
+CameraPlacementAlgorithm/
+
+This module handles camera placement optimization. Given building geometry, placement constraints, and coverage goals, it uses Google OR-Tools to search for strong camera configurations.
+
+SyntheticDataset/
+
+This module generates synthetic surveillance data from each camera’s viewpoint. It is responsible for producing training-ready scenes that reflect camera-specific perspective and scenario variation.
+
+bespoke-camera-ai/
+
+This module trains neural networks tailored to individual camera feeds. It is the core of the per-camera intelligence pipeline.
+
+Watchman/
+
+This module acts as the inference and evaluation engine. It runs trained models against simulated or generated scenarios and returns threat classifications across feeds.
+
+MetaSAM/
+
+This module supports segmentation and scene-aware processing. It helps provide more structured visual understanding during analysis and model workflows.
+
+### Key Design Ideas
+
+## Surveillance should be validated before deployment
+
+The platform is built around simulation-first thinking. Instead of deploying cameras and hoping for good results, **SIQUR** helps test camera networks ahead of time.
+
+## Different cameras need different intelligence
+
+A camera in a lobby and a camera in a hallway do not observe the same patterns. Per-camera model training allows the AI layer to reflect those differences.
+
+## Spatial context matters
+
+Coverage quality is not only about the number of cameras. It is about where they are placed, what they can see, and how their fields of view overlap or leave gaps.
+
+## System-wide performance matters more than single-feed performance
+
+A surveillance network should be judged as a complete system. **SIQUR** evaluates scenarios across all feeds simultaneously to reveal coordinated behavior, blind spots, and network-level weaknesses.
+
+### Current Scope
+
+**SIQUR** is currently structured as a research/prototype platform that demonstrates an end-to-end surveillance optimization workflow spanning placement, synthetic training, and evaluation. Its current value is in showing how these parts can be integrated into a unified system for smarter pre-deployment decision-making.
+
+The platform is especially well suited for:
+
+research demonstrations prototype security planning workflows computer vision experimentation AI-assisted camera network evaluation synthetic data and per-camera model studies Team
+
+### Team Catapult
+
+### Purdue University
