@@ -3,19 +3,37 @@
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { getPlacedCameras } from "@/lib/session";
+import ModeSidebar from "@/components/ModeSidebar";
 
 const SceneView = dynamic(
   () => import("@/components/SceneView").then((m) => m.default),
   { ssr: false }
 );
 
+const CameraView = dynamic(
+  () => import("@/components/CameraView").then((m) => m.default),
+  { ssr: false }
+);
+
 export default function V2BuildingPage() {
   const router = useRouter();
   const [placementMode, setPlacementMode] = useState(false);
+  const [activeCameraId, setActiveCameraId] = useState<string | null>(null);
+
+  const cameras = typeof window !== "undefined" ? getPlacedCameras() : [];
 
   const handleCameraClicked = useCallback((cameraId: string) => {
-    router.push(`/v2/camera/${cameraId}`);
-  }, [router]);
+    setActiveCameraId(cameraId);
+  }, []);
+
+  const handleSwitchCamera = useCallback((cameraId: string) => {
+    setActiveCameraId(cameraId);
+  }, []);
+
+  const handleCloseCamera = useCallback(() => {
+    setActiveCameraId(null);
+  }, []);
 
   return (
     <div style={{
@@ -24,13 +42,15 @@ export default function V2BuildingPage() {
       background: "#000",
       zIndex: 10000,
     }}>
+      <ModeSidebar />
+
       {/* Back button */}
       <button
         onClick={() => router.push("/v2/globe")}
         style={{
           position: "absolute",
           top: 24,
-          left: 24,
+          left: 64,
           zIndex: 100,
           padding: "8px 16px",
           background: "rgba(10, 10, 10, 0.8)",
@@ -105,6 +125,19 @@ export default function V2BuildingPage() {
         splatVisible={true}
         onCameraClicked={handleCameraClicked}
       />
+
+      {/* Camera feed overlay — rendered on top of the world model */}
+      {activeCameraId && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 200 }}>
+          <CameraView
+            cameraId={activeCameraId}
+            cameras={cameras}
+            building={null}
+            onSwitchCamera={handleSwitchCamera}
+            onClose={handleCloseCamera}
+          />
+        </div>
+      )}
     </div>
   );
 }

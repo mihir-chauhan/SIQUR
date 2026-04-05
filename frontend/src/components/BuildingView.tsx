@@ -510,6 +510,7 @@ export default function BuildingView() {
               </motion.div>
             )}
           </AnimatePresence>
+
         </div>
       </div>
 

@@ -48,7 +48,12 @@
       "Bash(ln -sf \"$\\(pwd\\)/SyntheticDataset/outputs/cam3-2__overcast_disturbance.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_3.mp4)",
       "mcp__playwright__browser_navigate",
       "mcp__playwright__browser_take_screenshot",
-      "mcp__playwright__browser_evaluate"
+      "mcp__playwright__browser_evaluate",
+      "Bash(ln -sf __TRACKED_VAR__/camera-screenshots/cam1_screenshot.png /home/mihir/Data/MinorityReport/frontend/public/camera-screenshots/cam_h1.png)",
+      "Bash(ln -sf __TRACKED_VAR__/camera-screenshots/cam2_screenshot.png /home/mihir/Data/MinorityReport/frontend/public/camera-screenshots/cam_h2.png)",
+      "Bash(ln -sf __TRACKED_VAR__/camera-screenshots/cam3_screenshot.png /home/mihir/Data/MinorityReport/frontend/public/camera-screenshots/cam_h3.png)",
+      "Bash(ln -sf __TRACKED_VAR__/camera-screenshots/cam4_screenshot.png /home/mihir/Data/MinorityReport/frontend/public/camera-screenshots/cam_h4.png)",
+      "Bash(ln -sf __TRACKED_VAR__/scans/4_4_2026-2/textures/4868cfa4d570620552596d41d0795f82.jpg /home/mihir/Data/MinorityReport/frontend/public/models/interior/textures/4868cfa4d570620552596d41d0795f82.jpg)"
     ]
   },
   "disabledMcpjsonServers": [

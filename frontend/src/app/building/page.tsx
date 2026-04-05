@@ -10,11 +10,15 @@ import LayersSidebar from "../../components/LayersSidebar";
 import type { Layer } from "../../components/LayersSidebar";
 import PropertiesPanel from "../../components/PropertiesPanel";
 import type { SceneObjects, CameraPlacement, SceneHandle } from "../../components/SceneView";
-import { getPlacedCameras, setPlacedCameras } from "../../lib/session";
+import { getPlacedCameras, setPlacedCameras, setSelectedBuilding, setSessionId, getSessionId } from "../../lib/session";
 import type { Camera } from "../../lib/types";
 import type { Mesh, Object3D } from "three";
 
 const SceneView = dynamic(() => import("../../components/SceneView"), {
+  ssr: false,
+});
+
+const CameraView = dynamic(() => import("../../components/CameraView"), {
   ssr: false,
 });
 
@@ -370,6 +374,7 @@ export default function BuildingPage() {
   const [placementMode, setPlacementMode] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
   const [modeTransition, setModeTransition] = useState(false);
+  const [activeCameraId, setActiveCameraId] = useState<string | null>(null);
   const [positions, setPositions] = useState<Record<string, { x: number; y: number; z: number }>>({
     outdoor: { x: 0, y: 0, z: 0 },
     indoor: { x: -1.65, y: -0.6, z: 16.9 },
@@ -701,6 +706,12 @@ export default function BuildingPage() {
     return (
       <ConfigScreen
         onSubmit={() => {
+          // Ensure BuildingView can find the building
+          setSelectedBuilding("purdue-armstrong");
+          // Create a mock session ID if none exists
+          if (!getSessionId()) {
+            setSessionId("demo-" + Date.now());
+          }
           setConfigDone(true);
         }}
       />
@@ -737,7 +748,7 @@ export default function BuildingPage() {
           sceneRef={sceneHandleRef}
           onObjectsReady={handleObjectsReady}
           onCameraPlaced={handleCameraPlaced}
-          onCameraClicked={(camId) => router.push(`/camera/${camId}`)}
+          onCameraClicked={(camId) => setActiveCameraId(camId)}
           onSplatLoaded={() => {
             setSceneReady(true);
             // Grab hardcoded camera marker refs now that everything is spawned
@@ -992,6 +1003,30 @@ export default function BuildingPage() {
             <BuildingView />
           </div>
         </div>
+
+        {/* Camera feed overlay */}
+        {activeCameraId && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 200 }}>
+            <CameraView
+              cameraId={activeCameraId}
+              cameras={[
+                ...HARDCODED_CAMERAS.map((hc) => ({
+                  id: hc.id,
+                  building_id: "dsai",
+                  position: hc.pos,
+                  rotation: { yaw: hc.yaw, pitch: -15 },
+                  fov: 90,
+                  coverage_radius: 10,
+                  placement_score: 1.0,
+                })),
+                ...getPlacedCameras().filter((c) => !c.id.startsWith("cam_h")),
+              ]}
+              building={null}
+              onSwitchCamera={(id) => setActiveCameraId(id)}
+              onClose={() => setActiveCameraId(null)}
+            />
+          </div>
+        )}
       </motion.div>
     </AnimatePresence>
   );
