@@ -27,25 +27,26 @@ Built by Mihir Chauhan, David Chen, Rohan Muppa, and David Wang at Purdue Univer
 
 ## User Flow
 
-```
-/ (Hero)
-  Click to start
-    |
-/v2/globe (Satellite Globe)
-  Click building marker
-    |
-/building (Configure + 3D Interior)
-  Set camera count, coverage, priority zones
-  View 3D Gaussian splat with placed cameras
-    |
-/v2/training (Train Camera Models)
-  Synthetic dataset generation
-  Per camera neural network training
-    |
-/v2/evaluate (Evaluate Scenarios)
-  Prompt based scenario simulation
-  Real time threat classification
-```
+```mermaid
+flowchart TD
+    A[Landing Page<br/>/] -->|Click to start| B[Satellite Globe<br/>/v2/globe]
+    B -->|Select building marker| C[Building Configuration<br/>/building]
+
+    C --> C1[Set camera count]
+    C --> C2[Set coverage target]
+    C --> C3[Define priority zones]
+    C --> C4[Preview 3D Gaussian splat interior]
+    C --> C5[View optimized camera placement]
+
+    C -->|Continue to training| D[Training Workspace<br/>/v2/training]
+    D --> D1[Generate synthetic datasets]
+    D --> D2[Train per-camera AI models]
+
+    D -->|Continue to evaluation| E[Scenario Evaluation<br/>/v2/evaluate]
+    E --> E1[Enter prompt-based scenarios]
+    E --> E2[Simulate security events]
+    E --> E3[Run real-time threat classification]
+    E --> E4[Compare activity across all feeds]
 
 ## Running Locally
 
