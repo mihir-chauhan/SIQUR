@@ -19,3 +19,27 @@ Thumbs.db
 
 # ── Local planning / scratch ──────────────────────────────────
 .planning/
+
+# ── Build artifacts ───────────────────────────────────────────
+.next/
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+
+# ── Binary assets (don't track in git) ────────────────────────
+*.png
+*.jpg
+*.jpeg
+*.JPG
+*.mp4
+*.avi
+*.mov
+# *.splat — these are served by the frontend, keep tracked
+
+# ── Test artifacts ────────────────────────────────────────────
+.playwright-mcp/
+screenshots/
+
+# ── Generated outputs ────────────────────────────────────────
+**/outputs/
