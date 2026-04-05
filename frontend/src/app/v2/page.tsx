@@ -107,12 +107,18 @@ export default function V2Page() {
   }, []);
 
   const handleButtonLeave = useCallback(() => {
-    disruptedRef.current = false;
-  }, []);
+    // Only re-enable disruption if we're not mid-transition
+    if (view === "hero") {
+      disruptedRef.current = false;
+    }
+  }, [view]);
 
   // ─── Transition: zoom through ──────────────────────────────────────
   const handleEnter = useCallback(() => {
     if (view !== "hero") return;
+    // Kill any active disruption effect so it doesn't show during transition
+    disruptedRef.current = true;
+    setDisrupted(false);
     setView("transitioning");
     setTransitionPhase(1);
     setTimeout(() => setTransitionPhase(2), 400);
@@ -233,12 +239,6 @@ export default function V2Page() {
           }}
         >
           <AsciiSphere />
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            background: "radial-gradient(ellipse at center, rgba(0, 229, 255, 0.04) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }} />
         </div>
       )}
 
@@ -252,8 +252,8 @@ export default function V2Page() {
           inset: 0,
           zIndex: 2,
           background: "radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.75) 100%)",
-          opacity: transitionPhase >= 2 ? 0 : 1,
-          transition: "opacity 600ms ease",
+          opacity: 1,
+          transition: "none",
           pointerEvents: "none",
         }}
       />
@@ -287,7 +287,7 @@ export default function V2Page() {
             letterSpacing: "-0.03em",
             lineHeight: 0.9,
             fontFamily: "var(--font-heading), system-ui, sans-serif",
-            textShadow: "0 4px 60px rgba(0,0,0,0.9), 0 0 120px rgba(0,229,255,0.12), 0 0 200px rgba(0,229,255,0.06)",
+            textShadow: "0 4px 60px rgba(0,0,0,0.9)",
             minHeight: "1.1em",
           }}
         >
@@ -401,19 +401,6 @@ export default function V2Page() {
         }}
       />
 
-      {/* ═══ LAYER 6: Signal disruption flash ═══ */}
-      {disrupted && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 11,
-            pointerEvents: "none",
-            background: "linear-gradient(0deg, transparent 30%, rgba(0,229,255,0.03) 50%, transparent 70%)",
-            opacity: 1,
-          }}
-        />
-      )}
     </div>
   );
 }

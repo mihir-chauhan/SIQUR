@@ -180,7 +180,15 @@ export default function BuildingView() {
   useEffect(() => {
     const sid = getSessionId();
     if (!sid) {
-      router.replace("/");
+      // No session — try localStorage fallback before giving up
+      const storedId = getSelectedBuilding();
+      const fallback = storedId
+        ? PRELOADED_BUILDINGS.find((b) => b.id === storedId) ?? null
+        : null;
+      if (fallback) {
+        setBuilding(fallback);
+      }
+      // Don't redirect — BuildingView may be embedded in a page that works without a session
       return;
     }
     setSessionId(sid);
@@ -198,7 +206,7 @@ export default function BuildingView() {
         }
 
         if (!resolvedBuilding) {
-          router.replace("/");
+          // Don't redirect — just leave building as null; the host page handles navigation
           return;
         }
         setBuilding(resolvedBuilding);
