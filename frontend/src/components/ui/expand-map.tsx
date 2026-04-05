@@ -49,7 +49,7 @@ export function LocationMap({
   }
 
   const handleClick = (e: React.MouseEvent) => {
-    router.push("/v2/building")
+    router.push("/building")
   }
 
   // Blueprint colors
@@ -76,7 +76,7 @@ export function LocationMap({
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
     >
       <motion.div
-        className="relative overflow-hidden rounded-xl border backdrop-blur-xl shadow-2xl"
+        className="relative overflow-hidden rounded-sm border backdrop-blur-xl shadow-2xl"
         style={{
           rotateX: springRotateX,
           rotateY: springRotateY,
@@ -137,7 +137,7 @@ export function LocationMap({
           <text x="128" y="85" textAnchor="middle" fill={label}
             fontSize="7.5" fontFamily="monospace" letterSpacing="0.12em">LECTURE HALL A</text>
           <text x="128" y="215" textAnchor="middle" fill={labelDim}
-            fontSize="5.5" fontFamily="monospace">18.2m × 12.4m</text>
+            fontSize="7" fontFamily="monospace">18.2m × 12.4m</text>
           {/* Door arc */}
           <motion.path d="M 210 130 A 15 15 0 0 1 210 160" fill="none" stroke={wall} strokeWidth="1"
             initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
@@ -160,7 +160,7 @@ export function LocationMap({
           <text x="305" y="82" textAnchor="middle" fill={label}
             fontSize="7" fontFamily="monospace" letterSpacing="0.1em">AI LAB</text>
           <text x="305" y="137" textAnchor="middle" fill={labelDim}
-            fontSize="5" fontFamily="monospace">12 WORKSTATIONS</text>
+            fontSize="7" fontFamily="monospace">12 WORKSTATIONS</text>
 
           {/* ═══ WING C: Top-far-right — Server Room ═══ */}
           <motion.rect x="390" y="65" width="165" height="80" rx="1"
@@ -177,7 +177,7 @@ export function LocationMap({
           <text x="472" y="82" textAnchor="middle" fill={label}
             fontSize="7" fontFamily="monospace" letterSpacing="0.1em">SERVER ROOM</text>
           <text x="472" y="137" textAnchor="middle" fill={labelDim}
-            fontSize="5" fontFamily="monospace">RESTRICTED ACCESS</text>
+            fontSize="7" fontFamily="monospace">RESTRICTED ACCESS</text>
 
           {/* ═══ Offices row — mid right ═══ */}
           {[0, 1, 2, 3, 4].map(i => (
@@ -188,7 +188,7 @@ export function LocationMap({
           ))}
           {[0, 1, 2, 3, 4].map(i => (
             <text key={`offlbl-${i}`} x={260 + i * 67} y="195" textAnchor="middle" fill={labelDim}
-              fontSize="5" fontFamily="monospace">{`OFF-${i + 1}`}</text>
+              fontSize="7" fontFamily="monospace">{`OFF-${i + 1}`}</text>
           ))}
 
           {/* ═══ WING D: Bottom-left — Data Center ═══ */}
@@ -206,7 +206,7 @@ export function LocationMap({
           <text x="128" y="265" textAnchor="middle" fill={label}
             fontSize="7.5" fontFamily="monospace" letterSpacing="0.12em">DATA CENTER</text>
           <text x="128" y="408" textAnchor="middle" fill={labelDim}
-            fontSize="5" fontFamily="monospace">CLIMATE CONTROLLED</text>
+            fontSize="7" fontFamily="monospace">CLIMATE CONTROLLED</text>
 
           {/* ═══ WING E: Bottom-mid — Seminar Rooms ═══ */}
           <motion.rect x="230" y="245" width="150" height="75" rx="1"
@@ -219,7 +219,7 @@ export function LocationMap({
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.65 }} />
           <text x="305" y="260" textAnchor="middle" fill={label}
-            fontSize="6.5" fontFamily="monospace">SEMINAR A</text>
+            fontSize="7" fontFamily="monospace">SEMINAR A</text>
 
           <motion.rect x="390" y="245" width="165" height="75" rx="1"
             fill={room} stroke={wall} strokeWidth="1.5"
@@ -230,7 +230,7 @@ export function LocationMap({
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.68 }} />
           <text x="472" y="260" textAnchor="middle" fill={label}
-            fontSize="6.5" fontFamily="monospace">SEMINAR B</text>
+            fontSize="7" fontFamily="monospace">SEMINAR B</text>
 
           {/* ═══ Lobby — bottom spanning ═══ */}
           <motion.rect x="230" y="330" width="325" height="85" rx="1"
@@ -252,7 +252,7 @@ export function LocationMap({
             initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
             transition={{ duration: 0.3, delay: 0.85 }} />
           <text x="400" y="445" textAnchor="middle" fill={label}
-            fontSize="6" fontFamily="monospace" letterSpacing="0.15em">MAIN ENTRY</text>
+            fontSize="7" fontFamily="monospace" letterSpacing="0.15em">MAIN ENTRY</text>
 
           {/* ── Dimension lines ── */}
           {/* Top width */}
@@ -263,7 +263,7 @@ export function LocationMap({
           <line x1="35" y1="42" x2="35" y2="48" stroke={dim} strokeWidth="0.5" />
           <line x1="565" y1="42" x2="565" y2="48" stroke={dim} strokeWidth="0.5" />
           <text x="300" y="43" textAnchor="middle" fill={labelDim}
-            fontSize="5" fontFamily="monospace">52.8m</text>
+            fontSize="7" fontFamily="monospace">52.8m</text>
 
           {/* Left height */}
           <motion.line x1="25" y1="55" x2="25" y2="425"
@@ -273,21 +273,21 @@ export function LocationMap({
           <line x1="22" y1="55" x2="28" y2="55" stroke={dim} strokeWidth="0.5" />
           <line x1="22" y1="425" x2="28" y2="425" stroke={dim} strokeWidth="0.5" />
           <text x="18" y="240" textAnchor="middle" fill={labelDim}
-            fontSize="5" fontFamily="monospace" transform="rotate(-90 18 240)">36.4m</text>
+            fontSize="7" fontFamily="monospace" transform="rotate(-90 18 240)">36.4m</text>
 
           {/* Scale indicator bottom-right */}
           <line x1="510" y1="450" x2="560" y2="450" stroke={label} strokeWidth="1" />
           <line x1="510" y1="447" x2="510" y2="453" stroke={label} strokeWidth="0.8" />
           <line x1="560" y1="447" x2="560" y2="453" stroke={label} strokeWidth="0.8" />
           <text x="535" y="460" textAnchor="middle" fill={labelDim}
-            fontSize="5" fontFamily="monospace">5m</text>
+            fontSize="7" fontFamily="monospace">5m</text>
 
           {/* North arrow */}
           <motion.polygon points="560,75 565,90 555,90" fill={label}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.95 }} />
           <text x="560" y="100" textAnchor="middle" fill={labelDim}
-            fontSize="6" fontFamily="monospace" fontWeight="bold">N</text>
+            fontSize="7" fontFamily="monospace" fontWeight="bold">N</text>
 
           {/* Target reticle in center */}
           <motion.circle cx="300" cy="250" r="12" fill="none" stroke={wallThick} strokeWidth="1.5"
@@ -319,8 +319,8 @@ export function LocationMap({
           <div className="flex items-start justify-between">
             <div>
               <span style={{
-                fontFamily: "monospace",
-                fontSize: "8px",
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: "10px",
                 letterSpacing: "0.2em",
                 color: "rgba(100, 180, 255, 0.35)",
               }}>BLUEPRINT // FLOOR 1</span>
@@ -344,7 +344,7 @@ export function LocationMap({
                   color: "rgba(100, 180, 255, 0.7)",
                   letterSpacing: "0.05em",
                   textTransform: "uppercase" as const,
-                }}>Live Context</span>
+                }}>LIVE CONTEXT</span>
               </motion.div>
 
               {onClose && (
@@ -362,9 +362,9 @@ export function LocationMap({
           </div>
 
           {/* Bottom section */}
-          <div className="space-y-1">
+          <div className="space-y-1" style={{ padding: "0 8px 4px" }}>
             <motion.h3
-              style={{ color: "#fff", fontWeight: 500, fontSize: "14px", letterSpacing: "-0.01em" }}
+              style={{ color: "rgba(100, 180, 255, 0.9)", fontWeight: 600, fontSize: "var(--text-base)", letterSpacing: "0.08em", fontFamily: "var(--font-mono, monospace)" }}
               animate={{ x: isHovered ? 4 : 0 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
             >
@@ -372,9 +372,10 @@ export function LocationMap({
             </motion.h3>
 
             <p style={{
-              fontFamily: "monospace",
-              fontSize: "11px",
-              color: "rgba(100, 180, 255, 0.6)",
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: "var(--text-xs)",
+              color: "rgba(100, 180, 255, 0.5)",
+              letterSpacing: "0.05em",
             }}>
               {coordinates}
             </p>

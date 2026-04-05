@@ -12,8 +12,32 @@
   --color-accent-green:   #50e3c2;
   --color-border:         rgba(255, 255, 255, 0.1);
 
-  --font-ui:   var(--font-inter);
-  --font-mono: var(--font-space-mono);
+  --font-ui:      var(--font-inter);
+  --font-mono:    var(--font-space-mono);
+  --font-heading: var(--font-display);
+
+  /* ── Type Scale (1.25 ratio, rem-based) ── */
+  --text-xs:    0.625rem;   /* 10px — micro labels, dimensions */
+  --text-sm:    0.75rem;    /* 12px — HUD labels, coordinates */
+  --text-base:  0.8125rem;  /* 13px — HUD body, data rows */
+  --text-md:    1rem;       /* 16px — UI body text */
+  --text-lg:    1.125rem;   /* 18px — section headers */
+  --text-xl:    1.25rem;    /* 20px — panel titles */
+  --text-2xl:   1.5rem;     /* 24px — page headings */
+  --text-hero:  clamp(4.5rem, 12vw, 10rem); /* hero display */
+
+  /* ── Line Heights ── */
+  --leading-tight:  1.1;
+  --leading-snug:   1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* ── Letter Spacing ── */
+  --tracking-tight:  -0.04em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.1em;
+  --tracking-wider:  0.15em;
+  --tracking-widest: 0.25em;
 
   --duration-fast:   120ms;
   --duration-normal: 280ms;

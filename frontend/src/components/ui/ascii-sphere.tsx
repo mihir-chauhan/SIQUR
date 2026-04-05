@@ -14,13 +14,15 @@ export function AsciiSphere() {
     let renderer: { dispose: () => void; setSize: (w: number, h: number) => void } | null = null;
     let effectDom: HTMLElement | null = null;
 
+    const container = containerRef.current;
+
+    // --- Three.js + AsciiEffect ---
     const init = async () => {
       const THREE = await import("three");
       const { AsciiEffect } = await import("three/examples/jsm/effects/AsciiEffect.js");
 
       if (disposedRef.current || !containerRef.current) return;
 
-      const container = containerRef.current;
       const width = container.clientWidth;
       const height = container.clientHeight;
 
@@ -119,8 +121,13 @@ export function AsciiSphere() {
 
       window.addEventListener("resize", handleResize);
 
+      const forceResizeTimer = setTimeout(handleResize, 100);
+      const forceResizeTimer2 = setTimeout(handleResize, 500);
+
       return () => {
         window.removeEventListener("resize", handleResize);
+        clearTimeout(forceResizeTimer);
+        clearTimeout(forceResizeTimer2);
       };
     };
 
@@ -136,6 +143,7 @@ export function AsciiSphere() {
       if (effectDom && containerRef.current?.contains(effectDom)) {
         containerRef.current.removeChild(effectDom);
       }
+
       cleanupResize?.();
     };
   }, []);
@@ -146,7 +154,7 @@ export function AsciiSphere() {
       style={{
         position: "absolute",
         top: 0,
-        left: 0,
+        left: "-5%",
         right: 0,
         bottom: 0,
         overflow: "hidden",

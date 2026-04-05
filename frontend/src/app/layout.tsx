@@ -23,7 +23,7 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Minority Report — AI Surveillance Platform",
+  title: "Siqor — AI Surveillance Platform",
   description: "Secure. Simulate. Save. An AI-powered surveillance optimization and synthetic data platform by Catapult at Purdue University.",
 };
 

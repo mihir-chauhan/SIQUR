@@ -34,6 +34,8 @@ export default function V2Page() {
   const [transitionPhase, setTransitionPhase] = useState(0);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   // ─── Boot sequence (pure timeouts — no 60fps interval) ────────────
@@ -77,6 +79,29 @@ export default function V2Page() {
     return () => clearTimeout(t);
   }, [sloganVisible]);
 
+  // ─── Cursor-reactive glow (direct DOM, no re-renders) ──────────────
+  useEffect(() => {
+    const root = rootRef.current;
+    const glow = glowRef.current;
+    if (!root || !glow) return;
+
+    const onMove = (e: MouseEvent) => {
+      const rect = root.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      glow.style.background = `radial-gradient(200px circle at ${mx}px ${my}px, rgba(0,229,255,0.35) 0%, rgba(0,229,255,0.15) 30%, rgba(0,229,255,0.04) 60%, transparent 100%)`;
+      glow.style.opacity = "1";
+    };
+    const onLeave = () => { glow.style.opacity = "0"; };
+
+    root.addEventListener("mousemove", onMove);
+    root.addEventListener("mouseleave", onLeave);
+    return () => {
+      root.removeEventListener("mousemove", onMove);
+      root.removeEventListener("mouseleave", onLeave);
+    };
+  }, []);
+
   // ─── Transition: zoom through ──────────────────────────────────────
   const handleEnter = useCallback(() => {
     if (view !== "hero") return;
@@ -94,12 +119,14 @@ export default function V2Page() {
 
   return (
     <div
+      ref={rootRef}
       style={{
         position: "fixed",
         top: 0, left: 0, right: 0, bottom: 0,
         background: "#000",
         zIndex: 10000,
         overflow: "hidden",
+        cursor: "crosshair",
       }}
     >
       <style>{`
@@ -199,9 +226,22 @@ export default function V2Page() {
           position: "absolute",
           inset: 0,
           zIndex: 2,
-          background: "radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.85) 100%)",
+          background: "radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.75) 100%)",
           opacity: transitionPhase >= 2 ? 0 : 1,
           transition: "opacity 600ms ease",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* ═══ LAYER 2.5: Cursor-reactive glow ═══ */}
+      <div
+        ref={glowRef}
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 4,
+          opacity: 0,
+          transition: "opacity 0.3s ease",
           pointerEvents: "none",
         }}
       />
@@ -217,7 +257,7 @@ export default function V2Page() {
           alignItems: "center",
           justifyContent: "center",
           opacity: showHeroText && isBooted ? 1 : 0,
-          transform: transitionPhase >= 1 ? "translateY(-40px)" : "translateY(0)",
+          transform: transitionPhase >= 1 ? "translate(-20px, -40px)" : "translateX(-20px)",
           transition: transitionPhase >= 1
             ? "opacity 400ms ease, transform 700ms cubic-bezier(0.4, 0, 1, 1)"
             : bootPhase === "ready"
@@ -228,12 +268,12 @@ export default function V2Page() {
       >
         <h1
           style={{
-            fontSize: "clamp(4.5rem, 12vw, 10rem)",
+            fontSize: "var(--text-hero)",
             fontWeight: 700,
             color: "#fff",
-            letterSpacing: "-0.04em",
-            lineHeight: 0.95,
-            fontFamily: "var(--font-display), system-ui, sans-serif",
+            letterSpacing: "var(--tracking-tight)",
+            lineHeight: "var(--leading-tight)",
+            fontFamily: "var(--font-heading), system-ui, sans-serif",
             textShadow: "0 2px 40px rgba(0,0,0,0.8), 0 0 80px rgba(0,229,255,0.07), 0 0 160px rgba(0,229,255,0.04)",
             minHeight: "1.1em",
           }}

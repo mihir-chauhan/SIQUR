@@ -106,6 +106,8 @@ function ConfigScreen({
         }}
       />
 
+      <style>{`@keyframes configFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }`}</style>
+      <div style={{ animation: "configFadeIn 0.6s ease-out" }}>
       <div
         style={{
           position: "relative",
@@ -132,8 +134,8 @@ function ConfigScreen({
             key={i}
             style={{
               position: "absolute",
-              width: "12px",
-              height: "12px",
+              width: "20px",
+              height: "20px",
               borderColor: "rgba(0, 229, 255, 0.4)",
               borderStyle: "solid",
               borderWidth: 0,
@@ -166,7 +168,7 @@ function ConfigScreen({
               fontFamily: "var(--font-space-mono, monospace)",
               fontSize: "10px",
               letterSpacing: "0.25em",
-              color: "rgba(255, 255, 255, 0.25)",
+              color: "rgba(255, 255, 255, 0.5)",
               margin: "8px 0 0",
               textTransform: "uppercase",
             }}
@@ -347,6 +349,7 @@ function ConfigScreen({
           &#9654; INITIALIZE PLACEMENT
         </button>
       </div>
+      </div>
 
       {/* Custom scrollbar styling */}
       <style>{`
@@ -433,8 +436,6 @@ export default function BuildingPage() {
     const id = `cam_${cameraCountRef.current}`;
     const pos = data.position;
 
-    console.log(`[CAPTURE] ${id}: pos(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}) yaw(${data.yaw.toFixed(2)})`);
-
     // Spawn the visual marker in the 3D scene
     const markerGroup = handle.spawnMarker(id, pos, data.yaw);
     if (markerGroup) {
@@ -477,10 +478,6 @@ export default function BuildingPage() {
         }
       }
     }
-    console.log("[BuildingPage] Objects ready:", {
-      splat: !!objects.splatGroup,
-      obj: !!objects.objGroup,
-    });
   }, []);
 
   const handleCameraPlaced = useCallback((placement: CameraPlacement) => {
@@ -596,7 +593,6 @@ export default function BuildingPage() {
       });
       setPlacedCameras(placed);
     }
-    console.log("[BuildingPage] Saved camera", selectedLayerId, pos, rot);
   }, [selectedLayerId, positions, rotations, layers]);
 
   const handleDeleteLayer = useCallback((id: string) => {
@@ -760,7 +756,7 @@ export default function BuildingPage() {
         {/* Building name header */}
         <div style={{
           position: "absolute",
-          top: 16,
+          top: 56,
           left: "50%",
           transform: "translateX(-50%)",
           zIndex: 20,
@@ -768,7 +764,7 @@ export default function BuildingPage() {
           pointerEvents: "none",
         }}>
           <span style={{
-            color: "#33ccaa",
+            color: "#00e5ff",
             fontFamily: "var(--font-space-mono, monospace)",
             fontSize: "12px",
             letterSpacing: "0.3em",
@@ -897,28 +893,6 @@ export default function BuildingPage() {
             flexDirection: "column",
           }}
         >
-          {/* DEV: Capture camera button */}
-          <div style={{ padding: "12px", borderBottom: "1px solid rgba(0, 229, 255, 0.08)" }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleCaptureCam(); }}
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                color: "#0a0a0a",
-                background: "#ffdd44",
-                border: "none",
-                borderRadius: "3px",
-                padding: "8px 16px",
-                cursor: "pointer",
-                width: "100%",
-                fontWeight: 700,
-              }}
-            >
-              CAPTURE CAMERA
-            </button>
-          </div>
-
           {/* Properties section */}
           <div style={{ padding: "16px", borderBottom: "1px solid rgba(0, 229, 255, 0.08)" }}>
             <PropertiesPanel

@@ -169,7 +169,6 @@ export function MapboxGlobe({
           const mId = e.features[0].properties.id
           const marker = markers.find(m => m.id === mId)
           if (marker) {
-            console.log("Native interact triggered:", mId)
             onMarkerClickRef.current?.(marker)
           }
         }
@@ -359,7 +358,7 @@ export function MapboxGlobe({
           position: absolute;
           bottom: -20px;
           font-family: var(--font-space-mono), monospace;
-          font-size: 8px;
+          font-size: 10px;
           color: rgba(0, 229, 255, 0.6);
           letter-spacing: 0.1em;
           white-space: nowrap;

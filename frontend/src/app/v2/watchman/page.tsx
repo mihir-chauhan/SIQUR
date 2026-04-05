@@ -32,6 +32,7 @@ export default function WatchmanPage() {
   // Poll camera position/rotation at 10fps
   useEffect(() => {
     const interval = setInterval(() => {
+      if (document.hidden) return;
       const data = sceneHandleRef.current?.captureCamera();
       if (data) {
         setCamData({ x: data.position.x, y: data.position.y, z: data.position.z, yaw: data.yaw });
@@ -50,7 +51,7 @@ export default function WatchmanPage() {
         width: "100vw",
         height: "100vh",
         overflow: "hidden",
-        background: "#0a0a0a",
+        background: "#0a0e14",
       }}
     >
       {/* Mode switcher (far left) */}
@@ -87,7 +88,7 @@ export default function WatchmanPage() {
           />
           <div
             style={{
-              fontFamily: "var(--font-mono, monospace)",
+              fontFamily: "var(--font-space-mono, monospace)",
               fontSize: 11,
               fontWeight: 700,
               letterSpacing: "0.3em",
@@ -99,6 +100,7 @@ export default function WatchmanPage() {
           </div>
           <style>{`
             @keyframes wm-spin { to { transform: rotate(360deg); } }
+            @keyframes pulse-connect { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
           `}</style>
         </div>
       )}
@@ -130,8 +132,8 @@ export default function WatchmanPage() {
         >
           <span
             style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 9,
+              fontFamily: "var(--font-space-mono, monospace)",
+              fontSize: 11,
               letterSpacing: "0.3em",
               color: "rgba(0, 229, 255, 0.6)",
             }}
@@ -169,7 +171,7 @@ export default function WatchmanPage() {
                 display: "flex",
                 flexDirection: "column",
                 gap: 3,
-                fontFamily: "var(--font-mono, monospace)",
+                fontFamily: "var(--font-space-mono, monospace)",
                 fontSize: 10,
                 letterSpacing: "0.1em",
                 color: "var(--color-text-dim, rgba(255,255,255,0.4))",
@@ -208,7 +210,9 @@ export default function WatchmanPage() {
                   flex: 1,
                   position: "relative",
                   borderBottom: "1px solid rgba(0, 229, 255, 0.08)",
-                  background: "rgba(10, 10, 10, 0.95)",
+                  background: "rgba(10, 14, 20, 0.95)",
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E")`,
+                  backgroundSize: "150px 150px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -227,7 +231,7 @@ export default function WatchmanPage() {
                     position: "absolute",
                     top: 8,
                     left: 10,
-                    fontFamily: "var(--font-mono, monospace)",
+                    fontFamily: "var(--font-space-mono, monospace)",
                     fontSize: 9,
                     letterSpacing: "0.15em",
                     color: "rgba(0, 229, 255, 0.5)",
@@ -236,7 +240,7 @@ export default function WatchmanPage() {
                   {feed.label}
                 </div>
 
-                {/* No signal state */}
+                {/* Connecting state */}
                 {!feed.src && (
                   <div
                     style={{
@@ -252,13 +256,14 @@ export default function WatchmanPage() {
                     </svg>
                     <span
                       style={{
-                        fontFamily: "var(--font-mono, monospace)",
+                        fontFamily: "var(--font-space-mono, monospace)",
                         fontSize: 8,
                         letterSpacing: "0.2em",
-                        color: "rgba(0, 229, 255, 0.15)",
+                        color: "rgba(0, 229, 255, 0.25)",
+                        animation: "pulse-connect 2s ease-in-out infinite",
                       }}
                     >
-                      NO SIGNAL
+                      CONNECTING...
                     </span>
                   </div>
                 )}
