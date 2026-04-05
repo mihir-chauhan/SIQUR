@@ -97,7 +97,10 @@ The system simulates those events across all camera feeds and runs the trained m
 
 SIQUR utilizes a modular architecture that connects a modern web frontend with specialized backend pipelines for spatial optimization, synthetic data generation, machine learning, and real-time inference.
 
-![SIQUR System Architecture](https://imgur.com/oWIYmI8)
+<p align="center">
+  <img src="https://imgur.com/oWIYmI8" alt="User Flow Diagram" width="800"/>
+</p>
+<p align="center"><em>Figure 1: SIQR User Flow Diagram.</em></p>
 
 ### System Components & Data Flow
 
