@@ -57,6 +57,7 @@ export default function TrainingPage() {
   const [cellVideos, setCellVideos] = useState<string[]>(() => initGrid());
   const startTime = useRef(Date.now());
   const redirected = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Terminal lines
   useEffect(() => {
@@ -82,26 +83,39 @@ export default function TrainingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Random video replacement — every 2s, replace a random subset of cells
+  // Random video replacement — fires every 300–600ms, replaces 3–7 cells
+  // Each replaced cell gets a video different from what it currently shows
   useEffect(() => {
     if (phase !== "feed") return;
 
-    const replace = () => {
-      // Replace ~6–12 random cells each tick
-      const count = 6 + Math.floor(Math.random() * 7);
-      const indices = new Set<number>();
-      while (indices.size < count) {
-        indices.add(Math.floor(Math.random() * GRID));
-      }
-      setCellVideos((prev) => {
-        const next = [...prev];
-        for (const i of indices) next[i] = randomVideo();
-        return next;
-      });
+    const schedule = () => {
+      const delay = 300 + Math.random() * 300;
+      return setTimeout(() => {
+        const count = 3 + Math.floor(Math.random() * 5);
+        const indices = new Set<number>();
+        while (indices.size < count) {
+          indices.add(Math.floor(Math.random() * GRID));
+        }
+        setCellVideos((prev) => {
+          const next = [...prev];
+          for (const i of indices) {
+            let next_vid = randomVideo();
+            // Keep picking until we get something different from what's there
+            let tries = 0;
+            while (next_vid === prev[i] && tries < 10) {
+              next_vid = randomVideo();
+              tries++;
+            }
+            next[i] = next_vid;
+          }
+          return next;
+        });
+        timerRef.current = schedule();
+      }, delay);
     };
 
-    const timer = setInterval(replace, 2000);
-    return () => clearInterval(timer);
+    timerRef.current = schedule();
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [phase]);
 
   // Redirect after 10s total
