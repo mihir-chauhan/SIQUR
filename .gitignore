@@ -19,3 +19,17 @@ Thumbs.db
 
 # ── Local planning / scratch ──────────────────────────────────
 .planning/
+
+# ── Build artifacts ───────────────────────────────────────────
+.next/
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+
+# ── Test artifacts ────────────────────────────────────────────
+.playwright-mcp/
+screenshots/
+
+# ── Generated outputs ────────────────────────────────────────
+**/outputs/
