@@ -74,11 +74,11 @@ export function MapboxGlobe({
     map.on("click", () => { if (onMapClick) onMapClick() })
 
     map.on("style.load", () => {
-      // Dark atmosphere for surveillance aesthetic
+      // Subtle cyan atmospheric glow around the globe limb
       map.setFog({
-        color: "rgb(0, 0, 0)",
-        "high-color": "rgb(0, 0, 0)",
-        "horizon-blend": 0.02,
+        color: "rgba(0, 120, 220, 0.10)",
+        "high-color": "rgba(0, 60, 160, 0.08)",
+        "horizon-blend": 0.06,                   // tighter radius
         "space-color": "rgb(0, 0, 0)",
         "star-intensity": 0.0,
       } as any)

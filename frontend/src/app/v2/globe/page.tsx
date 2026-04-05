@@ -62,7 +62,7 @@ export default function GlobePage() {
   return (
     <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 10000, overflow: "hidden" }}>
       {/* Globe */}
-      <div style={{ position: "absolute", inset: 0, cursor: !activeTarget ? "default" : "default" }}>
+      <div style={{ position: "absolute", inset: 0 }}>
         <MapboxGlobe
           token="pk.eyJ1IjoibWloaXJjIiwiYSI6ImNtYnhoZ2wxYjBkdWsybG9rMnptcDI5NDQifQ.I3WBvKmQnyux7qBz3hXJ1w"
           markers={PURDUE_MARKERS}

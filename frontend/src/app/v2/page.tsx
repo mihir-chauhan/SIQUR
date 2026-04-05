@@ -9,59 +9,39 @@ const AsciiSphere = dynamic(
   { ssr: false }
 );
 
-const TITLE = "Watchman";
+const TITLE = "Siqor";
 const SLOGAN = "See everything. Miss nothing.";
 const TYPE_SPEED = 150;
 const SLOGAN_DELAY = 400;
 const BUTTON_DELAY = 600;
 
-const BOOT_DURATION = 2000;
-const BOOT_FLICKER_END = 2200;
-const TYPE_START = 2400;
+// Boot timing (ms)
+const SCAN_START   = 300;
+const SCAN_DURATION = 2000;
+const FLICKER_START = SCAN_START + SCAN_DURATION;       // 2300
+const READY_AT      = FLICKER_START + 200;              // 2500
+const TYPE_START    = READY_AT + 200;                   // 2700
 
-type ViewState = "hero" | "transitioning";
+type BootPhase = "black" | "scanning" | "flickering" | "ready";
+type ViewState  = "hero" | "transitioning";
 
 export default function V2Page() {
-  // Boot
-  const [bootPhase, setBootPhase] = useState<"black" | "scanning" | "flickering" | "ready">("black");
-  const [scanProgress, setScanProgress] = useState(0);
-
-  // Typewriter
+  const [bootPhase, setBootPhase]         = useState<BootPhase>("black");
   const [displayedChars, setDisplayedChars] = useState(0);
-  const [sloganVisible, setSloganVisible] = useState(false);
-  const [buttonVisible, setButtonVisible] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const scanRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const router = useRouter();
-
-  // View state
-  const [view, setView] = useState<ViewState>("hero");
+  const [sloganVisible, setSloganVisible]  = useState(false);
+  const [buttonVisible, setButtonVisible]  = useState(false);
+  const [view, setView]                    = useState<ViewState>("hero");
   const [transitionPhase, setTransitionPhase] = useState(0);
 
-  // ─── Boot sequence ─────────────────────────────────────────────────
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const router = useRouter();
+
+  // ─── Boot sequence (pure timeouts — no 60fps interval) ────────────
   useEffect(() => {
-    const startScan = setTimeout(() => {
-      setBootPhase("scanning");
-      const startTime = Date.now();
-      scanRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(100, (elapsed / BOOT_DURATION) * 100);
-        setScanProgress(progress);
-        if (progress >= 100) {
-          if (scanRef.current) clearInterval(scanRef.current);
-          setBootPhase("flickering");
-        }
-      }, 16);
-    }, 300);
-
-    const settleTimer = setTimeout(() => setBootPhase("ready"), BOOT_FLICKER_END + 300);
-
-    return () => {
-      clearTimeout(startScan);
-      clearTimeout(settleTimer);
-      if (scanRef.current) clearInterval(scanRef.current);
-    };
+    const t1 = setTimeout(() => setBootPhase("scanning"),   SCAN_START);
+    const t2 = setTimeout(() => setBootPhase("flickering"), FLICKER_START);
+    const t3 = setTimeout(() => setBootPhase("ready"),      READY_AT);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
   // ─── Typewriter ────────────────────────────────────────────────────
@@ -77,7 +57,7 @@ export default function V2Page() {
           return prev + 1;
         });
       }, TYPE_SPEED);
-    }, TYPE_START - BOOT_FLICKER_END);
+    }, TYPE_START - READY_AT);
 
     return () => {
       clearTimeout(timeout);
@@ -101,96 +81,114 @@ export default function V2Page() {
   const handleEnter = useCallback(() => {
     if (view !== "hero") return;
     setView("transitioning");
-
-    // Phase 1: text lifts out
     setTransitionPhase(1);
-
-    // Phase 2: ASCII zooms forward
     setTimeout(() => setTransitionPhase(2), 400);
-
-    // Phase 3: Route to globe explicitly
-    setTimeout(() => {
-      setTransitionPhase(3);
-      router.push("/v2/globe");
-    }, 1400);
+    setTimeout(() => { setTransitionPhase(3); router.push("/v2/globe"); }, 1400);
   }, [view, router]);
 
-  const titleText = TITLE.slice(0, displayedChars);
+  const titleText  = TITLE.slice(0, displayedChars);
   const showCursor = displayedChars < TITLE.length && bootPhase === "ready";
-  const isBooted = bootPhase === "ready" || bootPhase === "flickering";
-
-  const showAscii = view === "hero" || (view === "transitioning" && transitionPhase < 3);
+  const isBooted   = bootPhase === "ready" || bootPhase === "flickering";
+  const showAscii  = view === "hero" || (view === "transitioning" && transitionPhase < 3);
   const showHeroText = view === "hero";
 
   return (
     <div
       style={{
         position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        top: 0, left: 0, right: 0, bottom: 0,
         background: "#000",
         zIndex: 10000,
         overflow: "hidden",
       }}
     >
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style>{`
         html, body, .scanlines, .app-shell { background: #000 !important; }
 
         @keyframes crt-flicker {
           0%, 100% { opacity: 0.7; }
-          10% { opacity: 0.5; }
-          20% { opacity: 0.8; }
-          30% { opacity: 0.6; }
-          50% { opacity: 0.75; }
-          70% { opacity: 0.65; }
-          90% { opacity: 0.7; }
+          10%  { opacity: 0.5; }
+          20%  { opacity: 0.8; }
+          30%  { opacity: 0.6; }
+          50%  { opacity: 0.75; }
+          70%  { opacity: 0.65; }
+          90%  { opacity: 0.7; }
         }
-      `}} />
+
+        /* CSS-driven scan reveal — zero JS per-frame */
+        @keyframes scan-reveal {
+          from { clip-path: inset(0 0 100% 0); }
+          to   { clip-path: inset(0 0 0% 0); }
+        }
+
+        /* CSS-driven beam sweep */
+        @keyframes beam-sweep {
+          from { top: 0%; }
+          to   { top: 100%; }
+        }
+
+        .ascii-scanning {
+          animation: scan-reveal ${SCAN_DURATION}ms linear forwards;
+        }
+        .ascii-ready {
+          clip-path: inset(0 0 0% 0);
+        }
+
+        .scan-beam {
+          position: absolute;
+          left: 0; right: 0;
+          height: 2px;
+          background: rgba(0, 229, 255, 0.7);
+          box-shadow: 0 0 12px 3px rgba(0, 229, 255, 0.4),
+                      0 0 40px 8px rgba(0, 229, 255, 0.15);
+          animation: beam-sweep ${SCAN_DURATION}ms linear forwards;
+          z-index: 5;
+          pointer-events: none;
+        }
+
+        @keyframes cursor-blink {
+          0%, 100% { opacity: 1; }
+          50%      { opacity: 0; }
+        }
+      `}</style>
 
       {/* ═══ LAYER 0: ASCII sphere ═══ */}
       {showAscii && (
         <div
+          className={
+            bootPhase === "scanning" ? "ascii-scanning" :
+            bootPhase === "flickering" || bootPhase === "ready" ? "ascii-ready" : ""
+          }
           style={{
             position: "absolute",
             inset: 0,
             transformOrigin: "center center",
-            clipPath: bootPhase === "scanning"
-              ? `inset(0 0 ${100 - scanProgress}% 0)`
-              : "inset(0 0 0 0)",
             opacity: transitionPhase >= 2 ? 0 : 0.7,
             transform: transitionPhase >= 2 ? "scale(6)" : "scale(1)",
+            willChange: transitionPhase >= 1 ? "transform, opacity" : "auto",
             transition: transitionPhase >= 2
               ? "transform 1200ms cubic-bezier(0.25, 0, 0, 1), opacity 1000ms ease"
               : "none",
-            animation: bootPhase === "flickering" ? "crt-flicker 0.3s ease 3" : "none",
+            animation: bootPhase === "flickering"
+              ? "crt-flicker 0.3s ease 3"
+              : undefined,
             zIndex: 0,
           }}
         >
           <AsciiSphere />
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            background: "radial-gradient(ellipse at center, rgba(0, 229, 255, 0.04) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }} />
         </div>
       )}
 
-      {/* Scanning beam */}
-      {bootPhase === "scanning" && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: `${scanProgress}%`,
-            height: "2px",
-            background: "rgba(255,255,255,0.6)",
-            boxShadow: "0 0 12px 3px rgba(255,255,255,0.3), 0 0 40px 8px rgba(255,255,255,0.1)",
-            zIndex: 5,
-          }}
-        />
-      )}
+      {/* Scanning beam — CSS animated, no React state */}
+      {bootPhase === "scanning" && <div className="scan-beam" />}
 
-
-
-      {/* ═══ LAYER 2: Dark vignette (hero only) ═══ */}
+      {/* ═══ LAYER 2: Dark vignette ═══ */}
       <div
         style={{
           position: "absolute",
@@ -203,7 +201,7 @@ export default function V2Page() {
         }}
       />
 
-      {/* ═══ LAYER 3: Hero text content ═══ */}
+      {/* ═══ LAYER 3: Hero text ═══ */}
       <div
         style={{
           position: "absolute",
@@ -231,7 +229,7 @@ export default function V2Page() {
             letterSpacing: "-0.04em",
             lineHeight: 0.95,
             fontFamily: "var(--font-display), system-ui, sans-serif",
-            textShadow: "0 2px 40px rgba(0,0,0,0.8), 0 0 80px rgba(255,255,255,0.08)",
+            textShadow: "0 2px 40px rgba(0,0,0,0.8), 0 0 80px rgba(0,229,255,0.07), 0 0 160px rgba(0,229,255,0.04)",
             minHeight: "1.1em",
           }}
         >
@@ -240,7 +238,7 @@ export default function V2Page() {
             style={{
               opacity: showCursor ? 1 : 0,
               animation: showCursor ? "cursor-blink 1s step-end infinite" : "none",
-              color: "#fff",
+              color: "#00e5ff",
               fontWeight: 200,
             }}
           >
@@ -250,7 +248,7 @@ export default function V2Page() {
             <span
               style={{
                 animation: "cursor-blink 1s step-end infinite",
-                color: "rgba(255,255,255,0.3)",
+                color: "rgba(0, 229, 255, 0.25)",
                 fontWeight: 200,
               }}
             >
@@ -263,12 +261,12 @@ export default function V2Page() {
           style={{
             marginTop: "28px",
             fontSize: "clamp(0.9375rem, 1.6vw, 1.125rem)",
-            color: "rgba(255,255,255,0.6)",
+            color: "rgba(0, 229, 255, 0.55)",
             fontFamily: "var(--font-space-mono), monospace",
             letterSpacing: "0.15em",
             lineHeight: 1.6,
             textTransform: "lowercase",
-            textShadow: "0 2px 20px rgba(0,0,0,0.9)",
+            textShadow: "0 2px 20px rgba(0,0,0,0.9), 0 0 40px rgba(0,229,255,0.1)",
             transition: "opacity 800ms ease",
             opacity: sloganVisible ? 1 : 0,
           }}
@@ -281,33 +279,32 @@ export default function V2Page() {
           style={{
             marginTop: "64px",
             fontSize: "0.75rem",
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(0, 229, 255, 0.4)",
             background: "none",
-            border: "1px solid rgba(255,255,255,0.12)",
+            border: "1px solid rgba(0, 229, 255, 0.15)",
             borderRadius: "9999px",
             padding: "12px 36px",
             cursor: "pointer",
             fontFamily: "var(--font-space-mono), monospace",
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            transition: "opacity 800ms ease, color 200ms ease, border-color 200ms ease",
+            transition: "opacity 800ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease",
             opacity: buttonVisible ? 1 : 0,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.6)";
-            e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+            e.currentTarget.style.color = "rgba(0, 229, 255, 0.85)";
+            e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.35)";
+            e.currentTarget.style.boxShadow = "0 0 20px rgba(0, 229, 255, 0.08)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.35)";
-            e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+            e.currentTarget.style.color = "rgba(0, 229, 255, 0.4)";
+            e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.15)";
+            e.currentTarget.style.boxShadow = "none";
           }}
         >
           click to start
         </button>
       </div>
-
-
-
     </div>
   );
 }
