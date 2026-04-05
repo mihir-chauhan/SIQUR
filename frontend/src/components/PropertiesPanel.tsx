@@ -10,11 +10,13 @@ interface PropertiesPanelProps {
   scale: { x: number; y: number; z: number };
   showCone?: boolean;
   showAimLine?: boolean;
+  yaw?: number;
   onPositionChange: (axis: "x" | "y" | "z", value: number) => void;
   onRotationChange: (axis: "x" | "y" | "z", value: number) => void;
   onScaleChange: (axis: "x" | "y" | "z", value: number) => void;
   onToggleCone?: (visible: boolean) => void;
   onToggleAimLine?: (visible: boolean) => void;
+  onSave?: () => void;
 }
 
 function DragInput({
@@ -167,11 +169,13 @@ export default function PropertiesPanel({
   scale,
   showCone,
   showAimLine,
+  yaw,
   onPositionChange,
   onRotationChange,
   onScaleChange,
   onToggleCone,
   onToggleAimLine,
+  onSave,
 }: PropertiesPanelProps) {
   if (!layer) {
     return (
@@ -235,6 +239,19 @@ export default function PropertiesPanel({
               ? "CAMERA POINT"
               : "OBJ MESH"}
         </p>
+        {layer.type === "camera" && yaw !== undefined && (
+          <p
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: "10px",
+              color: "#ffdd44",
+              letterSpacing: "0.1em",
+              marginTop: "6px",
+            }}
+          >
+            YAW: {yaw.toFixed(2)}°
+          </p>
+        )}
       </div>
 
       {/* Position — drag to adjust */}
@@ -417,6 +434,36 @@ export default function PropertiesPanel({
             AIM LINE
           </span>
         </div>
+      )}
+
+      {onSave && (
+        <button
+          onClick={onSave}
+          style={{
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: "10px",
+            letterSpacing: "0.25em",
+            color: "var(--color-accent-cyan)",
+            background: "rgba(0, 229, 255, 0.07)",
+            border: "1px solid rgba(0, 229, 255, 0.3)",
+            borderRadius: "3px",
+            padding: "8px 16px",
+            cursor: "pointer",
+            width: "100%",
+            marginTop: "4px",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(0, 229, 255, 0.14)";
+            e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.6)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(0, 229, 255, 0.07)";
+            e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.3)";
+          }}
+        >
+          SAVE
+        </button>
       )}
     </div>
   );

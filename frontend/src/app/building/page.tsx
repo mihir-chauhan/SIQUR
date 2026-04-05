@@ -8,7 +8,7 @@ import BuildingView from "../../components/BuildingView";
 import LayersSidebar from "../../components/LayersSidebar";
 import type { Layer } from "../../components/LayersSidebar";
 import PropertiesPanel from "../../components/PropertiesPanel";
-import type { SceneObjects, CameraPlacement } from "../../components/SceneView";
+import type { SceneObjects, CameraPlacement, SceneHandle } from "../../components/SceneView";
 import { getPlacedCameras, setPlacedCameras } from "../../lib/session";
 import type { Camera } from "../../lib/types";
 import type { Mesh, Object3D } from "three";
@@ -17,9 +17,20 @@ const SceneView = dynamic(() => import("../../components/SceneView"), {
   ssr: false,
 });
 
+const HARDCODED_CAMERAS: Array<{ id: string; pos: { x: number; y: number; z: number }; yaw: number }> = [
+  { id: "cam_h1", pos: { x: -5.54, y: -1.00, z: 15.87 }, yaw: 270.97 },
+  { id: "cam_h2", pos: { x: -3.93, y: -0.89, z: 13.34 }, yaw: 181.08 },
+  { id: "cam_h3", pos: { x:  0.05, y: -0.86, z: 15.19 }, yaw: 181.01 },
+  { id: "cam_h4", pos: { x:  4.71, y: -1.06, z: 19.20 }, yaw:  17.93 },
+];
+
 const DEFAULT_LAYERS: Layer[] = [
   { id: "outdoor", name: "Outdoor", type: "splat", visible: true },
   { id: "indoor", name: "Indoor", type: "obj", visible: true },
+  { id: "cam_h1", name: "Camera 1", type: "camera", visible: true },
+  { id: "cam_h2", name: "Camera 2", type: "camera", visible: true },
+  { id: "cam_h3", name: "Camera 3", type: "camera", visible: true },
+  { id: "cam_h4", name: "Camera 4", type: "camera", visible: true },
 ];
 
 export default function BuildingPage() {
@@ -27,31 +38,117 @@ export default function BuildingPage() {
   const [layers, setLayers] = useState<Layer[]>(DEFAULT_LAYERS);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [placementMode, setPlacementMode] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
   const [positions, setPositions] = useState<Record<string, { x: number; y: number; z: number }>>({
     outdoor: { x: 0, y: 0, z: 0 },
     indoor: { x: -1.65, y: -0.6, z: 16.9 },
+    cam_h1: { x: -5.54, y: -1.00, z: 15.87 },
+    cam_h2: { x: -3.93, y: -0.89, z: 13.34 },
+    cam_h3: { x:  0.05, y: -0.86, z: 15.19 },
+    cam_h4: { x:  4.71, y: -1.06, z: 19.20 },
   });
   const [rotations, setRotations] = useState<Record<string, { x: number; y: number; z: number }>>({
     outdoor: { x: 0, y: 0, z: 0 },
     indoor: { x: 0, y: -267.5, z: 0 },
+    cam_h1: { x: 0, y: 270.97, z: 0 },
+    cam_h2: { x: 0, y: 181.08, z: 0 },
+    cam_h3: { x: 0, y: 181.01, z: 0 },
+    cam_h4: { x: 0, y:  17.93, z: 0 },
   });
   const [scales, setScales] = useState<Record<string, { x: number; y: number; z: number }>>({
     outdoor: { x: 1, y: 1, z: 1 },
     indoor: { x: 0.25, y: 0.25, z: 0.25 },
+    cam_h1: { x: 1, y: 1, z: 1 },
+    cam_h2: { x: 1, y: 1, z: 1 },
+    cam_h3: { x: 1, y: 1, z: 1 },
+    cam_h4: { x: 1, y: 1, z: 1 },
   });
   const sceneObjectsRef = useRef<SceneObjects>({ splatGroup: null, objGroup: null });
+  const sceneHandleRef = useRef<SceneHandle | null>(null);
 
-  // Clear stale cameras from localStorage on mount
+  // Seed hardcoded cameras into localStorage on mount
   useEffect(() => {
-    setPlacedCameras([]);
+    const hardcodedCameraObjects: Camera[] = HARDCODED_CAMERAS.map((hc, i) => ({
+      id: hc.id,
+      building_id: "dsai",
+      position: hc.pos,
+      rotation: { yaw: hc.yaw, pitch: -20 },
+      fov: 90,
+      coverage_radius: 10,
+      placement_score: 1.0,
+    }));
+    setPlacedCameras(hardcodedCameraObjects);
   }, []);
   // Map layer id -> Three.js mesh for camera markers
   const cameraMarkersRef = useRef<Record<string, Mesh>>({});
-  const [coneVisible, setConeVisible] = useState<Record<string, boolean>>({});
-  const cameraCountRef = useRef(0);
+  const [coneVisible, setConeVisible] = useState<Record<string, boolean>>({
+    cam_h1: true,
+    cam_h2: true,
+    cam_h3: true,
+    cam_h4: true,
+  });
+  const [cameraYaws, setCameraYaws] = useState<Record<string, number>>({
+    cam_h1: 270.97,
+    cam_h2: 181.08,
+    cam_h3: 181.01,
+    cam_h4:  17.93,
+  });
+  const cameraCountRef = useRef(4);
+
+  const handleCaptureCam = useCallback(() => {
+    const handle = sceneHandleRef.current;
+    if (!handle) return;
+    const data = handle.captureCamera();
+    if (!data) return;
+
+    cameraCountRef.current += 1;
+    const id = `cam_${cameraCountRef.current}`;
+    const pos = data.position;
+
+    console.log(`[CAPTURE] ${id}: pos(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}) yaw(${data.yaw.toFixed(2)})`);
+
+    // Spawn the visual marker in the 3D scene
+    const markerGroup = handle.spawnMarker(id, pos, data.yaw);
+    if (markerGroup) {
+      cameraMarkersRef.current[id] = markerGroup as unknown as Mesh;
+    }
+
+    setLayers((prev) => [
+      ...prev,
+      { id, name: `Camera ${cameraCountRef.current}`, type: "camera", visible: true },
+    ]);
+    setPositions((prev) => ({ ...prev, [id]: pos }));
+    setRotations((prev) => ({ ...prev, [id]: { x: 0, y: data.yaw, z: 0 } }));
+    setScales((prev) => ({ ...prev, [id]: { x: 1, y: 1, z: 1 } }));
+    setConeVisible((prev) => ({ ...prev, [id]: true }));
+    setCameraYaws((prev) => ({ ...prev, [id]: data.yaw }));
+
+    // Persist to localStorage
+    const existing = getPlacedCameras();
+    existing.push({
+      id,
+      building_id: "dsai",
+      position: pos,
+      rotation: { yaw: data.yaw, pitch: -20 },
+      fov: 90,
+      coverage_radius: 10,
+      placement_score: 1.0,
+    });
+    setPlacedCameras(existing);
+  }, []);
 
   const handleObjectsReady = useCallback((objects: SceneObjects) => {
     sceneObjectsRef.current = objects;
+    // Grab marker refs for hardcoded cameras after scene init
+    const handle = sceneHandleRef.current;
+    if (handle) {
+      for (const hc of HARDCODED_CAMERAS) {
+        const marker = handle.getMarker(hc.id);
+        if (marker) {
+          cameraMarkersRef.current[hc.id] = marker as unknown as Mesh;
+        }
+      }
+    }
     console.log("[BuildingPage] Objects ready:", {
       splat: !!objects.splatGroup,
       obj: !!objects.objGroup,
@@ -101,6 +198,7 @@ export default function BuildingPage() {
       [id]: { x: 1, y: 1, z: 1 },
     }));
     setConeVisible((prev) => ({ ...prev, [id]: true }));
+    setCameraYaws((prev) => ({ ...prev, [id]: placement.yaw }));
 
     setSelectedLayerId(id);
   }, []);
@@ -134,7 +232,38 @@ export default function BuildingPage() {
     setSelectedLayerId(id);
   }, []);
 
+  const handleSave = useCallback(() => {
+    if (!selectedLayerId) return;
+    const layer = layers.find((l) => l.id === selectedLayerId);
+    if (layer?.type !== "camera") return;
+    const pos = positions[selectedLayerId];
+    const rot = rotations[selectedLayerId];
+    if (!pos || !rot) return;
+    const placed = getPlacedCameras();
+    const cam = placed.find((c) => c.id === selectedLayerId);
+    if (cam) {
+      cam.position = pos;
+      cam.rotation = { yaw: rot.y, pitch: -20 };
+      setPlacedCameras(placed);
+    } else {
+      placed.push({
+        id: selectedLayerId,
+        building_id: "dsai",
+        position: pos,
+        rotation: { yaw: rot.y, pitch: -20 },
+        fov: 90,
+        coverage_radius: 10,
+        placement_score: 1.0,
+      });
+      setPlacedCameras(placed);
+    }
+    console.log("[BuildingPage] Saved camera", selectedLayerId, pos, rot);
+  }, [selectedLayerId, positions, rotations, layers]);
+
   const handleDeleteLayer = useCallback((id: string) => {
+    // Don't allow deleting hardcoded cameras or base layers
+    const protectedIds = new Set(["outdoor", "indoor", ...HARDCODED_CAMERAS.map(c => c.id)]);
+    if (protectedIds.has(id)) return;
     // Remove the Three.js object from scene
     const marker = cameraMarkersRef.current[id];
     if (marker) {
@@ -259,14 +388,17 @@ export default function BuildingPage() {
           objPosition={{ x: -1.65, y: -0.6, z: 16.9 }}
           objRotation={{ x: 0, y: -267.5, z: 0 }}
           objScale={{ x: 0.25, y: 0.25, z: 0.25 }}
+          hardcodedCameras={HARDCODED_CAMERAS}
+          sceneRef={sceneHandleRef}
           onObjectsReady={handleObjectsReady}
           onCameraPlaced={handleCameraPlaced}
           onCameraClicked={(camId) => router.push(`/camera/${camId}`)}
+          onSplatLoaded={() => setSceneReady(true)}
         />
 
         {/* Left sidebar: Layers */}
         <LayersSidebar
-          layers={layers}
+          layers={sceneReady ? layers : layers.filter((l) => l.type !== "camera")}
           selectedLayerId={selectedLayerId}
           onToggleVisibility={handleToggleVisibility}
           onSelectLayer={handleSelectLayer}
@@ -324,6 +456,28 @@ export default function BuildingPage() {
             flexDirection: "column",
           }}
         >
+          {/* DEV: Capture camera button */}
+          <div style={{ padding: "12px", borderBottom: "1px solid rgba(0, 229, 255, 0.08)" }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleCaptureCam(); }}
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: "10px",
+                letterSpacing: "0.2em",
+                color: "#0a0a0a",
+                background: "#ffdd44",
+                border: "none",
+                borderRadius: "3px",
+                padding: "8px 16px",
+                cursor: "pointer",
+                width: "100%",
+                fontWeight: 700,
+              }}
+            >
+              CAPTURE CAMERA
+            </button>
+          </div>
+
           {/* Properties section */}
           <div style={{ padding: "16px", borderBottom: "1px solid rgba(0, 229, 255, 0.08)" }}>
             <PropertiesPanel
@@ -332,15 +486,17 @@ export default function BuildingPage() {
               rotation={selectedRotation}
               scale={selectedScale}
               showCone={selectedLayerId ? coneVisible[selectedLayerId] ?? true : false}
+              yaw={selectedLayerId ? cameraYaws[selectedLayerId] : undefined}
               onPositionChange={handlePositionChange}
               onRotationChange={handleRotationChange}
               onScaleChange={handleScaleChange}
               onToggleCone={selectedLayerId ? (v) => handleToggleCone(selectedLayerId, v) : undefined}
+              onSave={selectedLayerId && layers.find((l) => l.id === selectedLayerId)?.type === "camera" ? handleSave : undefined}
             />
           </div>
 
-          {/* Floor plan + budget */}
-          <div style={{ flex: 1, pointerEvents: "auto" }}>
+          {/* Floor plan + budget — hidden until splats finish loading */}
+          <div style={{ flex: 1, pointerEvents: "auto", display: sceneReady ? "block" : "none" }}>
             <BuildingView />
           </div>
         </div>

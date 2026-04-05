@@ -8,6 +8,20 @@ import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
 
+// ----- TEMPORARY HARDCODED SCREENSHOTS -----
+// Maps hardcoded camera IDs to static screenshot images.
+// These replace the live 3D feed for demo purposes.
+// To revert: delete this map and remove the `useStaticScreenshot` variable
+// and the static image <img> block below (search for "STATIC_SCREENSHOT" comments).
+// The live 3D CameraView will resume working as before.
+const STATIC_SCREENSHOTS: Record<string, string> = {
+  cam_h1: "/camera-screenshots/cam_h1.png",
+  cam_h2: "/camera-screenshots/cam_h2.png",
+  cam_h3: "/camera-screenshots/cam_h3.png",
+  cam_h4: "/camera-screenshots/cam_h4.png",
+};
+// ----- END TEMPORARY HARDCODED SCREENSHOTS -----
+
 interface CameraViewProps {
   cameraId: string;
   cameras: Camera[];
@@ -35,6 +49,9 @@ export default function CameraView({
   const [timestamp, setTimestamp] = useState("");
 
   const camera = cameras.find((c) => c.id === cameraId) ?? null;
+
+  // STATIC_SCREENSHOT: Use static image instead of live 3D feed for hardcoded cameras
+  const useStaticScreenshot = cameraId in STATIC_SCREENSHOTS;
 
   // Update timestamp every second
   useEffect(() => {
@@ -115,12 +132,15 @@ export default function CameraView({
             const objLoader = new OBJLoader();
             objLoader.setMaterials(materials);
             objLoader.load("/models/interior/4_4_2026.obj", (obj) => {
+              // Match SceneView exactly: wrapper group handles transforms, obj just flips
               obj.rotation.x = Math.PI;
-              // Apply same transform as building view
-              obj.position.set(-1.65, -0.6, 16.9);
+
+              const objWrapper = new THREE.Group();
+              objWrapper.position.set(-1.65, -0.6, 16.9);
               const d = Math.PI / 180;
-              obj.rotation.set(Math.PI, -267.5 * d, 0);
-              obj.scale.set(0.25, 0.25, 0.25);
+              objWrapper.rotation.set(0 * d, -267.5 * d, 0 * d);
+              objWrapper.scale.set(0.25, 0.25, 0.25);
+              objWrapper.add(obj);
 
               obj.traverse((child) => {
                 if ((child as THREE.Mesh).isMesh) {
@@ -133,7 +153,7 @@ export default function CameraView({
                 }
               });
 
-              scene.add(obj);
+              scene.add(objWrapper);
               viewerRef.current = { dispose: () => {} };
 
               if (disposed) {
@@ -265,14 +285,40 @@ export default function CameraView({
         background: "var(--color-bg)",
       }}
     >
-      {/* 3D Viewer Container */}
-      <div
-        ref={containerRef}
-        style={{
-          position: "absolute",
-          inset: 0,
-        }}
-      />
+      {/* STATIC_SCREENSHOT: Show static image for hardcoded cameras, live 3D for others */}
+      {useStaticScreenshot ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "var(--color-bg)",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={STATIC_SCREENSHOTS[cameraId]}
+            alt={`Camera ${cameraId} feed`}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      ) : (
+        /* 3D Viewer Container — original live feed (preserved for non-hardcoded cameras) */
+        <div
+          ref={containerRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+          }}
+        />
+      )}
+      {/* END STATIC_SCREENSHOT */}
 
       {/* CRT Vignette */}
       <div className="crt-vignette" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }} />
