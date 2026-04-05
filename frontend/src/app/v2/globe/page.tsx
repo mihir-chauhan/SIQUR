@@ -25,7 +25,7 @@ const LOCATION_DB: Record<string, { name: string; coordinates: string }> = {
   "hall-ds-ai": { name: "Hall of Data Science and AI", coordinates: "40.4290° N, 86.9148° W" },
   "purdue-lawson": { name: "Lawson Computer Science Building", coordinates: "40.4278° N, 86.9170° W" },
   "purdue-pmu": { name: "Purdue Memorial Union", coordinates: "40.4247° N, 86.9106° W" },
-  "purdue-armstrong": { name: "Neil Armstrong Hall of Engineering", coordinates: "40.4314° N, 86.9193° W" },
+  "purdue-armstrong": { name: "Hall of Data Science and AI", coordinates: "40.4314° N, 86.9193° W" },
 };
 
 export default function GlobePage() {
@@ -190,7 +190,7 @@ export default function GlobePage() {
                   letterSpacing: "0.2em", cursor: "pointer", textTransform: "uppercase" as const,
                 }}
               >
-                ▶ ENTER BUILDING
+                ▶ PLACE CAMERAS
               </button>
             </motion.div>
           </AnimatePresence>

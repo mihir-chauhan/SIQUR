@@ -43,7 +43,7 @@ export const PRELOADED_BUILDINGS: Building[] = [
   },
   {
     id: "purdue-armstrong",
-    name: "Neil Armstrong Hall of Engineering",
+    name: "Hall of Data Science and AI",
     lat: 40.4314,
     lng: -86.9193,
     // ~80m E-W × 50m N-S, rectangular with wing
