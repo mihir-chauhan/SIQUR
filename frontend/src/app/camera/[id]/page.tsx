@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { getSessionId } from "@/lib/session";
+import { getSessionId, getPlacedCameras } from "@/lib/session";
 import {
   getCameras,
   getBuilding,
@@ -38,12 +38,19 @@ export default function CameraPage() {
 
     const load = async () => {
       try {
-        const [camerasRes, buildingRes] = await Promise.all([
-          getCameras(sessionId),
-          getBuilding(sessionId),
-        ]);
-        setCameras(camerasRes.cameras);
-        setBuilding(buildingRes.building);
+        // Use placed cameras from localStorage (these are the ones user manually placed)
+        const placedCameras = getPlacedCameras();
+        if (placedCameras.length > 0) {
+          setCameras(placedCameras);
+        }
+
+        // Still try to get building info for the HUD
+        try {
+          const buildingRes = await getBuilding(sessionId);
+          setBuilding(buildingRes.building);
+        } catch {
+          // Building info is optional for camera view
+        }
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : "Failed to load camera data";

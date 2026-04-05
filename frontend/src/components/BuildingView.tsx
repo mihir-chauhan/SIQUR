@@ -334,16 +334,13 @@ export default function BuildingView() {
   return (
     <main
       style={{
-        backgroundColor: "rgba(10, 10, 10, 0.85)",
-        backdropFilter: "blur(8px)",
+        backgroundColor: "transparent",
         color: "var(--color-text)",
         display: "flex",
         flexDirection: "column",
         padding: "16px",
-        gap: "16px",
+        gap: "12px",
         position: "relative",
-        borderRadius: "6px",
-        border: "1px solid rgba(0, 229, 255, 0.15)",
       }}
     >
       {/* Page-level HUD corners */}
@@ -528,80 +525,18 @@ export default function BuildingView() {
             AERIAL FOOTPRINT — TOP VIEW
           </p>
 
-          <div style={{ width: "100%", maxWidth: `${SVG_SIZE}px` }}>
-            <svg
-              viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
-              width="100%"
-              style={{ display: "block" }}
-              aria-label={`Floor plan of ${building.name}`}
-            >
-              {/* Grid lines for atmosphere */}
-              {Array.from({ length: 9 }, (_, i) => {
-                const coord = SVG_PAD + ((SVG_SIZE - SVG_PAD * 2) / 8) * i;
-                return (
-                  <g key={i}>
-                    <line
-                      x1={coord} y1={0} x2={coord} y2={SVG_SIZE}
-                      stroke="rgba(0,229,255,0.06)" strokeWidth="0.5"
-                    />
-                    <line
-                      x1={0} y1={coord} x2={SVG_SIZE} y2={coord}
-                      stroke="rgba(0,229,255,0.06)" strokeWidth="0.5"
-                    />
-                  </g>
-                );
-              })}
-              {/* Grid labels along edges */}
-              {Array.from({ length: 5 }, (_, i) => {
-                const coord = SVG_PAD + ((SVG_SIZE - SVG_PAD * 2) / 4) * i;
-                return (
-                  <text
-                    key={`label-${i}`}
-                    x={coord}
-                    y={SVG_SIZE - 8}
-                    fill="rgba(0,229,255,0.2)"
-                    fontSize="7"
-                    fontFamily="var(--font-space-mono, monospace)"
-                    textAnchor="middle"
-                  >
-                    {(i * 25).toString()}
-                  </text>
-                );
-              })}
-
-              {/* Building footprint polygon */}
-              <polygon
-                points={polygonPoints(scaledPolygon)}
-                fill="rgba(0,229,255,0.07)"
-                stroke="var(--color-accent-cyan)"
-                strokeWidth="2"
-                style={{ filter: "drop-shadow(0 0 6px rgba(0,229,255,0.4))" }}
-              />
-
-              {/* Camera pins */}
-              <AnimatePresence>
-                {cameras.map((cam, i) => {
-                  const { svgX, svgY } = cameraToSVG(cam, building);
-                  return (
-                    <motion.g
-                      key={cam.id}
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0 }}
-                      transition={{ delay: i * 0.06, duration: 0.3 }}
-                    >
-                      <CameraPin
-                        svgX={svgX}
-                        svgY={svgY}
-                        cameraId={cam.id}
-                        index={i}
-                        onClick={handleCameraClick}
-                      />
-                    </motion.g>
-                  );
-                })}
-              </AnimatePresence>
-            </svg>
+          {/* Floor plan image — inverted + cyan tinted for dark theme */}
+          <div style={{ width: "100%", position: "relative" }}>
+            <img
+              src="/models/DSAI_floorplan.png"
+              alt={`Floor plan of ${building.name}`}
+              style={{
+                width: "100%",
+                display: "block",
+                filter: "invert(1) brightness(0.7) sepia(1) hue-rotate(160deg) saturate(3)",
+                opacity: 0.7,
+              }}
+            />
           </div>
         </div>
 

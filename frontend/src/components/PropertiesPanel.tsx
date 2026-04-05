@@ -8,9 +8,11 @@ interface PropertiesPanelProps {
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
   scale: { x: number; y: number; z: number };
+  showCone?: boolean;
   onPositionChange: (axis: "x" | "y" | "z", value: number) => void;
   onRotationChange: (axis: "x" | "y" | "z", value: number) => void;
   onScaleChange: (axis: "x" | "y" | "z", value: number) => void;
+  onToggleCone?: (visible: boolean) => void;
 }
 
 function DragInput({
@@ -161,9 +163,11 @@ export default function PropertiesPanel({
   position,
   rotation,
   scale,
+  showCone,
   onPositionChange,
   onRotationChange,
   onScaleChange,
+  onToggleCone,
 }: PropertiesPanelProps) {
   if (!layer) {
     return (
@@ -333,6 +337,45 @@ export default function PropertiesPanel({
           step={0.01}
         />
       </div>
+
+      {/* Cone visibility toggle — camera layers only */}
+      {layer.type === "camera" && onToggleCone && (
+        <div
+          onClick={() => onToggleCone(!showCone)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "8px",
+            borderRadius: "3px",
+            border: "1px solid rgba(0, 229, 255, 0.12)",
+            background: "rgba(0, 229, 255, 0.03)",
+            cursor: "pointer",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: "14px",
+              color: showCone ? "#ffdd44" : "var(--color-text-dim)",
+              width: "20px",
+              opacity: showCone ? 1 : 0.4,
+            }}
+          >
+            {showCone ? "\u25C9" : "\u25CE"}
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: "9px",
+              letterSpacing: "0.2em",
+              color: showCone ? "#ffdd44" : "var(--color-text-dim)",
+            }}
+          >
+            VISION CONE
+          </span>
+        </div>
+      )}
     </div>
   );
 }

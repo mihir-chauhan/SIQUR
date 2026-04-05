@@ -11,9 +11,9 @@ import {
 } from "three-mesh-bvh";
 
 // Patch Three.js to use BVH-accelerated raycasting globally
-// @ts-expect-error — three-mesh-bvh monkey-patches prototypes
+// @ts-ignore — three-mesh-bvh monkey-patches prototypes
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
-// @ts-expect-error
+// @ts-ignore
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
@@ -31,6 +31,8 @@ export interface CameraPlacement {
   position: THREE.Vector3;
   normal: THREE.Vector3;
   mesh: THREE.Mesh;
+  yaw: number;   // degrees
+  pitch: number; // degrees
 }
 
 export default function SceneView({
@@ -45,6 +47,7 @@ export default function SceneView({
   objScale,
   onObjectsReady,
   onCameraPlaced,
+  onCameraClicked,
 }: {
   splatPath: string;
   objPath?: string;
@@ -57,17 +60,20 @@ export default function SceneView({
   objScale?: { x: number; y: number; z: number };
   onObjectsReady?: (objects: SceneObjects) => void;
   onCameraPlaced?: (placement: CameraPlacement) => void;
+  onCameraClicked?: (cameraId: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const placementModeRef = useRef(false);
   const onCameraPlacedRef = useRef(onCameraPlaced);
+  const onCameraClickedRef = useRef(onCameraClicked);
   const splatVisibleRef = useRef(splatVisible ?? true);
   const objVisibleRef = useRef(objVisible ?? true);
 
   // Keep refs in sync with props every render
   placementModeRef.current = placementMode ?? false;
   onCameraPlacedRef.current = onCameraPlaced;
+  onCameraClickedRef.current = onCameraClicked;
   splatVisibleRef.current = splatVisible ?? true;
   objVisibleRef.current = objVisible ?? true;
 
@@ -109,7 +115,8 @@ export default function SceneView({
         sharedMemoryForWorkers: false,
         integerBasedSort: false,
         dynamicScene: false,
-        sceneRevealMode: GaussianSplats3D.SceneRevealMode.Gradual,
+        // @ts-ignore — SceneRevealMode exists at runtime
+        sceneRevealMode: GaussianSplats3D.SceneRevealMode?.Gradual ?? 1,
         threeScene: threeScene,
         ignoreDevicePixelRatio: false,
       });
@@ -161,7 +168,7 @@ export default function SceneView({
               obj.traverse((child) => {
                 if ((child as THREE.Mesh).isMesh) {
                   const mesh = child as THREE.Mesh;
-                  // @ts-expect-error — patched by three-mesh-bvh
+                  // @ts-ignore — patched by three-mesh-bvh
                   mesh.geometry.computeBoundsTree();
                   if (Array.isArray(mesh.material)) {
                     mesh.material.forEach((m) => (m.side = THREE.DoubleSide));
@@ -205,12 +212,28 @@ export default function SceneView({
       raycaster.firstHitOnly = true;
       const pointer = new THREE.Vector2();
 
-      const markerGeo = new THREE.SphereGeometry(0.06, 16, 16);
+      const markerGeo = new THREE.SphereGeometry(0.03, 12, 12);
       const markerMat = new THREE.MeshBasicMaterial({
-        color: 0x00e5ff,
+        color: 0xffffff,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.95,
       });
+      // Vision cone: 90° FOV, ~2m length, very transparent
+      const coneFov = 90;
+      const coneLength = 2;
+      const coneRadius = Math.tan((coneFov / 2) * Math.PI / 180) * coneLength;
+      const coneGeo = new THREE.ConeGeometry(coneRadius, coneLength, 24, 1, true);
+      // Shift geometry so the tip is at origin (camera position)
+      coneGeo.translate(0, -coneLength / 2, 0);
+      const coneMat = new THREE.MeshBasicMaterial({
+        color: 0xffdd44,
+        transparent: true,
+        opacity: 0.08,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+      const markerIdMap = new Map<THREE.Object3D, string>();
+      let camCounter = 0;
 
       const onKeyDown = (e: KeyboardEvent) => {
         keys[e.key.toLowerCase()] = true;
@@ -220,16 +243,46 @@ export default function SceneView({
         keys[e.key.toLowerCase()] = false;
         if (e.key === "Shift") keys["shift"] = false;
       };
+      let mouseDownOnCanvas = false;
       const onMouseDown = (e: MouseEvent) => {
-        if (e.button === 0) {
+        // Only handle clicks directly on the canvas
+        if (e.button === 0 && e.target === renderer.domElement) {
           isDragging = true;
           didDrag = false;
+          mouseDownOnCanvas = true;
           mouseDownPos = { x: e.clientX, y: e.clientY };
         }
       };
       const onMouseUp = (e: MouseEvent) => {
         if (e.button === 0) {
           isDragging = false;
+          if (!mouseDownOnCanvas) return;
+          mouseDownOnCanvas = false;
+
+          if (!didDrag && !placementModeRef.current) {
+            // Not in placement mode — check if clicked a camera marker
+            const rect = renderer.domElement.getBoundingClientRect();
+            pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+
+            const markers = Array.from(markerIdMap.keys());
+            if (markers.length > 0) {
+              const markerHits = raycaster.intersectObjects(markers, true);
+              if (markerHits.length > 0) {
+                // Walk up to find which group was hit
+                let hitObj: THREE.Object3D | null = markerHits[0].object;
+                while (hitObj && !markerIdMap.has(hitObj)) {
+                  hitObj = hitObj.parent;
+                }
+                const hitId = hitObj ? markerIdMap.get(hitObj) : undefined;
+                if (hitId && onCameraClickedRef.current) {
+                  onCameraClickedRef.current(hitId);
+                  return;
+                }
+              }
+            }
+          }
 
           // If didn't drag and in placement mode, do raycast
           if (!didDrag && placementModeRef.current) {
@@ -245,20 +298,44 @@ export default function SceneView({
                 .clone()
                 .transformDirection(hit.object.matrixWorld);
 
-              // Spawn marker
-              const marker = new THREE.Mesh(markerGeo, markerMat.clone());
-              marker.position.copy(hit.point);
-              // Offset slightly along normal to prevent z-fighting
-              marker.position.addScaledVector(worldNormal, 0.02);
-              threeScene.add(marker);
+              // Spawn marker group (orb + vision cone)
+              const markerGroup = new THREE.Group();
+              markerGroup.position.copy(hit.point);
+              markerGroup.position.addScaledVector(worldNormal, 0.02);
 
-              console.log("[SceneView] Camera placed at", hit.point);
+              // White orb
+              const marker = new THREE.Mesh(markerGeo, markerMat.clone());
+              markerGroup.add(marker);
+
+              // Vision cone pointing inward (along -normal)
+              const cone = new THREE.Mesh(coneGeo.clone(), coneMat.clone());
+              // Default cone points along -Y. Rotate to point along inward direction.
+              const inwardDir = worldNormal.clone().negate();
+              const defaultDir = new THREE.Vector3(0, -1, 0);
+              const coneQuat = new THREE.Quaternion().setFromUnitVectors(defaultDir, inwardDir);
+              cone.quaternion.copy(coneQuat);
+              markerGroup.add(cone);
+
+              threeScene.add(markerGroup);
+
+              camCounter++;
+              markerIdMap.set(markerGroup, `cam_${camCounter}`);
+
+              // Compute yaw from inward direction (opposite of surface normal)
+              const inward = worldNormal.clone().negate();
+              const yawRad = Math.atan2(inward.x, inward.z);
+              const yawDeg = ((yawRad * 180) / Math.PI + 360) % 360;
+              const pitchDeg = -20; // default wall mount pitch
+
+              console.log("[SceneView] Camera placed at", hit.point, "yaw:", yawDeg.toFixed(1));
 
               if (onCameraPlacedRef.current) {
                 onCameraPlacedRef.current({
                   position: hit.point.clone(),
                   normal: worldNormal,
-                  mesh: marker,
+                  mesh: markerGroup as unknown as THREE.Mesh,
+                  yaw: yawDeg,
+                  pitch: pitchDeg,
                 });
               }
             }

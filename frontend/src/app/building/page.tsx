@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import BuildingView from "../../components/BuildingView";
@@ -8,6 +9,8 @@ import LayersSidebar from "../../components/LayersSidebar";
 import type { Layer } from "../../components/LayersSidebar";
 import PropertiesPanel from "../../components/PropertiesPanel";
 import type { SceneObjects, CameraPlacement } from "../../components/SceneView";
+import { getPlacedCameras, setPlacedCameras } from "../../lib/session";
+import type { Camera } from "../../lib/types";
 import type { Mesh, Object3D } from "three";
 
 const SceneView = dynamic(() => import("../../components/SceneView"), {
@@ -20,6 +23,7 @@ const DEFAULT_LAYERS: Layer[] = [
 ];
 
 export default function BuildingPage() {
+  const router = useRouter();
   const [layers, setLayers] = useState<Layer[]>(DEFAULT_LAYERS);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [placementMode, setPlacementMode] = useState(false);
@@ -36,8 +40,14 @@ export default function BuildingPage() {
     indoor: { x: 0.25, y: 0.25, z: 0.25 },
   });
   const sceneObjectsRef = useRef<SceneObjects>({ splatGroup: null, objGroup: null });
+
+  // Clear stale cameras from localStorage on mount
+  useEffect(() => {
+    setPlacedCameras([]);
+  }, []);
   // Map layer id -> Three.js mesh for camera markers
   const cameraMarkersRef = useRef<Record<string, Mesh>>({});
+  const [coneVisible, setConeVisible] = useState<Record<string, boolean>>({});
   const cameraCountRef = useRef(0);
 
   const handleObjectsReady = useCallback((objects: SceneObjects) => {
@@ -53,7 +63,22 @@ export default function BuildingPage() {
     const id = `cam_${cameraCountRef.current}`;
     const pos = placement.position;
 
-    // Store the mesh ref
+    // Build Camera object matching the schema
+    const camera: Camera = {
+      id,
+      building_id: "dsai",
+      position: { x: pos.x, y: pos.y, z: pos.z },
+      rotation: { yaw: placement.yaw, pitch: placement.pitch },
+      fov: 90,
+      coverage_radius: 10,
+      placement_score: 1.0,
+    };
+
+    // Sync to localStorage so /camera/[id] can read it
+    const existing = getPlacedCameras();
+    setPlacedCameras([...existing, camera]);
+
+    // Store the mesh ref for visibility/transform
     cameraMarkersRef.current[id] = placement.mesh;
 
     // Add layer
@@ -62,22 +87,32 @@ export default function BuildingPage() {
       { id, name: `Camera ${cameraCountRef.current}`, type: "camera", visible: true },
     ]);
 
-    // Add position and scale
+    // Add position, rotation, scale
     setPositions((prev) => ({
       ...prev,
       [id]: { x: pos.x, y: pos.y, z: pos.z },
     }));
     setRotations((prev) => ({
       ...prev,
-      [id]: { x: 0, y: 0, z: 0 },
+      [id]: { x: 0, y: placement.yaw, z: 0 },
     }));
     setScales((prev) => ({
       ...prev,
       [id]: { x: 1, y: 1, z: 1 },
     }));
+    setConeVisible((prev) => ({ ...prev, [id]: true }));
 
-    // Select the new camera
     setSelectedLayerId(id);
+  }, []);
+
+  const handleToggleCone = useCallback((id: string, visible: boolean) => {
+    setConeVisible((prev) => ({ ...prev, [id]: visible }));
+    // Toggle the cone mesh (second child of the marker group)
+    const markerGroup = cameraMarkersRef.current[id];
+    if (markerGroup && markerGroup.children) {
+      const cone = markerGroup.children[1];
+      if (cone) cone.visible = visible;
+    }
   }, []);
 
   const handleToggleVisibility = useCallback((id: string) => {
@@ -97,6 +132,26 @@ export default function BuildingPage() {
 
   const handleSelectLayer = useCallback((id: string) => {
     setSelectedLayerId(id);
+  }, []);
+
+  const handleDeleteLayer = useCallback((id: string) => {
+    // Remove the Three.js object from scene
+    const marker = cameraMarkersRef.current[id];
+    if (marker) {
+      marker.parent?.remove(marker);
+      delete cameraMarkersRef.current[id];
+    }
+    // Remove from layers
+    setLayers((prev) => prev.filter((l) => l.id !== id));
+    // Clear selection if deleted
+    setSelectedLayerId((prev) => (prev === id ? null : prev));
+    // Remove from localStorage
+    const placed = getPlacedCameras();
+    setPlacedCameras(placed.filter((c) => c.id !== id));
+    // Clean up position/rotation/scale state
+    setPositions((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setRotations((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setScales((prev) => { const n = { ...prev }; delete n[id]; return n; });
   }, []);
 
   const handlePositionChange = useCallback(
@@ -206,6 +261,7 @@ export default function BuildingPage() {
           objScale={{ x: 0.25, y: 0.25, z: 0.25 }}
           onObjectsReady={handleObjectsReady}
           onCameraPlaced={handleCameraPlaced}
+          onCameraClicked={(camId) => router.push(`/camera/${camId}`)}
         />
 
         {/* Left sidebar: Layers */}
@@ -214,6 +270,7 @@ export default function BuildingPage() {
           selectedLayerId={selectedLayerId}
           onToggleVisibility={handleToggleVisibility}
           onSelectLayer={handleSelectLayer}
+          onDeleteLayer={handleDeleteLayer}
         />
 
         {/* Placement mode toggle */}
@@ -227,7 +284,7 @@ export default function BuildingPage() {
           }}
         >
           <button
-            onClick={() => setPlacementMode((p) => !p)}
+            onClick={(e) => { e.stopPropagation(); setPlacementMode((p) => !p); }}
             style={{
               fontFamily: "var(--font-mono, monospace)",
               fontSize: "11px",
@@ -250,46 +307,42 @@ export default function BuildingPage() {
           </button>
         </div>
 
-        {/* Right panel: Properties (top) */}
+        {/* Right panel: full-height, properties + floor plan + budget */}
         <div
           style={{
             position: "absolute",
-            top: 16,
-            right: 16,
-            width: "260px",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: "280px",
             zIndex: 20,
-            backgroundColor: "rgba(10, 10, 10, 0.85)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(0, 229, 255, 0.15)",
-            borderRadius: "6px",
-            padding: "16px",
-          }}
-        >
-          <PropertiesPanel
-            layer={selectedLayer}
-            position={selectedPosition}
-            rotation={selectedRotation}
-            scale={selectedScale}
-            onPositionChange={handlePositionChange}
-            onRotationChange={handleRotationChange}
-            onScaleChange={handleScaleChange}
-          />
-        </div>
-
-        {/* Bottom-right: BuildingView panel (budget, deploy, floor plan) */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 16,
-            right: 16,
-            width: "420px",
-            maxHeight: "calc(100vh - 320px)",
+            backgroundColor: "rgba(10, 10, 10, 0.9)",
+            backdropFilter: "blur(12px)",
+            borderLeft: "1px solid rgba(0, 229, 255, 0.1)",
             overflowY: "auto",
-            zIndex: 10,
-            pointerEvents: "auto",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <BuildingView />
+          {/* Properties section */}
+          <div style={{ padding: "16px", borderBottom: "1px solid rgba(0, 229, 255, 0.08)" }}>
+            <PropertiesPanel
+              layer={selectedLayer}
+              position={selectedPosition}
+              rotation={selectedRotation}
+              scale={selectedScale}
+              showCone={selectedLayerId ? coneVisible[selectedLayerId] ?? true : false}
+              onPositionChange={handlePositionChange}
+              onRotationChange={handleRotationChange}
+              onScaleChange={handleScaleChange}
+              onToggleCone={selectedLayerId ? (v) => handleToggleCone(selectedLayerId, v) : undefined}
+            />
+          </div>
+
+          {/* Floor plan + budget */}
+          <div style={{ flex: 1, pointerEvents: "auto" }}>
+            <BuildingView />
+          </div>
         </div>
       </motion.div>
     </AnimatePresence>

@@ -14,6 +14,7 @@ interface LayersSidebarProps {
   selectedLayerId: string | null;
   onToggleVisibility: (id: string) => void;
   onSelectLayer: (id: string) => void;
+  onDeleteLayer?: (id: string) => void;
 }
 
 export default function LayersSidebar({
@@ -21,6 +22,7 @@ export default function LayersSidebar({
   selectedLayerId,
   onToggleVisibility,
   onSelectLayer,
+  onDeleteLayer,
 }: LayersSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -29,8 +31,8 @@ export default function LayersSidebar({
       <div
         style={{
           position: "absolute",
-          top: 16,
-          left: 16,
+          top: 0,
+          left: 0,
           zIndex: 20,
         }}
       >
@@ -41,11 +43,12 @@ export default function LayersSidebar({
             fontSize: "10px",
             letterSpacing: "0.2em",
             color: "var(--color-accent-cyan)",
-            background: "rgba(10, 10, 10, 0.85)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(0, 229, 255, 0.2)",
-            borderRadius: "4px",
-            padding: "8px 12px",
+            background: "rgba(10, 10, 10, 0.9)",
+            backdropFilter: "blur(12px)",
+            border: "none",
+            borderRight: "1px solid rgba(0, 229, 255, 0.1)",
+            borderBottom: "1px solid rgba(0, 229, 255, 0.1)",
+            padding: "12px 16px",
             cursor: "pointer",
           }}
         >
@@ -59,15 +62,17 @@ export default function LayersSidebar({
     <div
       style={{
         position: "absolute",
-        top: 16,
-        left: 16,
-        width: "220px",
+        top: 0,
+        left: 0,
+        bottom: 0,
+        width: "240px",
         zIndex: 20,
-        backgroundColor: "rgba(10, 10, 10, 0.85)",
-        backdropFilter: "blur(8px)",
-        border: "1px solid rgba(0, 229, 255, 0.15)",
-        borderRadius: "6px",
+        backgroundColor: "rgba(10, 10, 10, 0.9)",
+        backdropFilter: "blur(12px)",
+        borderRight: "1px solid rgba(0, 229, 255, 0.1)",
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {/* Header */}
@@ -184,6 +189,39 @@ export default function LayersSidebar({
                       : "OBJ MESH"}
                 </span>
               </div>
+
+              {/* Delete button */}
+              {onDeleteLayer && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteLayer(layer.id);
+                  }}
+                  style={{
+                    fontFamily: "var(--font-mono, monospace)",
+                    fontSize: "12px",
+                    color: "var(--color-text-dim)",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    width: "20px",
+                    opacity: 0.4,
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = "1";
+                    e.currentTarget.style.color = "#ff4444";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = "0.4";
+                    e.currentTarget.style.color = "var(--color-text-dim)";
+                  }}
+                  title="Delete layer"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           );
         })}
