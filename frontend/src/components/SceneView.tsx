@@ -117,6 +117,7 @@ export interface SceneHandle {
   captureCamera: () => { position: { x: number; y: number; z: number }; yaw: number } | null;
   spawnMarker: (id: string, pos: { x: number; y: number; z: number }, yaw: number) => THREE.Group | null;
   getMarker: (id: string) => THREE.Object3D | null;
+  flyTo: (pos: { x: number; y: number; z: number }, yaw: number) => void;
 }
 
 export interface CameraPlacement {
@@ -321,6 +322,18 @@ export default function SceneView({
               if (mid === id) return obj;
             }
             return null;
+          },
+          flyTo: (pos, yaw) => {
+            camera.position.set(pos.x, pos.y, pos.z);
+            const yawRad = (yaw * Math.PI) / 180;
+            const lookTarget = new THREE.Vector3(
+              pos.x + Math.sin(yawRad),
+              pos.y,
+              pos.z + Math.cos(yawRad)
+            );
+            camera.lookAt(lookTarget);
+            // Update euler to match new orientation for mouse look
+            euler.setFromQuaternion(camera.quaternion);
           },
         };
       }
