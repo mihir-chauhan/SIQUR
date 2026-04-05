@@ -47,7 +47,7 @@ Two modes:
 
 **Auto-minimize mode** (default): Find the fewest cameras needed to hit `--coverage-target` (default 98%).
 1. Run greedy until target is met.
-2. If greedy selected ≤ 50 cameras, run OR-Tools CP-SAT ILP for the provably optimal (minimum) solution within `--ilp-timeout` seconds. Falls back to greedy if ILP times out.
+2. If greedy selected ≤ 50 cameras, run OR-Tools CP-SAT ILP for the provably optimal (minimum) solution within 15 seconds. Falls back to greedy if ILP times out.
 
 ### Stage 4 — Output (`output.py`)
 
@@ -74,7 +74,12 @@ python main.py lawson_1.JPG --coverage-target 0.99 --max-range 12
 
 # Custom scale (pixels per metre)
 python main.py blueprint.png --scale 40.0
+
+# Ceiling-mounted cameras with colored FOV wedges
+python main.py dsai_1_masked.png --ceiling --color
 ```
+
+**Masked/unmasked image pairs:** If you pass a `_masked` image (e.g. `dsai_1_masked.png`), the algorithm automatically looks for a sibling `_unmasked` file (e.g. `dsai_1_unmasked.png`) and uses it as the display background in the output PNG, while still computing wall detection from the masked version.
 
 **All options:**
 
@@ -91,6 +96,10 @@ python main.py blueprint.png --scale 40.0
 | `--n-rays N` | `360` | Angular resolution for ray casting |
 | `--building-id STR` | `purdue-lawson` | Building ID in JSON output |
 | `--output-dir DIR` | `./output` | Output directory |
+| `--ceiling` | off | Place cameras on ceilings (interior floor grid) instead of wall-adjacent positions |
+| `--show-uncovered` | off | Overlay red tiles on uncovered floor areas in the PNG |
+| `--color` | off | Use unique colors per camera FOV wedge (default: all grey) |
+| `--no-dots` | off | Hide camera position markers and labels in the PNG |
 
 ## Output
 
@@ -132,7 +141,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Dependencies: `numpy`, `opencv-python`, `scipy`, `matplotlib`, `ortools`, `Pillow`, `scikit-image`.
+Dependencies: `numpy`, `opencv-python`, `scipy`, `shapely`, `scikit-image`, `ortools`, `matplotlib`, `Pillow`.
 
 OR-Tools is optional — if not installed, ILP is skipped and greedy is used.
 

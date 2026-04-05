@@ -1,11 +1,12 @@
 """
 Qwen2.5-VL model loader and inference.
 
-Designed for text-only analysis of synthetic scene descriptions —
-no image required for mock camera feeds.
+Supports both:
+  - run_analysis(scene_description)  — text-only, for mock camera feeds
+  - run_analysis_image(pil_image)     — vision, for real CCTV frame analysis
 
-Load once at startup via load_model(); call run_analysis() from
-a ThreadPoolExecutor thread (it is synchronous / blocking).
+Load once at startup via load_model(); all run_* functions are
+synchronous and must be called from a ThreadPoolExecutor thread.
 """
 
 from __future__ import annotations
@@ -19,6 +20,27 @@ _processor = None
 _loaded = False
 
 MODEL_ID = os.environ.get("QWEN_MODEL_ID", "Qwen/Qwen2.5-VL-7B-Instruct")
+
+IMAGE_SYSTEM_PROMPT = """\
+You are an AI security monitoring system analyzing a real surveillance camera frame.
+Look carefully at the image and determine whether any of the following security incidents are occurring.""" + """
+
+Respond ONLY with valid JSON in this exact format — nothing else:
+{
+  "incident": true or false,
+  "type": one of ["crime_assault", "fire_smoke", "unauthorized_access", "medical_emergency"] or null,
+  "severity": one of ["low", "medium", "high"] or null,
+  "description": "one sentence, maximum 100 characters" or null
+}
+
+Rules:
+- Set "incident" to false for routine, normal, or ambiguous scenes.
+- Only set "incident" to true for clearly visible dangerous or emergency situations.
+- "type" and "severity" must be null when "incident" is false.
+- "description" must be null when "incident" is false.
+- When "incident" is true, "description" must describe what you see in the image.
+- Return NOTHING outside the JSON object — no preamble, no explanation.\
+"""
 
 SYSTEM_PROMPT = """\
 You are an AI security monitoring system analyzing surveillance camera feeds.
@@ -97,6 +119,54 @@ def run_analysis(scene_description: str) -> str:
         )
 
     # Decode only the newly generated tokens
+    new_tokens = output_ids[0][inputs.input_ids.shape[1]:]
+    return _processor.decode(new_tokens, skip_special_tokens=True).strip()
+
+
+def run_analysis_image(image: "PIL.Image.Image") -> str:
+    """
+    Run visual analysis on a real PIL image frame from a camera.
+    Uses Qwen2.5-VL's vision capabilities to detect incidents.
+    Synchronous — call from ThreadPoolExecutor thread only.
+    """
+    import torch
+    from qwen_vl_utils import process_vision_info
+
+    if not _loaded:
+        raise RuntimeError("Model not loaded — call load_model() first")
+
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "image", "image": image},
+                {"type": "text", "text": IMAGE_SYSTEM_PROMPT},
+            ],
+        }
+    ]
+
+    text = _processor.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+    image_inputs, video_inputs = process_vision_info(messages)
+    device = next(_model.parameters()).device
+    inputs = _processor(
+        text=[text],
+        images=image_inputs,
+        videos=video_inputs,
+        padding=True,
+        return_tensors="pt",
+    ).to(device)
+
+    with torch.no_grad():
+        output_ids = _model.generate(
+            **inputs,
+            max_new_tokens=180,
+            do_sample=False,
+            temperature=None,
+            top_p=None,
+        )
+
     new_tokens = output_ids[0][inputs.input_ids.shape[1]:]
     return _processor.decode(new_tokens, skip_special_tokens=True).strip()
 

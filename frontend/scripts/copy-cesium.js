@@ -42,7 +42,7 @@ if (!fs.existsSync(CESIUM_SOURCE)) {
 
 // Only copy if destination doesn't exist or is outdated
 const markerFile = path.join(CESIUM_DEST, ".copied");
-const cesiumPkg = path.join(CESIUM_SOURCE, "..", "package.json");
+const cesiumPkg = path.join(CESIUM_SOURCE, "..", "..", "package.json");
 const currentVersion = fs.existsSync(cesiumPkg)
   ? JSON.parse(fs.readFileSync(cesiumPkg, "utf8")).version
   : "unknown";

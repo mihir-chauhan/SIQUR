@@ -1,3 +1,5 @@
+@frontend-agents.md
+
 # Minority Report — Shared Development Guide
 
 ## Project Overview

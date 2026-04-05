@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCTV Dataset Generator</title>
+<style>
+:root {
+  --bg:      #0d1117;
+  --surface: #161b22;
+  --border:  #30363d;
+  --text:    #e6edf3;
+  --muted:   #8b949e;
+  --accent:  #58a6ff;
+  --success: #3fb950;
+  --error:   #f85149;
+  --warn:    #d29922;
+  --radius:  6px;
+  --sidebar: 310px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px; height: 100vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ── Header ── */
+header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; border-bottom: 1px solid var(--border);
+  background: var(--surface); flex-shrink: 0;
+}
+header h1 { font-size: 14px; font-weight: 600; }
+.badge {
+  font-size: 11px; padding: 2px 7px; border-radius: 10px;
+  background: #1f6feb22; color: var(--accent); border: 1px solid #1f6feb55;
+}
+#session-display { margin-left: auto; font-size: 11px; color: var(--muted); }
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-bottom: 1px solid var(--border);
+  background: var(--surface); flex-shrink: 0; flex-wrap: wrap;
+}
+.tool-btn {
+  padding: 5px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text); cursor: pointer; font-size: 12px;
+  transition: background .1s, border-color .1s;
+}
+.tool-btn:hover { background: #ffffff11; border-color: var(--accent); }
+.tool-btn.active { background: #1f6feb33; border-color: var(--accent); color: var(--accent); }
+.tool-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+
+/* ── Layout ── */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar); flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface);
+}
+.sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.tab {
+  flex: 1; padding: 7px 2px; text-align: center;
+  font-size: 11px; cursor: pointer; color: var(--muted);
+  border-bottom: 2px solid transparent; transition: color .1s; user-select: none;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-pane { display: none; flex-direction: column; gap: 10px; padding: 12px; overflow-y: auto; flex: 1; }
+.tab-pane.active { display: flex; }
+
+/* ── Forms ── */
+.label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--muted); margin-bottom: 3px;
+}
+input[type="text"], input[type="number"], textarea, select {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-size: 12px; font-family: inherit; padding: 5px 8px;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+textarea { resize: vertical; min-height: 54px; line-height: 1.4; }
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field-row { display: flex; align-items: center; gap: 8px; }
+.field-row input[type="range"] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+.val-lbl { font-size: 11px; color: var(--accent); min-width: 38px; text-align: right; font-weight: 600; }
+
+/* ── Buttons ── */
+.btn {
+  padding: 6px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text); cursor: pointer; font-size: 12px;
+  transition: background .1s, border-color .1s; white-space: nowrap;
+}
+.btn:hover { background: #ffffff11; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+.btn-primary:hover:not(:disabled) { background: #3d9bff; }
+.btn-sm { padding: 3px 7px; font-size: 11px; }
+.btn-danger { color: var(--error); border-color: transparent; }
+.btn-danger:hover { background: #f8514922; border-color: var(--error); }
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── Drop zone ── */
+.drop-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 14px; text-align: center; cursor: pointer;
+  color: var(--muted); font-size: 12px;
+  transition: border-color .1s, background .1s;
+}
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: #1f6feb11; color: var(--accent); }
+
+/* ── Camera cards ── */
+.cam-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; transition: border-color .15s;
+}
+.cam-card.selected { border-color: var(--accent); }
+.cam-card-hdr {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px; cursor: pointer; background: var(--bg); user-select: none;
+}
+.cam-card-hdr:hover { background: #ffffff08; }
+.cam-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cam-card-body {
+  padding: 10px; border-top: 1px solid var(--border);
+  display: none; flex-direction: column; gap: 8px;
+}
+.cam-card.expanded .cam-card-body { display: flex; }
+.img-thumb {
+  width: 100%; height: 70px; object-fit: cover;
+  border-radius: 4px; display: block;
+}
+.img-placeholder {
+  width: 100%; height: 70px; border: 1px dashed var(--border);
+  border-radius: 4px; display: flex; align-items: center;
+  justify-content: center; color: var(--muted); font-size: 11px;
+  cursor: pointer;
+}
+.img-placeholder:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Job / result cards ── */
+.job-card {
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 8px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.job-hdr { display: flex; align-items: center; gap: 6px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.s-queued    { background: var(--muted); }
+.s-generating{ background: var(--warn); animation: pulse 1s infinite; }
+.s-complete  { background: var(--success); }
+.s-failed    { background: var(--error); }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+.pbar-wrap { height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+.pbar { height: 100%; background: linear-gradient(90deg,var(--accent),#a5d6ff); border-radius: 2px; transition: width .3s; }
+video.job-video { width: 100%; border-radius: 4px; background: #000; max-height: 130px; display: block; margin-top: 2px; }
+.prompt-preview {
+  font-size: 10px; color: var(--muted); line-height: 1.4;
+  word-break: break-word; font-style: italic;
+}
+
+/* ── Canvas ── */
+.canvas-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; position: relative; background: #080b10;
+}
+#canvas { flex: 1; display: block; }
+.canvas-hint {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  background: #000b; color: var(--muted); font-size: 11px;
+  padding: 4px 12px; border-radius: 12px; pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Modal ── */
+.modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: #0009; z-index: 200;
+  align-items: center; justify-content: center;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; width: 460px; max-height: 80vh;
+  overflow-y: auto; padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.modal-title {
+  font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.close-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; }
+.close-btn:hover { color: var(--text); }
+details > summary {
+  cursor: pointer; color: var(--muted); font-size: 11px;
+  display: flex; align-items: center; gap: 5px; list-style: none; user-select: none;
+}
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▶"; font-size: 8px; transition: transform .15s; }
+details[open] > summary::before { transform: rotate(90deg); }
+.adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8">
+    <circle cx="12" cy="10" r="3"/><path d="M3 10a9 9 0 0 1 18 0"/><path d="M6.3 16.3A9 9 0 0 0 12 19a9 9 0 0 0 5.7-2.7"/><line x1="12" y1="13" x2="12" y2="21"/>
+  </svg>
+  <h1>CCTV Dataset Generator</h1>
+  <span class="badge">Multi-Camera Consistent</span>
+  <span id="session-display">initializing…</span>
+</header>
+
+<!-- ── Toolbar ── -->
+<div class="toolbar">
+  <button class="tool-btn active" id="tool-select" onclick="setTool('select')">✋ Select</button>
+  <button class="tool-btn" id="tool-camera" onclick="setTool('camera')">📷 Place Camera</button>
+  <button class="tool-btn" id="tool-path" onclick="setTool('path')">🚶 Draw Path</button>
+  <div class="tool-sep"></div>
+  <button class="btn btn-sm" onclick="openImportModal()">📂 Import CPA JSON</button>
+  <button class="btn btn-sm" onclick="clearPath()">🗑 Clear Path</button>
+  <button class="btn btn-sm" onclick="clearCameras()">🗑 Clear Cameras</button>
+  <div class="tool-sep"></div>
+  <span style="font-size:11px;color:var(--muted)" id="hint-bar">Select a tool above</span>
+</div>
+
+<!-- ── Main layout ── -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="tab active" data-tab="floor"    onclick="switchTab('floor')">Floor Plan</div>
+      <div class="tab"        data-tab="cameras"  onclick="switchTab('cameras')">Cameras</div>
+      <div class="tab"        data-tab="scenario" onclick="switchTab('scenario')">Scenario</div>
+      <div class="tab"        data-tab="results"  onclick="switchTab('results')">Results</div>
+    </div>
+
+    <!-- Floor Plan tab -->
+    <div class="tab-pane active" id="tab-floor">
+      <div class="field">
+        <div class="label">Floor Plan Image</div>
+        <div class="drop-zone" id="fp-drop" onclick="document.getElementById('fp-input').click()">
+          <div id="fp-preview-wrap">
+            <div style="font-size:22px;margin-bottom:6px">🗺</div>
+            <div>Drop image or click to upload</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">JPG · PNG · BMP</div>
+          </div>
+        </div>
+        <input type="file" id="fp-input" accept="image/*" style="display:none">
+      </div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.7;border:1px solid var(--border);border-radius:var(--radius);padding:10px">
+        <strong style="color:var(--text)">Quick start:</strong><br>
+        1. Upload a floor plan above<br>
+        2. <strong style="color:var(--text)">Cameras</strong> tab → place or import cameras<br>
+        3. <strong style="color:var(--text)">🚶 Draw Path</strong> tool → click waypoints on floor plan<br>
+        4. Upload a base POV image per camera<br>
+        5. <strong style="color:var(--text)">Scenario</strong> tab → describe the event<br>
+        6. Hit <strong style="color:var(--accent)">Generate All Cameras</strong>
+      </div>
+    </div>
+
+    <!-- Cameras tab -->
+    <div class="tab-pane" id="tab-cameras">
+      <button class="btn btn-primary" onclick="addCamera()">+ Add Camera at Center</button>
+      <div style="font-size:11px;color:var(--muted)">
+        Or use the <strong style="color:var(--text)">📷 Place Camera</strong> tool to click directly on the floor plan.
+      </div>
+      <div id="camera-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <!-- Scenario tab -->
+    <div class="tab-pane" id="tab-scenario">
+      <div class="field">
+        <div class="label">Actor Description</div>
+        <input type="text" id="actor-desc" value="person in dark hoodie with backpack"
+               placeholder="e.g. person in dark hoodie with backpack">
+      </div>
+      <div class="field">
+        <div class="label">Scenario / Event</div>
+        <textarea id="scenario-text" rows="3"
+          placeholder="e.g. A shoplifter conceals merchandise and attempts to leave">A shoplifter conceals merchandise and attempts to leave unnoticed</textarea>
+      </div>
+      <div class="field">
+        <div class="label">Video Duration</div>
+        <div class="field-row">
+          <input type="range" id="dur-slider" min="3" max="15" step="1" value="5"
+            oninput="document.getElementById('dur-val').textContent=this.value+'s'">
+          <span class="val-lbl" id="dur-val">5s</span>
+        </div>
+      </div>
+
+      <details>
+        <summary>Generation settings</summary>
+        <div class="adv-grid">
+          <div class="field"><div class="label">Frames</div>
+            <input type="number" id="g-frames" value="81" min="17" max="129" step="8"></div>
+          <div class="field"><div class="label">Steps</div>
+            <input type="number" id="g-steps" value="20" min="10" max="50"></div>
+          <div class="field"><div class="label">Guidance</div>
+            <input type="number" id="g-guidance" value="5.0" min="1" max="10" step="0.5"></div>
+          <div class="field"><div class="label">FPS</div>
+            <input type="number" id="g-fps" value="16" min="8" max="30"></div>
+          <div class="field"><div class="label">Width</div>
+            <input type="number" id="g-width" value="832" min="256" max="1280" step="8"></div>
+          <div class="field"><div class="label">Height</div>
+            <input type="number" id="g-height" value="480" min="256" max="720" step="8"></div>
+          <div class="field" style="grid-column:span 2"><div class="label">Seed (shared across cameras)</div>
+            <input type="number" id="g-seed" value="42"></div>
+        </div>
+      </details>
+
+      <button class="btn btn-primary" id="gen-btn" onclick="startGeneration()">
+        ▶ Generate All Cameras
+      </button>
+
+      <div id="gen-status" style="font-size:11px;color:var(--muted);display:none"></div>
+    </div>
+
+    <!-- Results tab -->
+    <div class="tab-pane" id="tab-results">
+      <div id="results-list">
+        <div style="color:var(--muted);font-size:12px;text-align:center;padding:24px">
+          Generate videos to see results here.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+    <div class="canvas-hint" id="canvas-hint">Upload a floor plan to get started</div>
+  </div>
+
+</div>
+
+<!-- ── Import CPA JSON modal ── -->
+<div class="modal-bg" id="import-modal">
+  <div class="modal">
+    <div class="modal-title">
+      Import Cameras from CPA JSON
+      <button class="close-btn" onclick="closeModal('import-modal')">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.6">
+      Paste the JSON output from the Camera Placement Algorithm.<br>
+      A floor plan image must be uploaded first. Provide the same scale
+      that was used when running CPA (<code>--scale</code> flag, default 29.5 px/m).
+    </div>
+    <div class="adv-grid">
+      <div class="field"><div class="label">Scale (px/m)</div>
+        <input type="number" id="import-scale" value="29.5" step="0.5"></div>
+      <div class="field"><div class="label">Floor plan px/m override</div>
+        <input type="number" id="import-fp-w" placeholder="auto" step="1"
+               title="Override if CPA and your uploaded floor plan have different widths"></div>
+    </div>
+    <div class="field"><div class="label">CPA JSON (paste here)</div>
+      <textarea id="import-json" rows="9" style="font-family:monospace;font-size:11px"
+                placeholder='{"cameras": [...], "building_id": "..."}'></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="importCPA()">Import</button>
+      <button class="btn" onclick="closeModal('import-modal')">Cancel</button>
+    </div>
+    <div id="import-err" style="color:var(--error);font-size:11px;display:none"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const CAM_COLORS = ['#58a6ff','#3fb950','#d29922','#f85149','#bc8cff','#56d364','#e3b341','#79c0ff'];
+let _colorIdx = 0;
+
+const S = {
+  sid:         null,
+  floorplan:   null,    // {url, width, height, img: HTMLImageElement}
+  cameras:     [],      // [{id, name, x, y, direction_deg, fov_deg, scene_description, base_image_url, color}]
+  waypoints:   [],      // [{id, x, y}]  — t assigned proportionally when generating
+  jobs:        {},
+  tool:        'select',
+  selectedId:  null,
+  dragging:    null,    // {type:'camera'|'waypoint', obj}
+  pollTimer:   null,
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function init() {
+  const r = await fetch('/session', { method: 'POST' });
+  const { session_id } = await r.json();
+  S.sid = session_id;
+  document.getElementById('session-display').textContent = `Session: ${session_id}`;
+
+  const canvas = document.getElementById('canvas');
+  const wrap   = canvas.parentElement;
+
+  function resize() {
+    canvas.width  = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    render();
+  }
+  new ResizeObserver(resize).observe(wrap);
+  resize();
+
+  canvas.addEventListener('mousedown',    onMouseDown);
+  canvas.addEventListener('mousemove',    onMouseMove);
+  canvas.addEventListener('mouseup',      onMouseUp);
+  canvas.addEventListener('contextmenu',  onRightClick);
+
+  const fpInput = document.getElementById('fp-input');
+  fpInput.addEventListener('change', () => fpInput.files[0] && uploadFloorplan(fpInput.files[0]));
+  const fpDrop = document.getElementById('fp-drop');
+  fpDrop.addEventListener('dragover',  e => { e.preventDefault(); fpDrop.classList.add('drag-over'); });
+  fpDrop.addEventListener('dragleave', () => fpDrop.classList.remove('drag-over'));
+  fpDrop.addEventListener('drop', e => {
+    e.preventDefault(); fpDrop.classList.remove('drag-over');
+    e.dataTransfer.files[0] && uploadFloorplan(e.dataTransfer.files[0]);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UI helpers
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(el =>
+    el.classList.toggle('active', el.dataset.tab === name));
+  document.querySelectorAll('.tab-pane').forEach(el =>
+    el.classList.toggle('active', el.id === `tab-${name}`));
+}
+
+function setTool(t) {
+  S.tool = t;
+  ['select','camera','path'].forEach(id =>
+    document.getElementById(`tool-${id}`).classList.toggle('active', id === t));
+  const hints = {
+    select: 'Click to select. Drag to move cameras or waypoints.',
+    camera: 'Click on the floor plan to place a camera. Right-click to cancel.',
+    path:   'Click to add path waypoints in order. Right-click last point to remove it.',
+  };
+  document.getElementById('canvas-hint').textContent = hints[t] || '';
+  document.getElementById('hint-bar').textContent    = hints[t] || '';
+  document.getElementById('canvas').style.cursor = t === 'select' ? 'default' : 'crosshair';
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openImportModal() { openModal('import-modal'); }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Floor plan
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function uploadFloorplan(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const r    = await fetch(`/session/${S.sid}/floorplan`, { method: 'POST', body: fd });
+  const data = await r.json();
+  const img  = new Image();
+  img.src    = data.url + '?t=' + Date.now();
+  img.onload = () => {
+    S.floorplan = { url: data.url, width: data.width, height: data.height, img };
+    document.getElementById('fp-preview-wrap').innerHTML =
+      `<img src="${data.url}" style="max-width:100%;max-height:80px;object-fit:contain;border-radius:4px">
+       <div style="margin-top:4px;font-size:10px;color:var(--muted)">${data.width}×${data.height} px</div>`;
+    render();
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Coordinate transform: floor-plan normalized [0,1] ↔ canvas pixels
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function getT() {
+  const c = document.getElementById('canvas');
+  const cw = c.width, ch = c.height;
+  if (!S.floorplan) return { ox: 0, oy: 0, sw: cw, sh: ch };
+  const { width: fw, height: fh } = S.floorplan;
+  const scale = Math.min(cw / fw, ch / fh) * 0.96;
+  const sw = fw * scale, sh = fh * scale;
+  return { ox: (cw - sw) / 2, oy: (ch - sh) / 2, sw, sh };
+}
+
+function w2c(nx, ny) { const {ox,oy,sw,sh}=getT(); return [ox+nx*sw, oy+ny*sh]; }
+function c2w(cx, cy) { const {ox,oy,sw,sh}=getT(); return [(cx-ox)/sw, (cy-oy)/sh]; }
+function inFP(cx, cy){ const {ox,oy,sw,sh}=getT(); return cx>=ox&&cx<=ox+sw&&cy>=oy&&cy<=oy+sh; }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Rendering
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function render() {
+  const canvas = document.getElementById('canvas');
+  const ctx    = canvas.getContext('2d');
+  const {ox, oy, sw, sh} = getT();
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#080b10';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (S.floorplan?.img) {
+    ctx.drawImage(S.floorplan.img, ox, oy, sw, sh);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(ox, oy, sw, sh);
+  } else {
+    ctx.strokeStyle = '#30363d'; ctx.lineWidth = 2;
+    ctx.setLineDash([10, 8]);
+    ctx.strokeRect(ox + 30, oy + 30, sw - 60, sh - 60);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#4a5568'; ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Upload a floor plan to get started', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  // FOV cones (drawn first so cameras sit on top)
+  S.cameras.forEach(cam => drawFOV(ctx, cam));
+
+  // Actor path
+  drawPath(ctx);
+
+  // Camera icons
+  S.cameras.forEach(cam => drawCamera(ctx, cam, cam.id === S.selectedId));
+
+  ctx.textAlign = 'left';
+}
+
+function drawFOV(ctx, cam) {
+  const [cx, cy] = w2c(cam.x, cam.y);
+  const {sw}     = getT();
+  const r        = sw * 0.14;
+  const dir      = (cam.direction_deg * Math.PI) / 180;
+  const half     = (cam.fov_deg * Math.PI) / 360;
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, r, dir - half, dir + half);
+  ctx.closePath();
+  ctx.fillStyle = cam.color + '28';
+  ctx.fill();
+  ctx.strokeStyle = cam.color + '70';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawCamera(ctx, cam, selected) {
+  const [cx, cy] = w2c(cam.x, cam.y);
+  const r        = 9;
+  const dir      = (cam.direction_deg * Math.PI) / 180;
+  const aLen     = 18;
+
+  // Direction arrow
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(dir) * aLen, cy + Math.sin(dir) * aLen);
+  ctx.strokeStyle = cam.color; ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Body circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = selected ? '#fff' : cam.color;
+  ctx.fill();
+  ctx.strokeStyle = selected ? cam.color : 'rgba(0,0,0,0.6)';
+  ctx.lineWidth = selected ? 2.5 : 1.5;
+  ctx.stroke();
+
+  // Inner dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = selected ? cam.color : 'rgba(0,0,0,0.7)';
+  ctx.fill();
+
+  // Label
+  ctx.fillStyle = cam.color;
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(cam.name, cx, cy - r - 3);
+}
+
+function drawPath(ctx) {
+  const wps = S.waypoints;
+  if (!wps.length) return;
+
+  // Dashed line
+  if (wps.length > 1) {
+    ctx.beginPath();
+    const [x0, y0] = w2c(wps[0].x, wps[0].y);
+    ctx.moveTo(x0, y0);
+    for (let i = 1; i < wps.length; i++) {
+      const [xi, yi] = w2c(wps[i].x, wps[i].y);
+      ctx.lineTo(xi, yi);
+    }
+    ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2;
+    ctx.setLineDash([6, 5]); ctx.stroke(); ctx.setLineDash([]);
+
+    // Arrowheads at midpoints
+    for (let i = 0; i < wps.length - 1; i++) drawArrow(ctx, wps[i], wps[i + 1]);
+  }
+
+  // Waypoint dots
+  wps.forEach((wp, i) => {
+    const [wx, wy] = w2c(wp.x, wp.y);
+    ctx.beginPath(); ctx.arc(wx, wy, 8, 0, Math.PI * 2);
+    ctx.fillStyle = wp.id === S.selectedId ? '#fff' : '#ff6b6b';
+    ctx.fill();
+    ctx.strokeStyle = '#b33'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(i + 1, wx, wy);
+    ctx.textBaseline = 'alphabetic';
+  });
+}
+
+function drawArrow(ctx, wp0, wp1) {
+  const [x1, y1] = w2c(wp0.x, wp0.y);
+  const [x2, y2] = w2c(wp1.x, wp1.y);
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  const ang = Math.atan2(y2 - y1, x2 - x1), sz = 7;
+  ctx.beginPath();
+  ctx.moveTo(mx + Math.cos(ang) * sz,          my + Math.sin(ang) * sz);
+  ctx.lineTo(mx + Math.cos(ang + 2.5) * sz*.6, my + Math.sin(ang + 2.5) * sz*.6);
+  ctx.lineTo(mx + Math.cos(ang - 2.5) * sz*.6, my + Math.sin(ang - 2.5) * sz*.6);
+  ctx.closePath();
+  ctx.fillStyle = '#ff6b6b'; ctx.fill();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Camera management
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function addCamera(x, y) {
+  x = (x !== undefined) ? x : 0.5;
+  y = (y !== undefined) ? y : 0.5;
+  const id    = 'cam_' + Date.now();
+  const name  = `Cam ${S.cameras.length + 1}`;
+  const color = CAM_COLORS[_colorIdx++ % CAM_COLORS.length];
+  const dx    = 0.5 - x, dy = 0.5 - y;
+  const dir   = Math.round(Math.atan2(dy, dx) * 180 / Math.PI);
+  S.cameras.push({ id, name, x, y, direction_deg: dir, fov_deg: 90, scene_description: '', base_image_url: null, color });
+  S.selectedId = id;
+  syncCams(); renderCamList(); render();
+  if (document.getElementById('tab-cameras').classList.contains('active') === false)
+    switchTab('cameras');
+}
+
+function removeCamera(id) {
+  S.cameras = S.cameras.filter(c => c.id !== id);
+  if (S.selectedId === id) S.selectedId = null;
+  syncCams(); renderCamList(); render();
+}
+
+function clearCameras() {
+  if (!S.cameras.length) return;
+  S.cameras = []; S.selectedId = null;
+  syncCams(); renderCamList(); render();
+}
+
+async function syncCams() {
+  if (!S.sid) return;
+  await fetch(`/session/${S.sid}/cameras`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(S.cameras.map(c => ({
+      id: c.id, name: c.name, x: c.x, y: c.y,
+      direction_deg: c.direction_deg, fov_deg: c.fov_deg,
+      scene_description: c.scene_description || '',
+    }))),
+  });
+}
+
+function renderCamList() {
+  const list = document.getElementById('camera-list');
+  if (!S.cameras.length) {
+    list.innerHTML = `<div style="color:var(--muted);font-size:11px;text-align:center;padding:12px">
+      No cameras placed yet.<br>Use 📷 Place Camera tool or "+ Add Camera".
+    </div>`;
+    return;
+  }
+  list.innerHTML = '';
+  S.cameras.forEach(cam => {
+    const el = document.createElement('div');
+    el.className = 'cam-card' + (cam.id === S.selectedId ? ' selected expanded' : '');
+    el.id = `cc-${cam.id}`;
+    el.innerHTML = `
+      <div class="cam-card-hdr" onclick="selectCam('${cam.id}')">
+        <div class="cam-dot" style="background:${cam.color}"></div>
+        <span style="flex:1;font-weight:500">${cam.name}</span>
+        <span style="font-size:10px;color:var(--muted)">${cam.fov_deg}° FOV</span>
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeCamera('${cam.id}')">✕</button>
+      </div>
+      <div class="cam-card-body">
+        <div class="field"><div class="label">Name</div>
+          <input type="text" value="${cam.name}"
+            onchange="S.cameras.find(c=>c.id==='${cam.id}').name=this.value;render();syncCams()">
+        </div>
+        <div class="field"><div class="label">Direction (0°=right, 90°=down)</div>
+          <div class="field-row">
+            <input type="range" min="-180" max="180" value="${cam.direction_deg}"
+              oninput="S.cameras.find(c=>c.id==='${cam.id}').direction_deg=+this.value;
+                       document.getElementById('dv-${cam.id}').textContent=Math.round(this.value)+'°';render()"
+              onchange="syncCams()">
+            <span class="val-lbl" id="dv-${cam.id}">${cam.direction_deg}°</span>
+          </div>
+        </div>
+        <div class="field"><div class="label">FOV (degrees)</div>
+          <div class="field-row">
+            <input type="range" min="30" max="150" step="5" value="${cam.fov_deg}"
+              oninput="S.cameras.find(c=>c.id==='${cam.id}').fov_deg=+this.value;
+                       document.getElementById('fv-${cam.id}').textContent=this.value+'°';render()"
+              onchange="syncCams()">
+            <span class="val-lbl" id="fv-${cam.id}">${cam.fov_deg}°</span>
+          </div>
+        </div>
+        <div class="field"><div class="label">Static scene description (for prompt)</div>
+          <textarea rows="2"
+            placeholder="e.g. interior corridor near exit doors, fluorescent lighting"
+            onchange="S.cameras.find(c=>c.id==='${cam.id}').scene_description=this.value;syncCams()"
+          >${cam.scene_description || ''}</textarea>
+        </div>
+        <div class="field"><div class="label">Base POV Image (I2V reference)</div>
+          ${cam.base_image_url
+            ? `<img class="img-thumb" src="${cam.base_image_url}">
+               <button class="btn btn-sm" onclick="uploadCamImg('${cam.id}')">🔄 Replace image</button>`
+            : `<div class="img-placeholder" onclick="uploadCamImg('${cam.id}')">
+                 📸 Click to upload base camera image
+               </div>`
+          }
+        </div>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+}
+
+function selectCam(id) {
+  S.selectedId = id;
+  document.querySelectorAll('.cam-card').forEach(el => {
+    const mine = el.id === `cc-${id}`;
+    el.classList.toggle('selected', mine);
+    el.classList.toggle('expanded', mine);
+  });
+  render();
+}
+
+async function uploadCamImg(camId) {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = async () => {
+    if (!inp.files[0]) return;
+    const fd = new FormData(); fd.append('file', inp.files[0]);
+    const r = await fetch(`/session/${S.sid}/cameras/${camId}/image`, { method: 'POST', body: fd });
+    const { url } = await r.json();
+    const cam = S.cameras.find(c => c.id === camId);
+    if (cam) { cam.base_image_url = url; renderCamList(); }
+  };
+  inp.click();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Path / waypoints
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function addWaypoint(x, y) {
+  S.waypoints.push({ id: 'wp_' + Date.now(), x, y });
+  render();
+}
+
+function clearPath() {
+  S.waypoints = []; render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Mouse interaction
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function evtPx(e) {
+  const r = document.getElementById('canvas').getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top];
+}
+
+function hitCam(cx, cy) {
+  for (const cam of S.cameras) {
+    const [sx, sy] = w2c(cam.x, cam.y);
+    if (Math.hypot(sx - cx, sy - cy) < 13) return cam;
+  }
+  return null;
+}
+
+function hitWp(cx, cy) {
+  for (const wp of S.waypoints) {
+    const [sx, sy] = w2c(wp.x, wp.y);
+    if (Math.hypot(sx - cx, sy - cy) < 12) return wp;
+  }
+  return null;
+}
+
+function onMouseDown(e) {
+  if (e.button !== 0) return;
+  const [cx, cy] = evtPx(e);
+  if (!inFP(cx, cy)) return;
+  const [wx, wy] = c2w(cx, cy);
+
+  if (S.tool === 'select') {
+    const cam = hitCam(cx, cy);
+    const wp  = hitWp(cx, cy);
+    if (cam) {
+      S.selectedId = cam.id; S.dragging = { type: 'camera', obj: cam };
+      selectCam(cam.id);
+    } else if (wp) {
+      S.selectedId = wp.id; S.dragging = { type: 'waypoint', obj: wp };
+      render();
+    } else {
+      S.selectedId = null;
+      document.querySelectorAll('.cam-card').forEach(el => el.classList.remove('selected','expanded'));
+      render();
+    }
+  } else if (S.tool === 'camera') {
+    addCamera(wx, wy);
+  } else if (S.tool === 'path') {
+    addWaypoint(wx, wy);
+  }
+}
+
+function onMouseMove(e) {
+  if (!S.dragging) return;
+  const [cx, cy] = evtPx(e);
+  const { ox, oy, sw, sh } = getT();
+  const wx = Math.max(0, Math.min(1, (cx - ox) / sw));
+  const wy = Math.max(0, Math.min(1, (cy - oy) / sh));
+  S.dragging.obj.x = wx; S.dragging.obj.y = wy;
+  render();
+}
+
+function onMouseUp() {
+  if (S.dragging) { S.dragging = null; syncCams(); }
+}
+
+function onRightClick(e) {
+  e.preventDefault();
+  if (S.tool === 'path' && S.waypoints.length > 0) {
+    S.waypoints.pop(); render();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CPA JSON import
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function importCPA() {
+  const errEl = document.getElementById('import-err');
+  errEl.style.display = 'none';
+
+  let data;
+  try { data = JSON.parse(document.getElementById('import-json').value); }
+  catch (e) { showImportErr('Invalid JSON: ' + e.message); return; }
+
+  if (!S.floorplan) { showImportErr('Upload a floor plan image first.'); return; }
+
+  const scale = parseFloat(document.getElementById('import-scale').value) || 29.5;
+  const W     = S.floorplan.width;
+  const H     = S.floorplan.height;
+  const rawCams = data.cameras || data;
+  if (!Array.isArray(rawCams)) { showImportErr('Expected "cameras" array in JSON.'); return; }
+
+  S.cameras = []; _colorIdx = 0;
+
+  rawCams.forEach((cam, i) => {
+    const pos = cam.position || {};
+    const rot = cam.rotation || {};
+
+    // World metres → pixel:  col = W/2 + x_m * scale,  row = H/2 - z_m * scale
+    const col = W / 2 + (pos.x || 0) * scale;
+    const row = H / 2 - (pos.z || 0) * scale;
+
+    // Clamp to [0,1]
+    const nx = Math.max(0, Math.min(1, col / W));
+    const ny = Math.max(0, Math.min(1, row / H));
+
+    // CPA compass yaw → screen direction_deg:
+    //   CPA: 0=North, 90=East, 180=South, 270=West
+    //   Screen: 0=right(East), 90=down(South), 180=left(West), 270=up(North)
+    //   Formula: screen_dir = (compass_yaw - 90 + 360) % 360
+    const compassYaw   = rot.yaw  !== undefined ? rot.yaw : 0;
+    const direction_deg = (compassYaw - 90 + 360) % 360;
+
+    const color = CAM_COLORS[_colorIdx++ % CAM_COLORS.length];
+    S.cameras.push({
+      id: cam.id || `cam_${i + 1}`,
+      name: cam.id || `Cam ${i + 1}`,
+      x: nx, y: ny,
+      direction_deg: Math.round(direction_deg),
+      fov_deg: cam.fov || 90,
+      scene_description: '',
+      base_image_url: null,
+      color,
+    });
+  });
+
+  syncCams(); renderCamList(); render();
+  closeModal('import-modal');
+}
+
+function showImportErr(msg) {
+  const el = document.getElementById('import-err');
+  el.textContent = msg; el.style.display = '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Generation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function startGeneration() {
+  if (!S.sid) return;
+  if (!S.cameras.length) { alert('Add at least one camera first.'); return; }
+
+  const duration = parseFloat(document.getElementById('dur-slider').value);
+  const n = S.waypoints.length;
+
+  // Assign times: evenly spaced between 0 and duration
+  const waypoints = S.waypoints.map((wp, i) => ({
+    t: n > 1 ? (i / (n - 1)) * duration : 0,
+    x: wp.x, y: wp.y,
+  }));
+
+  // Push scene
+  await fetch(`/session/${S.sid}/scene`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      actor_description: document.getElementById('actor-desc').value,
+      scenario:          document.getElementById('scenario-text').value,
+      waypoints,
+      duration,
+    }),
+  });
+
+  // Start generation
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true; btn.textContent = '⏳ Queuing…';
+
+  const r = await fetch(`/session/${S.sid}/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      num_frames:    parseInt(document.getElementById('g-frames').value),
+      steps:         parseInt(document.getElementById('g-steps').value),
+      guidance_scale: parseFloat(document.getElementById('g-guidance').value),
+      fps:           parseInt(document.getElementById('g-fps').value),
+      width:         parseInt(document.getElementById('g-width').value),
+      height:        parseInt(document.getElementById('g-height').value),
+      seed:          parseInt(document.getElementById('g-seed').value),
+    }),
+  });
+
+  btn.disabled = false; btn.textContent = '▶ Generate All Cameras';
+
+  if (!r.ok) {
+    const t = await r.text();
+    alert('Error: ' + t); return;
+  }
+
+  switchTab('results');
+  startPolling();
+}
+
+function startPolling() {
+  if (S.pollTimer) clearInterval(S.pollTimer);
+  S.pollTimer = setInterval(poll, 2000);
+  poll();
+}
+
+async function poll() {
+  const r = await fetch(`/session/${S.sid}/status`);
+  const { jobs } = await r.json();
+  S.jobs = jobs;
+  renderResults();
+
+  const vals = Object.values(jobs);
+  if (vals.length && vals.every(j => j.status === 'complete' || j.status === 'failed')) {
+    clearInterval(S.pollTimer); S.pollTimer = null;
+  }
+}
+
+function renderResults() {
+  const list = document.getElementById('results-list');
+  if (!Object.keys(S.jobs).length) {
+    list.innerHTML = `<div style="color:var(--muted);font-size:12px;text-align:center;padding:24px">
+      Generate videos to see results here.</div>`;
+    return;
+  }
+  list.innerHTML = '';
+  for (const [camId, job] of Object.entries(S.jobs)) {
+    const cam   = S.cameras.find(c => c.id === camId);
+    const name  = cam?.name  || camId;
+    const color = cam?.color || '#58a6ff';
+    const pct   = job.progress?.total > 0
+      ? Math.round((job.progress.step / job.progress.total) * 100) : 0;
+
+    const card = document.createElement('div');
+    card.className = 'job-card';
+    card.innerHTML = `
+      <div class="job-hdr">
+        <div class="status-dot s-${job.status}"></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:5px">
+            <div class="cam-dot" style="background:${color}"></div>
+            <strong>${name}</strong>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:1px">
+            ${job.visible ? '✓ Actor visible in this view' : '— Actor not in FOV (empty scene)'}
+          </div>
+        </div>
+        <span style="font-size:11px;color:var(--muted)">
+          ${job.status==='complete'?'✓ Done':job.status==='generating'?pct+'%':job.status==='failed'?'✗ Failed':'Queued'}
+        </span>
+      </div>
+      ${job.status==='generating'?`<div class="pbar-wrap"><div class="pbar" style="width:${pct}%"></div></div>`:''}
+      ${job.status==='complete'&&job.video_url?`
+        <video class="job-video" src="${job.video_url}" controls playsinline loop muted preload="none"></video>
+        <a href="${job.video_url}" download class="btn btn-sm" style="text-align:center;display:block">↓ Download MP4</a>
+      `:''}
+      ${job.status==='failed'?`<div style="font-size:10px;color:var(--error);word-break:break-word">${job.error||'Unknown error'}</div>`:''}
+      <div class="prompt-preview">"${(job.prompt||'').substring(0,120)}…"</div>
+    `;
+    list.appendChild(card);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Boot
+// ═══════════════════════════════════════════════════════════════════════════════
+init().catch(console.error);
+</script>
+</body>
+</html>
