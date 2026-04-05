@@ -51,6 +51,12 @@ def parse_args():
     p.add_argument('--ceiling', action='store_true',
                    help='Place cameras on ceilings (interior floor grid) '
                         'instead of wall-adjacent positions')
+    p.add_argument('--show-uncovered', action='store_true',
+                   help='Overlay red tiles on uncovered floor areas (default: hidden)')
+    p.add_argument('--color', action='store_true',
+                   help='Use unique colors per camera (default: all grey)')
+    p.add_argument('--no-dots', action='store_true',
+                   help='Hide camera position markers and labels (default: shown)')
     return p.parse_args()
 
 
@@ -89,6 +95,16 @@ def main():
     print(f"      Building:    "
           f"~{fp.floor_mask.shape[1]/args.scale:.0f}m × "
           f"{fp.floor_mask.shape[0]/args.scale:.0f}m")
+
+    # Auto-detect _unmasked sibling for display
+    import cv2 as _cv2
+    display_img = None
+    if '_masked' in args.image:
+        unmasked_path = args.image.replace('_masked', '_unmasked')
+        if os.path.isfile(unmasked_path):
+            display_img = _cv2.imread(unmasked_path)
+            if display_img is not None:
+                print(f"      Display image: {unmasked_path} (unmasked)")
 
     if len(fp.candidates) == 0:
         print("ERROR: No candidate positions found. "
@@ -141,7 +157,11 @@ def main():
 
     save_json(cameras, selected, vis, json_path, args.building_id)
     save_visualization(fp, vis, selected, cameras, png_path,
-                       fov_deg=args.fov, n_rays=args.n_rays)
+                       fov_deg=args.fov, n_rays=args.n_rays,
+                       show_uncovered=args.show_uncovered,
+                       unique_colors=args.color,
+                       show_dots=not args.no_dots,
+                       display_img=display_img)
 
     elapsed = time.time() - t_start
     print(f"\nDone in {elapsed:.1f}s")

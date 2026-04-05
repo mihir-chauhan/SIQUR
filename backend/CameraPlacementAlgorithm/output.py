@@ -181,30 +181,32 @@ def save_visualization(fp: FloorplanData,
                        cameras: List[dict],
                        output_path: str,
                        fov_deg: float = 90.0,
-                       n_rays: int = 360) -> None:
+                       n_rays: int = 360,
+                       show_uncovered: bool = False,
+                       unique_colors: bool = False,
+                       show_dots: bool = True,
+                       display_img: np.ndarray | None = None) -> None:
     """
     Render annotated floorplan PNG:
-      - Original image as base
+      - Original image as base (or _unmasked sibling if display_img provided)
       - Semi-transparent grey overlay on walkable floor (neutral base)
-      - Each camera FOV wedge filled + outlined in its own unique colour
-      - Camera dot in the same unique colour, black edge, numbered label
-      - Semi-transparent red overlay on uncovered floor grid points
+      - Each camera FOV wedge filled + outlined (unique colour if unique_colors, else grey)
+      - Camera dot in the same colour, black edge, numbered label
+      - Semi-transparent red overlay on uncovered floor grid points (only if show_uncovered)
       - Legend strip at bottom mapping number → colour
     """
     h, w = fp.floor_mask.shape
-    img_rgb = cv2.cvtColor(fp.img, cv2.COLOR_BGR2RGB)
+    src = display_img if display_img is not None else fp.img
+    if src.shape[:2] != (h, w):
+        src = cv2.resize(src, (w, h))
+    img_rgb = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
     n_cams = len(selected)
-    colours = _camera_colors(n_cams)
+    _GREY = (0.60, 0.60, 0.60)
+    colours = _camera_colors(n_cams) if unique_colors else [_GREY] * n_cams
 
     fig, ax = plt.subplots(figsize=(w / 100, h / 100), dpi=100)
     ax.imshow(img_rgb)
     ax.axis('off')
-
-    # --- Subtle floor tint (dark overlay so colours pop) ---
-    floor_overlay = np.zeros((h, w, 4), dtype=np.float32)
-    floor_overlay[fp.floor_mask, :3] = 0.0   # black tint
-    floor_overlay[fp.floor_mask, 3] = 0.25
-    ax.imshow(floor_overlay)
 
     # --- FOV wedges (drawn first so dots sit on top) ---
     angles_arr = np.linspace(0, 2 * np.pi, n_rays, endpoint=False)
@@ -231,36 +233,37 @@ def save_visualization(fp: FloorplanData,
         ax.plot(wedge_x, wedge_y, color=colour, alpha=0.7, linewidth=0.8)
 
     # --- Camera dots + labels (drawn on top of wedges) ---
-    for rank, (cam_idx, colour) in enumerate(zip(selected, colours), start=1):
-        row, col = fp.candidates[cam_idx]
+    if show_dots:
+        for rank, (cam_idx, colour) in enumerate(zip(selected, colours), start=1):
+            row, col = fp.candidates[cam_idx]
 
-        # Dot: unique colour fill, black edge
-        ax.plot(col, row, 'o', color=colour, markersize=7,
-                markeredgecolor='black', markeredgewidth=0.8, zorder=6)
+            # Dot: colour fill, black edge
+            ax.plot(col, row, 'o', color=colour, markersize=40,
+                    markeredgecolor='black', markeredgewidth=3.0, zorder=6)
 
-        # Number label: white text on a dark box tinted with the camera colour
-        label_bg = (*colour, 0.85)  # RGBA
-        ax.text(col + 5, row - 6, str(rank),
-                color='white', fontsize=4.5, fontweight='bold', zorder=7,
-                bbox=dict(boxstyle='round,pad=0.15',
-                          facecolor=colour, edgecolor='none', alpha=0.85))
+            # Number label: white text on a dark box tinted with the camera colour
+            ax.text(col + 24, row - 20, str(rank),
+                    color='white', fontsize=14, fontweight='bold', zorder=7,
+                    bbox=dict(boxstyle='round,pad=0.15',
+                              facecolor=colour, edgecolor='none', alpha=0.85))
 
-    # --- Uncovered floor points (red) ---
-    covered_mask = np.zeros(vis.n_grid, dtype=bool)
-    for i in selected:
-        if len(vis.coverage_sets[i]) > 0:
-            covered_mask[vis.coverage_sets[i]] = True
+    # --- Uncovered floor points (red, opt-in) ---
+    if show_uncovered:
+        covered_mask = np.zeros(vis.n_grid, dtype=bool)
+        for i in selected:
+            if len(vis.coverage_sets[i]) > 0:
+                covered_mask[vis.coverage_sets[i]] = True
 
-    gp = vis.grid_points
-    uncov_pts = gp[~covered_mask]
-    if len(uncov_pts) > 0:
-        uncov_overlay = np.zeros((h, w, 4), dtype=np.float32)
-        for r, c in uncov_pts:
-            r0 = max(0, r - 3); r1 = min(h, r + 4)
-            c0 = max(0, c - 3); c1 = min(w, c + 4)
-            uncov_overlay[r0:r1, c0:c1, 0] = 1.0
-            uncov_overlay[r0:r1, c0:c1, 3] = 0.6
-        ax.imshow(uncov_overlay)
+        gp = vis.grid_points
+        uncov_pts = gp[~covered_mask]
+        if len(uncov_pts) > 0:
+            uncov_overlay = np.zeros((h, w, 4), dtype=np.float32)
+            for r, c in uncov_pts:
+                r0 = max(0, r - 3); r1 = min(h, r + 4)
+                c0 = max(0, c - 3); c1 = min(w, c + 4)
+                uncov_overlay[r0:r1, c0:c1, 0] = 1.0
+                uncov_overlay[r0:r1, c0:c1, 3] = 0.6
+            ax.imshow(uncov_overlay)
 
     # --- Title ---
     coverage = _coverage_fraction(selected, vis.coverage_sets, vis.n_grid)

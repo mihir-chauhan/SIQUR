@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import BuildingView from "../../components/BuildingView";
+import ModeSidebar from "../../components/ModeSidebar";
 import LayersSidebar from "../../components/LayersSidebar";
 import type { Layer } from "../../components/LayersSidebar";
 import PropertiesPanel from "../../components/PropertiesPanel";
@@ -39,6 +40,7 @@ export default function BuildingPage() {
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [placementMode, setPlacementMode] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
+  const [modeTransition, setModeTransition] = useState(false);
   const [positions, setPositions] = useState<Record<string, { x: number; y: number; z: number }>>({
     outdoor: { x: 0, y: 0, z: 0 },
     indoor: { x: -1.65, y: -0.6, z: 16.9 },
@@ -205,11 +207,22 @@ export default function BuildingPage() {
 
   const handleToggleCone = useCallback((id: string, visible: boolean) => {
     setConeVisible((prev) => ({ ...prev, [id]: visible }));
-    // Toggle the cone mesh (second child of the marker group)
-    const markerGroup = cameraMarkersRef.current[id];
+    // Try cached ref first, fall back to sceneHandle lookup
+    let markerGroup = cameraMarkersRef.current[id];
+    if (!markerGroup && sceneHandleRef.current) {
+      const found = sceneHandleRef.current.getMarker(id);
+      if (found) {
+        cameraMarkersRef.current[id] = found as unknown as Mesh;
+        markerGroup = found as unknown as Mesh;
+      }
+    }
     if (markerGroup && markerGroup.children) {
-      const cone = markerGroup.children[1];
-      if (cone) cone.visible = visible;
+      // children: [0] = orb sphere, [1] = cone, [2] = aimline
+      for (const child of markerGroup.children) {
+        if ((child as { name?: string }).name === "cone" || (child as { name?: string }).name === "aimline") {
+          child.visible = visible;
+        }
+      }
     }
   }, []);
 
@@ -393,8 +406,71 @@ export default function BuildingPage() {
           onObjectsReady={handleObjectsReady}
           onCameraPlaced={handleCameraPlaced}
           onCameraClicked={(camId) => router.push(`/camera/${camId}`)}
-          onSplatLoaded={() => setSceneReady(true)}
+          onSplatLoaded={() => {
+            setSceneReady(true);
+            // Grab hardcoded camera marker refs now that everything is spawned
+            const handle = sceneHandleRef.current;
+            if (handle) {
+              for (const hc of HARDCODED_CAMERAS) {
+                const marker = handle.getMarker(hc.id);
+                if (marker) {
+                  cameraMarkersRef.current[hc.id] = marker as unknown as Mesh;
+                }
+              }
+            }
+          }}
         />
+
+        {/* Mode switcher (far left) */}
+        <ModeSidebar onTransitionStart={() => setModeTransition(true)} />
+
+        {/* Transition overlay — black screen when switching to Watchman */}
+        {modeTransition && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 48,
+              right: 0,
+              bottom: 0,
+              zIndex: 100,
+              background: "#000",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              animation: "fadeIn 0.3s ease forwards",
+            }}
+          >
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                border: "2px solid rgba(16, 185, 129, 0.15)",
+                borderTopColor: "rgba(16, 185, 129, 0.8)",
+                animation: "spin 1s linear infinite",
+                marginBottom: 20,
+              }}
+            />
+            <div
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.3em",
+                color: "#10b981",
+                textShadow: "0 0 12px rgba(16, 185, 129, 0.4)",
+              }}
+            >
+              INITIALIZING WATCHMAN
+            </div>
+            <style>{`
+              @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+              @keyframes spin { to { transform: rotate(360deg); } }
+            `}</style>
+          </div>
+        )}
 
         {/* Left sidebar: Layers */}
         <LayersSidebar
