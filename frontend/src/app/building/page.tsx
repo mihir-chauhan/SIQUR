@@ -18,6 +18,10 @@ const SceneView = dynamic(() => import("../../components/SceneView"), {
   ssr: false,
 });
 
+const CameraView = dynamic(() => import("../../components/CameraView"), {
+  ssr: false,
+});
+
 const HARDCODED_CAMERAS: Array<{ id: string; pos: { x: number; y: number; z: number }; yaw: number }> = [
   { id: "cam_h1", pos: { x: -5.54, y: -1.00, z: 15.87 }, yaw: 270.97 },
   { id: "cam_h2", pos: { x: -3.93, y: -0.89, z: 13.34 }, yaw: 181.08 },
@@ -370,6 +374,7 @@ export default function BuildingPage() {
   const [placementMode, setPlacementMode] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
   const [modeTransition, setModeTransition] = useState(false);
+  const [activeCameraId, setActiveCameraId] = useState<string | null>(null);
   const [positions, setPositions] = useState<Record<string, { x: number; y: number; z: number }>>({
     outdoor: { x: 0, y: 0, z: 0 },
     indoor: { x: -1.65, y: -0.6, z: 16.9 },
@@ -737,7 +742,7 @@ export default function BuildingPage() {
           sceneRef={sceneHandleRef}
           onObjectsReady={handleObjectsReady}
           onCameraPlaced={handleCameraPlaced}
-          onCameraClicked={(camId) => router.push(`/camera/${camId}`)}
+          onCameraClicked={(camId) => setActiveCameraId(camId)}
           onSplatLoaded={() => {
             setSceneReady(true);
             // Grab hardcoded camera marker refs now that everything is spawned
@@ -992,6 +997,30 @@ export default function BuildingPage() {
             <BuildingView />
           </div>
         </div>
+
+        {/* Camera feed overlay */}
+        {activeCameraId && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 200 }}>
+            <CameraView
+              cameraId={activeCameraId}
+              cameras={[
+                ...HARDCODED_CAMERAS.map((hc) => ({
+                  id: hc.id,
+                  building_id: "dsai",
+                  position: hc.pos,
+                  rotation: { yaw: hc.yaw, pitch: -15 },
+                  fov: 90,
+                  coverage_radius: 10,
+                  placement_score: 1.0,
+                })),
+                ...getPlacedCameras().filter((c) => !c.id.startsWith("cam_h")),
+              ]}
+              building={null}
+              onSwitchCamera={(id) => setActiveCameraId(id)}
+              onClose={() => setActiveCameraId(null)}
+            />
+          </div>
+        )}
       </motion.div>
     </AnimatePresence>
   );

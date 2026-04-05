@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Camera, Building } from "@/lib/types";
 import FNAFSwitcher from "./FNAFSwitcher";
-import SimulationPrompt from "./SimulationPrompt";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
@@ -27,8 +26,7 @@ interface CameraViewProps {
   cameras: Camera[];
   building: Building | null;
   onSwitchCamera: (cameraId: string) => void;
-  onSimulationSubmit: (prompt: string) => void;
-  isSimulating: boolean;
+  onClose: () => void;
 }
 
 export default function CameraView({
@@ -36,8 +34,7 @@ export default function CameraView({
   cameras,
   building,
   onSwitchCamera,
-  onSimulationSubmit,
-  isSimulating,
+  onClose,
 }: CameraViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<unknown>(null);
@@ -630,11 +627,28 @@ export default function CameraView({
         />
       </div>
 
-      {/* Simulation Prompt */}
-      <SimulationPrompt
-        onSubmit={onSimulationSubmit}
-        isSimulating={isSimulating}
-      />
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          zIndex: 30,
+          padding: "7px 16px",
+          background: "rgba(10,10,10,0.8)",
+          border: "1px solid rgba(0,229,255,0.2)",
+          borderRadius: 6,
+          color: "rgba(0,229,255,0.7)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          letterSpacing: "0.15em",
+          cursor: "pointer",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        ← WORLD VIEW
+      </button>
 
       {/* FNAF Camera Switcher */}
       <FNAFSwitcher
