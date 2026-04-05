@@ -459,7 +459,7 @@ export default function EvaluatePage() {
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={simState === "generating" || !selectedCamera}
-            placeholder={selectedCamera ? 'Describe a scenario — type "fight" or "normal" to classify...' : "Select a camera first"}
+            placeholder={selectedCamera ? 'Describe a scenario to test the AI model...' : "Select a camera first"}
             style={{
               flex: 1,
               background: "rgba(255,255,255,0.04)",
