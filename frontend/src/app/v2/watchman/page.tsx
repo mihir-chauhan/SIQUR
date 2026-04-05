@@ -35,25 +35,72 @@ export default function WatchmanPage() {
   const objWrapperRef = useRef<THREE.Group | null>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null, null]);
   const pathAnimRef = useRef<{ elapsed: number; lineGeo: unknown; dot: THREE.Sprite | THREE.Object3D; totalDuration: number; totalSegments: number; waypoints: Array<{x:number;y:number;z:number;t:number}>; sampledPoints: number[] } | null>(null);
-  const waypointsRef = useRef<Array<{ x: number; y: number; z: number; speed: number }>>([]);
-  const [waypointCount, setWaypointCount] = useState(0);
+  const annotateWaypointsRef = useRef<Array<{ x: number; y: number; z: number; t: number }>>([]);
+  const [annotateCount, setAnnotateCount] = useState(0);
+  const [annotateMode, setAnnotateMode] = useState(false);
+  const [globalTime, setGlobalTime] = useState(0);
+  const globalTimeRef = useRef(0);
 
-  // DEV: Spacebar records a waypoint, logs to console
+  // Sync all videos to global time
+  const syncVideosToGlobalTime = (gt: number) => {
+    const videos = document.querySelectorAll<HTMLVideoElement>("[data-watchman-video]");
+    videos.forEach((v, i) => {
+      const feed = VIDEO_FEEDS[i];
+      if (!feed || !feed.src) return;
+      const localT = gt - feed.offset;
+      if (localT < 0 || localT > (v.duration || 999)) {
+        // Outside this video's range — show black frame
+        v.currentTime = localT < 0 ? 0 : v.duration || 0;
+      } else {
+        v.currentTime = localT;
+      }
+    });
+  };
+
+  // DEV: Keyboard controls for annotation
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!annotateMode) return;
+
+      // Space = record waypoint at current global time
       if (e.code === "Space") {
         e.preventDefault();
         const d = camDataRef.current;
-        const pt = { x: +d.x.toFixed(2), y: +d.y.toFixed(2), z: +d.z.toFixed(2), speed: 1.0 };
-        waypointsRef.current.push(pt);
-        setWaypointCount(waypointsRef.current.length);
-        console.log(`[WAYPOINT ${waypointsRef.current.length}]`, JSON.stringify(pt));
-        console.log("ALL WAYPOINTS:", JSON.stringify(waypointsRef.current, null, 2));
+        const gt = +globalTimeRef.current.toFixed(2);
+        const pt = { x: +d.x.toFixed(2), y: +d.y.toFixed(2), z: +d.z.toFixed(2), t: gt };
+        annotateWaypointsRef.current.push(pt);
+        // Sort by time so waypoints stay ordered
+        annotateWaypointsRef.current.sort((a, b) => a.t - b.t);
+        setAnnotateCount(annotateWaypointsRef.current.length);
+        console.log(`[WAYPOINT ${annotateWaypointsRef.current.length}] globalT=${gt}s`, JSON.stringify(pt));
+        console.log("ALL WAYPOINTS:", JSON.stringify(annotateWaypointsRef.current, null, 2));
+      }
+      // Arrow keys = scrub global timeline
+      if (e.code === "ArrowRight") {
+        e.preventDefault();
+        const newT = Math.max(0, globalTimeRef.current + 0.5);
+        globalTimeRef.current = newT;
+        setGlobalTime(newT);
+        syncVideosToGlobalTime(newT);
+      }
+      if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        const newT = Math.max(0, globalTimeRef.current - 0.5);
+        globalTimeRef.current = newT;
+        setGlobalTime(newT);
+        syncVideosToGlobalTime(newT);
+      }
+      // Z = undo last waypoint
+      if (e.code === "KeyZ" && annotateWaypointsRef.current.length > 0) {
+        const removed = annotateWaypointsRef.current.pop();
+        setAnnotateCount(annotateWaypointsRef.current.length);
+        console.log("[UNDO]", JSON.stringify(removed));
+        console.log("ALL WAYPOINTS:", JSON.stringify(annotateWaypointsRef.current, null, 2));
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [annotateMode]);
 
   // Update OBJ opacity when slider changes
   useEffect(() => {
@@ -138,33 +185,22 @@ export default function WatchmanPage() {
         scene.add(objWrapper);
         objWrapperRef.current = objWrapper;
 
-        // --- Animated path (t = timestamp in seconds) ---
+        // --- Animated path (t = timestamp in seconds) — Person 1 ---
         const WAYPOINTS = [
-          {x:-7.53,y:0.76,z:19.53,t:0.0},{x:-7.75,y:0.77,z:19.4,t:0.2},
-          {x:-7.85,y:0.75,z:19.18,t:0.4},{x:-7.87,y:0.75,z:18.95,t:0.6},
-          {x:-7.88,y:0.74,z:18.77,t:0.8},{x:-7.88,y:0.74,z:18.46,t:1.0},
-          {x:-7.9,y:0.75,z:18.34,t:1.2},{x:-7.9,y:0.75,z:18.2,t:1.4},
-          {x:-7.89,y:0.76,z:18.01,t:1.6},{x:-7.89,y:0.77,z:17.85,t:1.8},
-          {x:-7.89,y:0.77,z:17.66,t:2.0},{x:-7.88,y:0.77,z:17.41,t:2.2},
-          {x:-7.87,y:0.77,z:17.22,t:2.4},{x:-7.86,y:0.77,z:17.02,t:2.6},
-          {x:-7.85,y:0.76,z:16.81,t:2.8},{x:-7.84,y:0.76,z:16.59,t:3.0},
-          {x:-7.82,y:0.75,z:16.48,t:3.2},{x:-7.8,y:0.75,z:16.36,t:3.4},
-          {x:-7.79,y:0.74,z:16.25,t:3.6},{x:-7.76,y:0.72,z:16.09,t:3.8},
-          {x:-7.72,y:0.72,z:16.06,t:4.0},{x:-7.63,y:0.74,z:16,t:4.2},
-          {x:-7.48,y:0.77,z:15.95,t:4.4},{x:-7.37,y:0.78,z:15.93,t:4.6},
-          {x:-7.15,y:0.8,z:15.88,t:4.8},{x:-6.73,y:0.83,z:15.82,t:5.0},
-          {x:-6.53,y:0.81,z:15.79,t:5.2},{x:-6.32,y:0.78,z:15.75,t:5.4},
-          {x:-6.08,y:0.77,z:15.73,t:5.6},{x:-5.84,y:0.75,z:15.78,t:5.8},
-          {x:-5.49,y:0.76,z:15.81,t:6.0},{x:-4.91,y:0.74,z:15.82,t:6.2},
-          {x:-4.6,y:0.67,z:15.84,t:6.4},{x:-4.27,y:0.69,z:15.8,t:6.6},
-          {x:-4.03,y:0.65,z:15.79,t:6.8},{x:-3.87,y:0.63,z:15.8,t:7.0},
-          {x:-3.44,y:0.6,z:15.69,t:7.2},{x:-2.97,y:0.52,z:15.77,t:7.4},
-          {x:-2.75,y:0.49,z:15.75,t:7.6},{x:-2.37,y:0.52,z:15.76,t:7.8},
-          {x:-2.02,y:0.54,z:15.75,t:8.0},{x:-1.8,y:0.55,z:15.8,t:8.2},
-          {x:-1.26,y:0.61,z:15.93,t:8.4},{x:-0.79,y:0.62,z:16.24,t:8.6},
-          {x:-0.44,y:0.59,z:16.65,t:8.8},{x:-0.28,y:0.58,z:17.22,t:9.0},
-          {x:-0.19,y:0.6,z:17.57,t:9.2},{x:-0.13,y:0.6,z:18.2,t:9.4},
-          {x:0,y:0.6,z:18.52,t:9.6},{x:0.16,y:0.59,z:18.97,t:9.8},
+          {x:-7.82, y:0.79, z:17.72, t:0},
+          {x:-7.78, y:0.78, z:17.94, t:3},
+          {x:-7.76, y:0.79, z:18.15, t:6},
+          {x:-7.76, y:0.79, z:18.15, t:8},      // standing still for 2s
+          {x:-7.83, y:0.82, z:17.8,  t:8.5},
+          {x:-7.94, y:0.83, z:16.71, t:9.5},
+          {x:-7.94, y:0.80, z:16.35, t:10},
+          {x:-7.76, y:0.85, z:16.04, t:11},
+          {x:-6.93, y:0.87, z:15.85, t:12},
+          {x:-5.39, y:0.77, z:15.73, t:13},
+          {x:-3.43, y:0.63, z:15.63, t:14},
+          {x:-2.15, y:0.64, z:15.80, t:15},
+          {x:-0.89, y:0.66, z:16.19, t:15.5},
+          {x:-0.37, y:0.70, z:16.99, t:16},
         ];
         const totalDuration = WAYPOINTS[WAYPOINTS.length - 1].t;
 
@@ -182,7 +218,7 @@ export default function WatchmanPage() {
           sampledPoints.push(p.x, p.y, p.z);
           // Subtle gradient: muted cyan at tail -> slightly brighter at head
           const brightness = 0.4 + 0.4 * t;
-          sampledColors.push(brightness * 0.2, brightness * 0.6, brightness * 0.7);
+          sampledColors.push(brightness * 0.1, brightness * 0.3, brightness * 1.0);
         }
 
         const lineGeo = new LineGeometry();
@@ -210,9 +246,9 @@ export default function WatchmanPage() {
         glowCanvas.height = 64;
         const glowCtx = glowCanvas.getContext("2d")!;
         const gradient = glowCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
-        gradient.addColorStop(0, "rgba(0, 229, 255, 0.9)");
-        gradient.addColorStop(0.3, "rgba(0, 200, 230, 0.3)");
-        gradient.addColorStop(1, "rgba(0, 229, 255, 0)");
+        gradient.addColorStop(0, "rgba(60, 100, 255, 0.9)");
+        gradient.addColorStop(0.3, "rgba(40, 80, 220, 0.3)");
+        gradient.addColorStop(1, "rgba(30, 60, 200, 0)");
         glowCtx.fillStyle = gradient;
         glowCtx.fillRect(0, 0, 64, 64);
         const glowTexture = new THREE.CanvasTexture(glowCanvas);
@@ -386,11 +422,22 @@ export default function WatchmanPage() {
         anim.dot.visible = true;
         anim.dot.position.set(px, py, pz);
 
-        // Reveal trail: map elapsed time to segment count
-        const progress = dotElapsed / anim.totalDuration;
-        const seg = Math.floor(progress * anim.totalSegments);
+        // Reveal trail: find the sampled point closest to the dot and reveal up to it
+        let closestSeg = 0;
+        let closestDist = Infinity;
+        for (let s = 0; s <= anim.totalSegments; s++) {
+          const si = s * 3;
+          const dx = anim.sampledPoints[si] - px;
+          const dy = anim.sampledPoints[si + 1] - py;
+          const dz = anim.sampledPoints[si + 2] - pz;
+          const dist = dx * dx + dy * dy + dz * dz;
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestSeg = s;
+          }
+        }
         // @ts-ignore — instanceCount controls Line2 progressive reveal
-        anim.lineGeo.instanceCount = seg;
+        anim.lineGeo.instanceCount = closestSeg;
       }
 
       renderer.render(scene, camera);
@@ -547,7 +594,7 @@ export default function WatchmanPage() {
               <span>Y: <span style={{ color: "rgba(0, 229, 255, 0.7)" }}>{camData.y.toFixed(2)}</span></span>
               <span>Z: <span style={{ color: "rgba(0, 229, 255, 0.7)" }}>{camData.z.toFixed(2)}</span></span>
               <span style={{ marginTop: 4 }}>YAW: <span style={{ color: "rgba(0, 229, 255, 0.7)" }}>{camData.yaw.toFixed(1)}</span>&deg;</span>
-              <span style={{ marginTop: 8, color: "#ffdd44", fontSize: 9 }}>WAYPOINTS: {waypointCount} [SPACE]</span>
+              <span style={{ marginTop: 8, color: "#ffdd44", fontSize: 9 }}>WAYPOINTS: {annotateCount} [SPACE]</span>
 
               {/* Environment opacity slider */}
               <div style={{ marginTop: 14, pointerEvents: "auto", padding: "8px 10px", background: "rgba(0,0,0,0.6)", borderRadius: 4, border: "1px solid rgba(0, 229, 255, 0.15)" }}>
@@ -657,7 +704,7 @@ export default function WatchmanPage() {
             </div>
           </div>
 
-          {/* Right: Video feeds (30%) */}
+          {/* Right: Video feeds (30%) or Annotate mode */}
           <div
             style={{
               width: "30%",
@@ -667,6 +714,33 @@ export default function WatchmanPage() {
               borderLeft: "1px solid rgba(0, 229, 255, 0.1)",
             }}
           >
+            {/* Annotate toggle — top of right panel */}
+            {!annotateMode && (
+              <button
+                onClick={() => {
+                  setAnnotateMode(true);
+                  setGlobalTime(0);
+                  globalTimeRef.current = 0;
+                  annotateWaypointsRef.current = [];
+                  setAnnotateCount(0);
+                  document.querySelectorAll<HTMLVideoElement>("[data-watchman-video]").forEach((v) => {
+                    v.pause();
+                    v.currentTime = 0;
+                  });
+                }}
+                style={{
+                  width: "100%", padding: "6px",
+                  fontFamily: "var(--font-mono, monospace)", fontSize: 8, letterSpacing: "0.2em",
+                  color: "#ffdd44", background: "rgba(255,221,68,0.05)",
+                  border: "none", borderBottom: "1px solid rgba(255,221,68,0.15)",
+                  cursor: "pointer", flexShrink: 0,
+                }}
+              >
+                ANNOTATE MODE
+              </button>
+            )}
+
+            {/* Video stack — always visible, synced in annotate mode */}
             {VIDEO_FEEDS.map((feed, feedIdx) => (
               <div
                 key={feed.id}
@@ -725,6 +799,58 @@ export default function WatchmanPage() {
                 )}
               </div>
             ))}
+
+            {/* Annotate mode: global timeline controls at bottom of video stack */}
+            {annotateMode && (
+              <div style={{
+                padding: "10px 12px",
+                borderTop: "1px solid rgba(255, 221, 68, 0.2)",
+                background: "rgba(20, 18, 5, 0.9)",
+              }}>
+                <div style={{
+                  fontFamily: "var(--font-mono, monospace)", fontSize: 14, fontWeight: 700,
+                  color: "#ffdd44", marginBottom: 6,
+                }}>
+                  GLOBAL: {globalTime.toFixed(2)}s
+                </div>
+                <div style={{
+                  fontFamily: "var(--font-mono, monospace)", fontSize: 8,
+                  color: "rgba(255, 221, 68, 0.5)", letterSpacing: "0.1em", marginBottom: 4,
+                }}>
+                  {VIDEO_FEEDS.filter(f => f.src).map(f => {
+                    const localT = globalTime - f.offset;
+                    const active = localT >= 0;
+                    return `${f.label}: ${active ? localT.toFixed(1) + "s" : "waiting"}`;
+                  }).join("  |  ")}
+                </div>
+                <div style={{
+                  fontFamily: "var(--font-mono, monospace)", fontSize: 7,
+                  color: "rgba(0, 229, 255, 0.4)", letterSpacing: "0.1em", marginBottom: 6,
+                }}>
+                  LEFT/RIGHT = SCRUB 0.5s | SPACE = RECORD | Z = UNDO
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 10, color: "#ffdd44" }}>
+                    POINTS: {annotateCount}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setAnnotateMode(false);
+                      setGlobalTime(0);
+                      globalTimeRef.current = 0;
+                    }}
+                    style={{
+                      fontFamily: "var(--font-mono, monospace)", fontSize: 8, letterSpacing: "0.15em",
+                      color: "#00e5ff", background: "rgba(0,229,255,0.1)", border: "1px solid rgba(0,229,255,0.2)",
+                      borderRadius: 3, padding: "4px 10px", cursor: "pointer",
+                    }}
+                  >
+                    EXIT ANNOTATE
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       </div>
