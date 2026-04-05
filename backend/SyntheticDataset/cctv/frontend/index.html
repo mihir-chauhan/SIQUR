@@ -1036,7 +1036,7 @@ function renderResults() {
       </div>
       ${job.status==='generating'?`<div class="pbar-wrap"><div class="pbar" style="width:${pct}%"></div></div>`:''}
       ${job.status==='complete'&&job.video_url?`
-        <video class="job-video" src="${job.video_url}" controls playsinline loop muted autoplay></video>
+        <video class="job-video" src="${job.video_url}" controls playsinline loop muted preload="none"></video>
         <a href="${job.video_url}" download class="btn btn-sm" style="text-align:center;display:block">↓ Download MP4</a>
       `:''}
       ${job.status==='failed'?`<div style="font-size:10px;color:var(--error);word-break:break-word">${job.error||'Unknown error'}</div>`:''}

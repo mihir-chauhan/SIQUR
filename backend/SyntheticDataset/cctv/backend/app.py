@@ -14,6 +14,7 @@ import base64
 import io
 import json
 import os
+import shutil
 import sys
 import time
 import uuid
@@ -334,9 +335,27 @@ async def _run_jobs(sid: str, req: GenSettings):
 
         async with _job_queue:
             try:
-                video_url = await _call_worker(job, req)
+                worker_url = await _call_worker(job, req)
+
+                # worker_url is /worker-outputs/output_xxx.mp4
+                # Copy to cctv/outputs/ with a descriptive name
+                worker_filename = Path(worker_url).name          # output_xxx.mp4
+                src = WORKER_OUTPUTS / worker_filename
+                dst_name = f"{sid}_{cam_id}_{int(time.time())}.mp4"
+                dst = OUTPUTS / dst_name
+
+                if src.exists():
+                    shutil.copy2(src, dst)
+                    print(f"[cctv] saved {dst}")
+                    local_url = f"/outputs/{dst_name}"
+                else:
+                    # Fall back to worker URL if copy fails
+                    print(f"[cctv] warning: source file not found at {src}, using worker URL")
+                    local_url = worker_url
+
                 job["status"]    = "complete"
-                job["video_url"] = video_url
+                job["video_url"] = local_url
+
             except websockets.exceptions.WebSocketException as exc:
                 job["status"] = "failed"
                 job["error"]  = f"Worker connection failed: {exc}. Is the 8001 worker running?"
