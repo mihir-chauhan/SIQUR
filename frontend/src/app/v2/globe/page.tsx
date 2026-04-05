@@ -177,9 +177,7 @@ export default function GlobePage() {
                 coordinates={activeTarget.coordinates}
                 onClose={() => {
                   setActiveTarget(null);
-                  setGlobePaused(false);
                   setShowLocationPanel(false);
-                  setFlyToTarget(null);
                 }}
               />
               <button

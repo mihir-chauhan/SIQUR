@@ -42,7 +42,7 @@ const TERMINAL_LINES = [
   "FINALIZING 3D SCENE COMPOSITION...",
 ];
 
-function LoadingTerminal() {
+function LoadingTerminal({ onComplete }: { onComplete?: () => void }) {
   const [lines, setLines] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,8 +51,12 @@ function LoadingTerminal() {
     const interval = setInterval(() => {
       const now = new Date();
       const ts = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
-      const line = `[${ts}] ${TERMINAL_LINES[idx % TERMINAL_LINES.length]}`;
+      const line = `[${ts}] ${TERMINAL_LINES[idx]}`;
       setLines((prev) => [...prev.slice(-11), line]);
+      if (idx >= TERMINAL_LINES.length - 1) {
+        clearInterval(interval);
+        if (onComplete) onComplete();
+      }
       idx++;
     }, 450);
     return () => clearInterval(interval);
@@ -160,6 +164,7 @@ export default function SceneView({
   const cleanupRef = useRef<(() => void) | null>(null);
   const placementModeRef = useRef(false);
   const [splatReady, setSplatReady] = useState(false);
+  const [terminalDone, setTerminalDone] = useState(false);
   const onCameraPlacedRef = useRef(onCameraPlaced);
   const onCameraClickedRef = useRef(onCameraClicked);
   const splatVisibleRef = useRef(splatVisible ?? true);
@@ -619,7 +624,7 @@ export default function SceneView({
       />
 
       {/* Custom loading overlay — replaces the library's gray box */}
-      {!splatReady && (
+      {(!splatReady || !terminalDone) && (
         <div
           style={{
             position: "absolute",
@@ -672,7 +677,7 @@ export default function SceneView({
           </div>
 
           {/* Terminal log feed */}
-          <LoadingTerminal />
+          <LoadingTerminal onComplete={() => setTerminalDone(true)} />
 
           <style>{`
             @keyframes spin {

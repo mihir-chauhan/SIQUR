@@ -150,6 +150,11 @@ export default function V2Page() {
           0%, 100% { opacity: 1; }
           50%      { opacity: 0; }
         }
+
+        @keyframes btn-glow-pulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(0,229,255,0.12), inset 0 0 20px rgba(0,229,255,0.05); }
+          50%      { box-shadow: 0 0 30px rgba(0,229,255,0.22), inset 0 0 25px rgba(0,229,255,0.08); }
+        }
       `}</style>
 
       {/* ═══ LAYER 0: ASCII sphere ═══ */}
@@ -194,7 +199,7 @@ export default function V2Page() {
           position: "absolute",
           inset: 0,
           zIndex: 2,
-          background: "radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.7) 100%)",
+          background: "radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.85) 100%)",
           opacity: transitionPhase >= 2 ? 0 : 1,
           transition: "opacity 600ms ease",
           pointerEvents: "none",
@@ -278,28 +283,32 @@ export default function V2Page() {
           onClick={handleEnter}
           style={{
             marginTop: "64px",
-            fontSize: "0.75rem",
-            color: "rgba(0, 229, 255, 0.4)",
-            background: "none",
-            border: "1px solid rgba(0, 229, 255, 0.15)",
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            color: "#00e5ff",
+            background: "rgba(0, 10, 15, 0.9)",
+            border: "1px solid rgba(0, 229, 255, 0.5)",
+            backdropFilter: "blur(16px)",
             borderRadius: "9999px",
-            padding: "12px 36px",
+            padding: "14px 44px",
             cursor: "pointer",
             fontFamily: "var(--font-space-mono), monospace",
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            transition: "opacity 800ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease",
+            animation: buttonVisible ? "btn-glow-pulse 3s ease-in-out infinite" : "none",
+            transition: "opacity 800ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease",
             opacity: buttonVisible ? 1 : 0,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = "rgba(0, 229, 255, 0.85)";
-            e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.35)";
-            e.currentTarget.style.boxShadow = "0 0 20px rgba(0, 229, 255, 0.08)";
+            e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.8)";
+            e.currentTarget.style.animation = "none";
+            e.currentTarget.style.boxShadow = "0 0 40px rgba(0, 229, 255, 0.3), 0 0 80px rgba(0, 229, 255, 0.12), inset 0 0 30px rgba(0, 229, 255, 0.08)";
+            e.currentTarget.style.transform = "scale(1.05)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = "rgba(0, 229, 255, 0.4)";
-            e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.15)";
-            e.currentTarget.style.boxShadow = "none";
+            e.currentTarget.style.borderColor = "rgba(0, 229, 255, 0.5)";
+            e.currentTarget.style.animation = "btn-glow-pulse 3s ease-in-out infinite";
+            e.currentTarget.style.transform = "scale(1)";
           }}
         >
           click to start

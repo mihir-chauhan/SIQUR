@@ -44,10 +44,10 @@ export function AsciiSphere() {
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
       scene.add(ambientLight);
 
+      // Simple sphere — just spins
       const sphere = new THREE.Mesh(
-        // More segments = smoother shading gradients = richer ASCII detail
         new THREE.SphereGeometry(240, 64, 40),
-        new THREE.MeshPhongMaterial({ flatShading: false })
+        new THREE.MeshPhongMaterial({ flatShading: true })
       );
       scene.add(sphere);
 
@@ -100,7 +100,6 @@ export function AsciiSphere() {
         if (document.hidden) return;
 
         const timer = Date.now() - start;
-        // Slow steady spin around Y axis — globe-like
         sphere.rotation.y = timer * 0.0003;
 
         effect.render(scene, camera);
