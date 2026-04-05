@@ -9,10 +9,12 @@ interface PropertiesPanelProps {
   rotation: { x: number; y: number; z: number };
   scale: { x: number; y: number; z: number };
   showCone?: boolean;
+  showAimLine?: boolean;
   onPositionChange: (axis: "x" | "y" | "z", value: number) => void;
   onRotationChange: (axis: "x" | "y" | "z", value: number) => void;
   onScaleChange: (axis: "x" | "y" | "z", value: number) => void;
   onToggleCone?: (visible: boolean) => void;
+  onToggleAimLine?: (visible: boolean) => void;
 }
 
 function DragInput({
@@ -164,10 +166,12 @@ export default function PropertiesPanel({
   rotation,
   scale,
   showCone,
+  showAimLine,
   onPositionChange,
   onRotationChange,
   onScaleChange,
   onToggleCone,
+  onToggleAimLine,
 }: PropertiesPanelProps) {
   if (!layer) {
     return (
@@ -373,6 +377,44 @@ export default function PropertiesPanel({
             }}
           >
             VISION CONE
+          </span>
+        </div>
+      )}
+
+      {layer.type === "camera" && onToggleAimLine && (
+        <div
+          onClick={() => onToggleAimLine(!showAimLine)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "8px",
+            borderRadius: "3px",
+            border: "1px solid rgba(0, 229, 255, 0.12)",
+            background: "rgba(0, 229, 255, 0.03)",
+            cursor: "pointer",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: "14px",
+              color: showAimLine ? "#ffffff" : "var(--color-text-dim)",
+              width: "20px",
+              opacity: showAimLine ? 1 : 0.4,
+            }}
+          >
+            {showAimLine ? "\u25C9" : "\u25CE"}
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: "9px",
+              letterSpacing: "0.2em",
+              color: showAimLine ? "#ffffff" : "var(--color-text-dim)",
+            }}
+          >
+            AIM LINE
           </span>
         </div>
       )}

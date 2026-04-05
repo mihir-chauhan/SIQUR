@@ -338,180 +338,27 @@ export default function BuildingView() {
         color: "var(--color-text)",
         display: "flex",
         flexDirection: "column",
-        padding: "16px",
+        padding: "12px",
         gap: "12px",
         position: "relative",
       }}
     >
-      {/* Page-level HUD corners */}
-      <span aria-hidden style={{ position: "fixed", top: 8, left: 8, width: 28, height: 28, borderTop: "2px solid rgba(0,229,255,0.25)", borderLeft: "2px solid rgba(0,229,255,0.25)", zIndex: 10, pointerEvents: "none" }} />
-      <span aria-hidden style={{ position: "fixed", top: 8, right: 8, width: 28, height: 28, borderTop: "2px solid rgba(0,229,255,0.25)", borderRight: "2px solid rgba(0,229,255,0.25)", zIndex: 10, pointerEvents: "none" }} />
-      <span aria-hidden style={{ position: "fixed", bottom: 8, left: 8, width: 28, height: 28, borderBottom: "2px solid rgba(0,229,255,0.25)", borderLeft: "2px solid rgba(0,229,255,0.25)", zIndex: 10, pointerEvents: "none" }} />
-      <span aria-hidden style={{ position: "fixed", bottom: 8, right: 8, width: 28, height: 28, borderBottom: "2px solid rgba(0,229,255,0.25)", borderRight: "2px solid rgba(0,229,255,0.25)", zIndex: 10, pointerEvents: "none" }} />
-      {/* ── Classification banner ────────────────────────────────────────────── */}
+      {/* ── Stacked layout for sidebar ────────────────────────────────────── */}
       <div
         style={{
           display: "flex",
-          justifyContent: "center",
-          padding: "3px 0",
-          marginBottom: "-16px",
-          borderBottom: "1px solid rgba(0, 229, 255, 0.06)",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "7px",
-            letterSpacing: "0.5em",
-            color: "var(--color-accent-cyan)",
-            opacity: 0.35,
-          }}
-        >
-          TOP SECRET // BUILDING ANALYSIS // MINORITY REPORT SURVEILLANCE SYSTEM
-        </span>
-      </div>
-
-      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
-      <header
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
+          flexDirection: "column",
           gap: "12px",
         }}
       >
-        {/* Left: back + classification */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <button
-            onClick={() => router.push("/")}
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              color: "var(--color-accent-cyan)",
-              background: "transparent",
-              border: "1px solid rgba(0,229,255,0.25)",
-              padding: "4px 14px",
-              fontSize: "10px",
-              letterSpacing: "0.25em",
-              cursor: "pointer",
-              alignSelf: "flex-start",
-              transition: "border-color 0.15s ease",
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.7)";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.25)";
-            }}
-          >
-            ← BACK
-          </button>
-
-          <p
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: "9px",
-              letterSpacing: "0.4em",
-              color: "var(--color-accent-cyan)",
-              opacity: 0.55,
-              textTransform: "uppercase",
-            }}
-          >
-            CLASSIFICATION: EYES ONLY
-          </p>
-
-          <h1
-            className="glow-cyan"
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              color: "var(--color-accent-cyan)",
-              fontSize: "clamp(1rem, 2.5vw, 1.5rem)",
-              letterSpacing: "0.12em",
-              fontWeight: 700,
-              textTransform: "uppercase",
-            }}
-          >
-            BUILDING ANALYSIS
-          </h1>
-
-          <h2
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: "clamp(0.7rem, 1.5vw, 0.9rem)",
-              color: "var(--color-text)",
-              letterSpacing: "0.08em",
-              fontWeight: 400,
-              maxWidth: "480px",
-            }}
-          >
-            {building.name.toUpperCase()}
-          </h2>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "20px",
-              flexWrap: "wrap",
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: "10px",
-              color: "var(--color-text-dim)",
-              letterSpacing: "0.15em",
-              marginTop: "4px",
-            }}
-          >
-            <span>LAT {building.lat.toFixed(5)}°</span>
-            <span>LNG {building.lng.toFixed(5)}°</span>
-            {placementDone && (
-              <span style={{ color: "var(--color-accent-green)" }}>
-                CAMERAS DEPLOYED: {cameras.length}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Right: coverage badge (shown after placement) */}
-        <AnimatePresence>
-          {placementDone && coverageScore !== null && (
-            <motion.div
-              key="badge"
-              initial={{ opacity: 0, y: -12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <CoverageBadge score={coverageScore} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
-
-      {/* ── Main content grid ────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr auto",
-          gap: "24px",
-          flex: 1,
-          alignItems: "start",
-        }}
-      >
-        {/* Floor plan SVG */}
+        {/* Floor plan */}
         <div
-          className="glow-cyan-box"
           style={{
             position: "relative",
-            backgroundColor: "var(--color-surface)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "4px",
-            padding: "20px",
-            overflow: "hidden",
+            borderBottom: "1px solid rgba(0, 229, 255, 0.08)",
+            paddingBottom: "12px",
           }}
         >
-          <HudCorners />
-          {/* Scanner sweep overlay */}
-          <div className="scanner-line" style={{ top: "50%", opacity: 0.2 }} />
-
-          {/* Panel label */}
           <p
             style={{
               fontFamily: "var(--font-mono, monospace)",
@@ -519,10 +366,10 @@ export default function BuildingView() {
               letterSpacing: "0.35em",
               color: "var(--color-accent-cyan)",
               opacity: 0.6,
-              marginBottom: "14px",
+              marginBottom: "8px",
             }}
           >
-            AERIAL FOOTPRINT — TOP VIEW
+            FLOOR PLAN
           </p>
 
           {/* Floor plan image — inverted + cyan tinted for dark theme */}
@@ -533,21 +380,18 @@ export default function BuildingView() {
               style={{
                 width: "100%",
                 display: "block",
-                filter: "invert(1) brightness(0.7) sepia(1) hue-rotate(160deg) saturate(3)",
-                opacity: 0.7,
+                opacity: 0.9,
               }}
             />
           </div>
         </div>
 
-        {/* Right panel: camera deployment controls */}
+        {/* Camera deployment controls */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "20px",
-            minWidth: "220px",
-            maxWidth: "280px",
+            gap: "12px",
           }}
         >
           {/* Camera budget card */}
@@ -750,28 +594,6 @@ export default function BuildingView() {
         </div>
       </div>
 
-      {/* ── Bottom status bar ─────────────────────────────────────────────────── */}
-      <footer
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "8px",
-          fontFamily: "var(--font-mono, monospace)",
-          fontSize: "9px",
-          color: "var(--color-text-dim)",
-          letterSpacing: "0.2em",
-          paddingTop: "8px",
-          borderTop: "1px solid rgba(0,229,255,0.07)",
-        }}
-      >
-        <span>MINORITY REPORT // BUILDING VIEW</span>
-        <span className="hud-pulse">SURVEILLANCE ACTIVE</span>
-        <span>
-          {new Date().toISOString().slice(0, 19).replace("T", " ")} UTC
-        </span>
-      </footer>
     </main>
   );
 }
