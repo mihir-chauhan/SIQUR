@@ -10,7 +10,7 @@ import LayersSidebar from "../../components/LayersSidebar";
 import type { Layer } from "../../components/LayersSidebar";
 import PropertiesPanel from "../../components/PropertiesPanel";
 import type { SceneObjects, CameraPlacement, SceneHandle } from "../../components/SceneView";
-import { getPlacedCameras, setPlacedCameras } from "../../lib/session";
+import { getPlacedCameras, setPlacedCameras, setSelectedBuilding, setSessionId, getSessionId } from "../../lib/session";
 import type { Camera } from "../../lib/types";
 import type { Mesh, Object3D } from "three";
 
@@ -701,6 +701,12 @@ export default function BuildingPage() {
     return (
       <ConfigScreen
         onSubmit={() => {
+          // Ensure BuildingView can find the building
+          setSelectedBuilding("purdue-armstrong");
+          // Create a mock session ID if none exists
+          if (!getSessionId()) {
+            setSessionId("demo-" + Date.now());
+          }
           setConfigDone(true);
         }}
       />
