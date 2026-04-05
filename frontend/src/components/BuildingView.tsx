@@ -169,7 +169,7 @@ export default function BuildingView() {
   const [building, setBuilding] = useState<Building | null>(null);
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [coverageScore, setCoverageScore] = useState<number | null>(null);
-  const [cameraCount, setCameraCount] = useState<number>(6);
+  const [cameraCount, setCameraCount] = useState<number>(4);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [placementDone, setPlacementDone] = useState(false);

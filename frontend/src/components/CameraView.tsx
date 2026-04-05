@@ -68,7 +68,7 @@ export default function CameraView({
 
   // Initialize Three.js and Gaussian Splats viewer ONCE (scene persists across camera switches)
   useEffect(() => {
-    if (!containerRef.current || !building || sceneInitialized.current) return;
+    if (!containerRef.current || sceneInitialized.current) return;
 
     sceneInitialized.current = true;
     let disposed = false;

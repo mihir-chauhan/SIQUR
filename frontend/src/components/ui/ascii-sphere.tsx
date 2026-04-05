@@ -24,9 +24,11 @@ export function AsciiSphere() {
       const width = container.clientWidth;
       const height = container.clientHeight;
 
-      const camera = new THREE.PerspectiveCamera(70, width / height, 1, 2000);
-      camera.position.y = 150;
-      camera.position.z = 500;
+      // Pull camera back slightly to frame the larger sphere
+      const camera = new THREE.PerspectiveCamera(58, width / height, 1, 2000);
+      camera.position.y = 40;
+      camera.position.z = 520;
+      camera.lookAt(0, 0, 0);
 
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0, 0, 0);
@@ -42,27 +44,24 @@ export function AsciiSphere() {
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
       scene.add(ambientLight);
 
+      // Simple sphere — just spins
       const sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(200, 20, 10),
+        new THREE.SphereGeometry(240, 64, 40),
         new THREE.MeshPhongMaterial({ flatShading: true })
       );
       scene.add(sphere);
 
-      // Large ground plane so ASCII fills the entire viewport
-      const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(2000, 2000),
-        new THREE.MeshBasicMaterial({ color: 0x222222 })
-      );
-      plane.position.y = -220;
-      plane.rotation.x = -Math.PI / 2;
-      scene.add(plane);
+
+      // Higher cap = more ASCII characters = more detail
+      const effectW = Math.min(width,  1400);
+      const effectH = Math.min(height,  900);
 
       const webglRenderer = new THREE.WebGLRenderer();
-      webglRenderer.setSize(width, height);
+      webglRenderer.setSize(effectW, effectH);
       renderer = webglRenderer;
 
       const effect = new AsciiEffect(webglRenderer, " .:-+*=%@#", { invert: true });
-      effect.setSize(width, height);
+      effect.setSize(effectW, effectH);
       effect.domElement.style.color = "white";
       effect.domElement.style.backgroundColor = "black";
       effect.domElement.style.overflow = "hidden";
@@ -85,25 +84,33 @@ export function AsciiSphere() {
       effectDom = effect.domElement;
 
       const start = Date.now();
+      const TARGET_FPS = 15;
+      const FRAME_MS   = 1000 / TARGET_FPS;
+      let lastRender = 0;
 
-      const animate = () => {
+      const animate = (timestamp: number) => {
         if (disposedRef.current) return;
         animationId = requestAnimationFrame(animate);
 
+        // Skip frames to hold ~15fps — ASCII is decorative, not interactive
+        if (timestamp - lastRender < FRAME_MS) return;
+        lastRender = timestamp;
+
+        // Pause when tab is not visible
+        if (document.hidden) return;
+
         const timer = Date.now() - start;
-        sphere.position.y = Math.abs(Math.sin(timer * 0.002)) * 150;
-        sphere.rotation.x = timer * 0.0003;
-        sphere.rotation.z = timer * 0.0002;
+        sphere.rotation.y = timer * 0.0003;
 
         effect.render(scene, camera);
       };
 
-      animate();
+      animate(0);
 
       const handleResize = () => {
         if (!containerRef.current || disposedRef.current) return;
-        const w = containerRef.current.clientWidth;
-        const h = containerRef.current.clientHeight;
+        const w = Math.min(containerRef.current.clientWidth,  1400);
+        const h = Math.min(containerRef.current.clientHeight,  900);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         webglRenderer.setSize(w, h);
