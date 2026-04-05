@@ -54,12 +54,31 @@ body {
   position: relative;
 }
 
-/* ─── Tailwind v4 Theme Bridge ───────────────────────────────────────── */
+/* ─── shadcn/Tailwind v4 Theme Bridge ────────────────────────────────── */
+:root {
+  --radius: 1rem;
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 4%;
+  --card-foreground: 0 0% 100%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 63%;
+  --border: 0 0% 14%;
+  --ring: 186 100% 50%;
+}
+
 @theme inline {
   --color-background: var(--color-bg);
   --color-foreground: var(--color-text);
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-ring: hsl(var(--ring));
   --font-sans: var(--font-inter);
   --font-mono: var(--font-space-mono);
+  --radius: 1rem;
 }
 
 /* ─── Custom Scrollbar ───────────────────────────────────────────────── */

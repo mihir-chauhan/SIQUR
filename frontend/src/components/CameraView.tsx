@@ -4,6 +4,23 @@ import { useEffect, useRef, useState } from "react";
 import type { Camera, Building } from "@/lib/types";
 import FNAFSwitcher from "./FNAFSwitcher";
 import SimulationPrompt from "./SimulationPrompt";
+import * as THREE from "three";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
+
+// ----- TEMPORARY HARDCODED SCREENSHOTS -----
+// Maps hardcoded camera IDs to static screenshot images.
+// These replace the live 3D feed for demo purposes.
+// To revert: delete this map and remove the `useStaticScreenshot` variable
+// and the static image <img> block below (search for "STATIC_SCREENSHOT" comments).
+// The live 3D CameraView will resume working as before.
+const STATIC_SCREENSHOTS: Record<string, string> = {
+  cam_h1: "/camera-screenshots/cam_h1.png",
+  cam_h2: "/camera-screenshots/cam_h2.png",
+  cam_h3: "/camera-screenshots/cam_h3.png",
+  cam_h4: "/camera-screenshots/cam_h4.png",
+};
+// ----- END TEMPORARY HARDCODED SCREENSHOTS -----
 
 interface CameraViewProps {
   cameraId: string;
@@ -33,6 +50,9 @@ export default function CameraView({
 
   const camera = cameras.find((c) => c.id === cameraId) ?? null;
 
+  // STATIC_SCREENSHOT: Use static image instead of live 3D feed for hardcoded cameras
+  const useStaticScreenshot = cameraId in STATIC_SCREENSHOTS;
+
   // Update timestamp every second
   useEffect(() => {
     const tick = () => {
@@ -55,41 +75,46 @@ export default function CameraView({
 
     const initViewer = async () => {
       try {
-        const THREE = await import("three");
-        const GaussianSplats3DModule = await import(
-          "@mkkellogg/gaussian-splats-3d"
-        );
-        const GaussianSplats3D =
-          GaussianSplats3DModule.default ?? GaussianSplats3DModule;
-
         if (disposed || !containerRef.current) return;
 
         const container = containerRef.current;
         const width = container.clientWidth;
         const height = container.clientHeight;
 
-        // Create scene, camera, renderer
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0a0a);
 
+        // Lighting
+        scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(5, -5, 5);
+        scene.add(dirLight);
+
         const threeCamera = new THREE.PerspectiveCamera(
-          camera?.fov ?? 75,
+          camera?.fov ?? 90,
           width / height,
           0.1,
           1000
         );
         threeCameraRef.current = threeCamera;
 
-        // Set initial camera position from camera data
+        // Match the building view's inverted Y coordinate system
+        threeCamera.up.set(0, -1, 0);
+
         if (camera) {
           threeCamera.position.set(
             camera.position.x,
             camera.position.y,
             camera.position.z
           );
+          // Use lookAt based on yaw direction instead of raw euler
           const yawRad = THREE.MathUtils.degToRad(camera.rotation.yaw);
-          const pitchRad = THREE.MathUtils.degToRad(camera.rotation.pitch);
-          threeCamera.rotation.set(pitchRad, yawRad, 0, "YXZ");
+          const lookTarget = new THREE.Vector3(
+            camera.position.x + Math.sin(yawRad),
+            camera.position.y,
+            camera.position.z + Math.cos(yawRad)
+          );
+          threeCamera.lookAt(lookTarget);
         }
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -98,43 +123,56 @@ export default function CameraView({
         container.appendChild(renderer.domElement);
         rendererRef.current = renderer;
 
-        // Try to load the splat viewer
-        const splatUrl = `/splats/${building.splat_asset}`;
-
+        // Load OBJ interior mesh
         try {
-          const viewer = new GaussianSplats3D.Viewer({
-            scene,
-            renderer,
-            camera: threeCamera,
-            selfDrivenMode: false,
-            useBuiltInControls: true,
+          const mtlLoader = new MTLLoader();
+          mtlLoader.setPath("/models/interior/");
+          mtlLoader.load("4_4_2026.mtl", (materials) => {
+            materials.preload();
+            const objLoader = new OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.load("/models/interior/4_4_2026.obj", (obj) => {
+              // Match SceneView exactly: wrapper group handles transforms, obj just flips
+              obj.rotation.x = Math.PI;
+
+              const objWrapper = new THREE.Group();
+              objWrapper.position.set(-1.65, -0.6, 16.9);
+              const d = Math.PI / 180;
+              objWrapper.rotation.set(0 * d, -267.5 * d, 0 * d);
+              objWrapper.scale.set(0.25, 0.25, 0.25);
+              objWrapper.add(obj);
+
+              obj.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                  const mesh = child as THREE.Mesh;
+                  if (Array.isArray(mesh.material)) {
+                    mesh.material.forEach((m) => (m.side = THREE.DoubleSide));
+                  } else {
+                    mesh.material.side = THREE.DoubleSide;
+                  }
+                }
+              });
+
+              scene.add(objWrapper);
+              viewerRef.current = { dispose: () => {} };
+
+              if (disposed) {
+                renderer.dispose();
+                if (container.contains(renderer.domElement)) {
+                  container.removeChild(renderer.domElement);
+                }
+                return;
+              }
+
+              const animate = () => {
+                if (disposed) return;
+                frameIdRef.current = requestAnimationFrame(animate);
+                renderer.render(scene, threeCamera);
+              };
+              animate();
+            });
           });
-
-          await viewer.addSplatScene(splatUrl, {
-            showLoadingUI: false,
-          });
-
-          viewerRef.current = viewer;
-
-          if (disposed) {
-            viewer.dispose();
-            renderer.dispose();
-            if (container.contains(renderer.domElement)) {
-              container.removeChild(renderer.domElement);
-            }
-            return;
-          }
-
-          // Render loop — persists across camera switches
-          const animate = () => {
-            if (disposed) return;
-            frameIdRef.current = requestAnimationFrame(animate);
-            viewer.update();
-            viewer.render();
-          };
-          animate();
         } catch {
-          // Splat file failed to load, show fallback
           if (!disposed) {
             setLoadError(true);
             renderer.dispose();
@@ -144,7 +182,6 @@ export default function CameraView({
           }
         }
       } catch {
-        // Three.js or module import failed
         if (!disposed) {
           setLoadError(true);
         }
@@ -205,13 +242,14 @@ export default function CameraView({
       camera.position.z
     );
 
-    // Convert yaw/pitch to Euler rotation
-    const degToRad = (deg: number) => (deg * Math.PI) / 180;
-    threeCamera.rotation.set(
-      degToRad(camera.rotation.pitch),
-      degToRad(camera.rotation.yaw),
-      0,
-      "YXZ"
+    const yawRad = (camera.rotation.yaw * Math.PI) / 180;
+    const lookTarget = {
+      x: camera.position.x + Math.sin(yawRad),
+      y: camera.position.y,
+      z: camera.position.z + Math.cos(yawRad),
+    };
+    (threeCamera as unknown as THREE.PerspectiveCamera).lookAt(
+      lookTarget.x, lookTarget.y, lookTarget.z
     );
 
     threeCamera.fov = camera.fov;
@@ -247,14 +285,40 @@ export default function CameraView({
         background: "var(--color-bg)",
       }}
     >
-      {/* 3D Viewer Container */}
-      <div
-        ref={containerRef}
-        style={{
-          position: "absolute",
-          inset: 0,
-        }}
-      />
+      {/* STATIC_SCREENSHOT: Show static image for hardcoded cameras, live 3D for others */}
+      {useStaticScreenshot ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "var(--color-bg)",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={STATIC_SCREENSHOTS[cameraId]}
+            alt={`Camera ${cameraId} feed`}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      ) : (
+        /* 3D Viewer Container — original live feed (preserved for non-hardcoded cameras) */
+        <div
+          ref={containerRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+          }}
+        />
+      )}
+      {/* END STATIC_SCREENSHOT */}
 
       {/* CRT Vignette */}
       <div className="crt-vignette" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }} />
