@@ -45,7 +45,10 @@
       "Bash(ln -sf \"$\\(pwd\\)/Watchman/test_footage/intruder_breakin.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_0.mp4)",
       "Bash(ln -sf \"$\\(pwd\\)/SyntheticDataset/outputs/cam3-2__night_theft.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_1.mp4)",
       "Bash(ln -sf \"$\\(pwd\\)/SyntheticDataset/outputs/cam2-2__daylight_theft.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_2.mp4)",
-      "Bash(ln -sf \"$\\(pwd\\)/SyntheticDataset/outputs/cam3-2__overcast_disturbance.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_3.mp4)"
+      "Bash(ln -sf \"$\\(pwd\\)/SyntheticDataset/outputs/cam3-2__overcast_disturbance.mp4\" /home/mihir/Data/MinorityReport/frontend/public/videos/fight_3.mp4)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_evaluate"
     ]
   },
   "disabledMcpjsonServers": [

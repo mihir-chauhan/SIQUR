@@ -16,7 +16,6 @@ export function AsciiSphere() {
 
     const container = containerRef.current;
 
-    // --- Three.js + AsciiEffect ---
     const init = async () => {
       const THREE = await import("three");
       const { AsciiEffect } = await import("three/examples/jsm/effects/AsciiEffect.js");
@@ -26,7 +25,6 @@ export function AsciiSphere() {
       const width = container.clientWidth;
       const height = container.clientHeight;
 
-      // Pull camera back slightly to frame the larger sphere
       const camera = new THREE.PerspectiveCamera(58, width / height, 1, 2000);
       camera.position.y = 40;
       camera.position.z = 520;
@@ -43,20 +41,16 @@ export function AsciiSphere() {
       light2.position.set(-500, -500, -500);
       scene.add(light2);
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
-      scene.add(ambientLight);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.15));
 
-      // Simple sphere — just spins
       const sphere = new THREE.Mesh(
         new THREE.SphereGeometry(240, 64, 40),
         new THREE.MeshPhongMaterial({ flatShading: true })
       );
       scene.add(sphere);
 
-
-      // Higher cap = more ASCII characters = more detail
-      const effectW = Math.min(width,  1400);
-      const effectH = Math.min(height,  900);
+      const effectW = Math.min(width, 1400);
+      const effectH = Math.min(height, 900);
 
       const webglRenderer = new THREE.WebGLRenderer();
       webglRenderer.setSize(effectW, effectH);
@@ -70,7 +64,6 @@ export function AsciiSphere() {
       effect.domElement.style.margin = "0";
       effect.domElement.style.padding = "0";
       effect.domElement.style.lineHeight = "1";
-      // Center the ASCII table within the container and fill any gaps with black
       effect.domElement.style.display = "flex";
       effect.domElement.style.alignItems = "center";
       effect.domElement.style.justifyContent = "center";
@@ -87,18 +80,15 @@ export function AsciiSphere() {
 
       const start = Date.now();
       const TARGET_FPS = 15;
-      const FRAME_MS   = 1000 / TARGET_FPS;
+      const FRAME_MS = 1000 / TARGET_FPS;
       let lastRender = 0;
 
       const animate = (timestamp: number) => {
         if (disposedRef.current) return;
         animationId = requestAnimationFrame(animate);
 
-        // Skip frames to hold ~15fps — ASCII is decorative, not interactive
         if (timestamp - lastRender < FRAME_MS) return;
         lastRender = timestamp;
-
-        // Pause when tab is not visible
         if (document.hidden) return;
 
         const timer = Date.now() - start;
@@ -111,8 +101,8 @@ export function AsciiSphere() {
 
       const handleResize = () => {
         if (!containerRef.current || disposedRef.current) return;
-        const w = Math.min(containerRef.current.clientWidth,  1400);
-        const h = Math.min(containerRef.current.clientHeight,  900);
+        const w = Math.min(containerRef.current.clientWidth, 1400);
+        const h = Math.min(containerRef.current.clientHeight, 900);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         webglRenderer.setSize(w, h);
@@ -143,7 +133,6 @@ export function AsciiSphere() {
       if (effectDom && containerRef.current?.contains(effectDom)) {
         containerRef.current.removeChild(effectDom);
       }
-
       cleanupResize?.();
     };
   }, []);
