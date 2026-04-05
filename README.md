@@ -27,10 +27,9 @@ Built by Mihir Chauhan, David Chen, Rohan Muppa, and David Wang at Purdue Univer
 
 ## User Flow
 
-```mermaid
-flowchart TD
-    A[Landing Page<br/>/] -->|Click to start| B[Satellite Globe<br/>/v2/globe]
-    B -->|Select building marker| C[Building Configuration<br/>/building]
+`flowchart TD
+    A[Landing Page\n/] -->|Click to start| B[Satellite Globe\n/v2/globe]
+    B -->|Select building marker| C[Building Configuration\n/building]
 
     C --> C1[Set camera count]
     C --> C2[Set coverage target]
@@ -38,11 +37,11 @@ flowchart TD
     C --> C4[Preview 3D Gaussian splat interior]
     C --> C5[View optimized camera placement]
 
-    C -->|Continue to training| D[Training Workspace<br/>/v2/training]
+    C -->|Continue to training| D[Training Workspace\n/v2/training]
     D --> D1[Generate synthetic datasets]
     D --> D2[Train per-camera AI models]
 
-    D -->|Continue to evaluation| E[Scenario Evaluation<br/>/v2/evaluate]
+    D -->|Continue to evaluation| E[Scenario Evaluation\n/v2/evaluate]
     E --> E1[Enter prompt-based scenarios]
     E --> E2[Simulate security events]
     E --> E3[Run real-time threat classification]
