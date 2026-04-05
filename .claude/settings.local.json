@@ -56,7 +56,12 @@
       "Bash(ln -sf __TRACKED_VAR__/scans/4_4_2026-2/textures/4868cfa4d570620552596d41d0795f82.jpg /home/mihir/Data/MinorityReport/frontend/public/models/interior/textures/4868cfa4d570620552596d41d0795f82.jpg)",
       "Bash(ls /home/mihir/Data/MinorityReport/backend/SyntheticDataset/outputs/*.mp4)",
       "Bash(xargs -I{} basename {})",
-      "Bash(ln -sfn /home/mihir/Data/MinorityReport/backend/SyntheticDataset/outputs /home/mihir/Data/MinorityReport/frontend/public/training-videos)"
+      "Bash(ln -sfn /home/mihir/Data/MinorityReport/backend/SyntheticDataset/outputs /home/mihir/Data/MinorityReport/frontend/public/training-videos)",
+      "Bash(ln -sfn ../../../backend/SyntheticDataset/outputs frontend/public/training-videos)",
+      "Bash(git add:*)",
+      "Bash(ls /home/mihir/Data/MinorityReport/frontend/public/training-videos/*.mp4)",
+      "Bash(ln -sfn ../../backend/SyntheticDataset/outputs /home/mihir/Data/MinorityReport/frontend/public/training-videos)",
+      "Bash(curl:*)"
     ]
   },
   "disabledMcpjsonServers": [

@@ -383,7 +383,7 @@ export default function BuildingView() {
           {/* Floor plan image — inverted + cyan tinted for dark theme */}
           <div style={{ width: "100%", position: "relative" }}>
             <img
-              src="/models/DSAI_floorplan.png"
+              src="/models/DSAI_floorplan.jpg"
               alt={`Floor plan of Hall of Data Science and AI`}
               style={{
                 width: "100%",
