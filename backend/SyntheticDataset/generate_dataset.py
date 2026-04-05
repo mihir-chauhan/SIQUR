@@ -37,10 +37,10 @@ WORKER_WS   = "ws://127.0.0.1:8001/generate"
 OUTPUTS_DIR = Path(__file__).parent / "outputs"
 OUTPUTS_DIR.mkdir(exist_ok=True)
 
-# 5 seconds at 16 fps — nearest valid Wan frame count (must be 4k+1)
+# ~5 seconds at 16 fps — nearest valid Wan frame count (must be 4k+1)
 NUM_FRAMES      = 81
 FPS             = 16
-WIDTH, HEIGHT   = 832, 480
+WIDTH, HEIGHT   = 480, 272    # low-res for speed; ~3x fewer pixels than 832×480
 GUIDANCE_SCALE  = 5.0
 SEED            = 42          # fixed seed keeps lighting/appearance stable across cameras
 
@@ -259,8 +259,8 @@ def main():
     ap = argparse.ArgumentParser(description="Batch CCTV variation generator")
     ap.add_argument("--images", default="camera_images",
                     help="Folder containing camera POV images (default: ./camera_images)")
-    ap.add_argument("--steps", type=int, default=20,
-                    help="Diffusion steps per clip (default: 20)")
+    ap.add_argument("--steps", type=int, default=10,
+                    help="Diffusion steps per clip (default: 10)")
     ap.add_argument("--dry-run", action="store_true",
                     help="Print prompts without generating")
     args = ap.parse_args()

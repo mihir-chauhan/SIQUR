@@ -36,7 +36,10 @@
       "Bash(pkill -f \"uvicorn.*port 8002\")",
       "Bash(kill 23132)",
       "Bash(kill -9 23132)",
-      "Bash(kill -9 35272)"
+      "Bash(kill -9 35272)",
+      "Bash(curl -s http://127.0.0.1:8001/health)",
+      "Bash(kill 60799)",
+      "Bash(tee /tmp/dataset_gen.log)"
     ]
   },
   "disabledMcpjsonServers": [
