@@ -14,6 +14,7 @@ interface GlobePulseProps {
   className?: string
   speed?: number
   paused?: boolean
+  focusLocation?: [number, number] | null
   onMarkerClick?: (marker: PulseMarker) => void
 }
 
@@ -29,6 +30,7 @@ export function GlobePulse({
   className = "",
   speed = 0.003,
   paused: pausedProp = false,
+  focusLocation = null,
   onMarkerClick
 }: GlobePulseProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -59,6 +61,16 @@ export function GlobePulse({
     if (canvasRef.current) canvasRef.current.style.cursor = "grab"
     isPausedRef.current = false
   }, [])
+
+  // Rotate to focus location when prop changes
+  useEffect(() => {
+    if (!focusLocation) return
+    const [lat, lng] = focusLocation
+    targetPhiRef.current = -lng * (Math.PI / 180) + Math.PI
+    targetThetaRef.current = lat * (Math.PI / 180)
+    isAnimatingToTargetRef.current = true
+    isPausedRef.current = false
+  }, [focusLocation])
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {

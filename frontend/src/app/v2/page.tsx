@@ -62,6 +62,7 @@ export default function V2Page() {
 
   // Globe
   const [globePaused, setGlobePaused] = useState(false);
+  const [focusLocation, setFocusLocation] = useState<[number, number] | null>(null);
   const [activeTarget, setActiveTarget] = useState<{
     id: string;
     name: string;
@@ -153,10 +154,23 @@ export default function V2Page() {
     (marker: { id: string; location: [number, number] }) => {
       const data = LOCATION_DB[marker.id] || { name: "Unknown", coordinates: "N/A" };
       setActiveTarget({ ...marker, ...data });
-      setGlobePaused(true);
+      // Don't pause yet — let the animation run, it will pause after rotating
     },
     []
   );
+
+  // Clicking anywhere on the globe selects Purdue and rotates to it
+  const handleGlobeClick = useCallback(() => {
+    if (activeTarget || view !== "globe") return;
+    const marker = PURDUE_MARKERS[0];
+    setFocusLocation(marker.location);
+    // Show the info panel after rotation finishes (~1.5s)
+    setTimeout(() => {
+      const data = LOCATION_DB[marker.id] || { name: "Unknown", coordinates: "N/A" };
+      setActiveTarget({ ...marker, ...data });
+      setGlobePaused(true);
+    }, 1500);
+  }, [activeTarget, view]);
 
   const titleText = TITLE.slice(0, displayedChars);
   const showCursor = displayedChars < TITLE.length && bootPhase === "ready";
@@ -236,6 +250,7 @@ export default function V2Page() {
       {/* ═══ LAYER 1: Cobe globe (underneath ASCII, scales up) ═══ */}
       {showGlobe && (
         <div
+          onClick={handleGlobeClick}
           style={{
             position: "absolute",
             inset: 0,
@@ -245,6 +260,7 @@ export default function V2Page() {
             zIndex: 1,
             opacity: transitionPhase >= 3 ? 1 : 0,
             transition: "opacity 800ms ease",
+            cursor: view === "globe" && !activeTarget ? "pointer" : "default",
           }}
         >
           <div
@@ -260,6 +276,7 @@ export default function V2Page() {
               markers={PURDUE_MARKERS}
               onMarkerClick={handleMarkerClick}
               paused={globePaused}
+              focusLocation={focusLocation}
             />
           </div>
         </div>
