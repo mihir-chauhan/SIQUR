@@ -185,98 +185,158 @@ export default function WatchmanPage() {
         scene.add(objWrapper);
         objWrapperRef.current = objWrapper;
 
-        // --- Animated path (t = timestamp in seconds) — Person 1 ---
-        const WAYPOINTS = [
-          {x:-7.82, y:0.79, z:17.72, t:0},
-          {x:-7.78, y:0.78, z:17.94, t:3},
-          {x:-7.76, y:0.79, z:18.15, t:6},
-          {x:-7.76, y:0.79, z:18.15, t:8},      // standing still for 2s
-          {x:-7.83, y:0.82, z:17.8,  t:8.5},
-          {x:-7.94, y:0.83, z:16.71, t:9.5},
-          {x:-7.94, y:0.80, z:16.35, t:10},
-          {x:-7.76, y:0.85, z:16.04, t:11},
-          {x:-6.93, y:0.87, z:15.85, t:12},
-          {x:-5.39, y:0.77, z:15.73, t:13},
-          {x:-3.43, y:0.63, z:15.63, t:14},
-          {x:-2.15, y:0.64, z:15.80, t:15},
-          {x:-0.89, y:0.66, z:16.19, t:15.5},
-          {x:-0.37, y:0.70, z:16.99, t:16},
+        // --- Multi-person animated paths ---
+        const PATHS = [
+          {
+            id: "person1",
+            color: [0.1, 0.3, 1.0] as [number, number, number],
+            dotColors: ["rgba(60, 100, 255, 0.9)", "rgba(40, 80, 220, 0.3)", "rgba(30, 60, 200, 0)"],
+            waypoints: [
+              {x:-7.82, y:0.79, z:17.72, t:0},
+              {x:-7.78, y:0.78, z:17.94, t:3},
+              {x:-7.76, y:0.79, z:18.15, t:6},
+              {x:-7.76, y:0.79, z:18.15, t:8},
+              {x:-7.83, y:0.82, z:17.8,  t:8.5},
+              {x:-7.94, y:0.83, z:16.71, t:9.5},
+              {x:-7.94, y:0.80, z:16.35, t:10},
+              {x:-7.76, y:0.85, z:16.04, t:11},
+              {x:-6.93, y:0.87, z:15.85, t:12},
+              {x:-5.39, y:0.77, z:15.73, t:13},
+              {x:-3.43, y:0.63, z:15.63, t:14},
+              {x:-2.15, y:0.64, z:15.80, t:15},
+              {x:-0.89, y:0.66, z:16.19, t:15.5},
+              {x:-0.37, y:0.70, z:16.99, t:16},
+            ],
+          },
+          {
+            id: "person2",
+            color: [1.0, 0.85, 0.1] as [number, number, number],
+            dotColors: ["rgba(255, 220, 40, 0.9)", "rgba(220, 180, 30, 0.3)", "rgba(200, 160, 20, 0)"],
+            waypoints: [
+              {x:-7.56, y:0.81, z:19.6,  t:4.5},
+              {x:-7.81, y:0.78, z:19.11, t:5.5},
+              {x:-7.84, y:0.77, z:18.94, t:6},
+              {x:-7.87, y:0.77, z:18.71, t:6.5},
+              {x:-7.86, y:0.79, z:18.55, t:7},
+              {x:-7.89, y:0.81, z:17.77, t:8},
+              {x:-7.87, y:0.84, z:17.1,  t:8.5},
+              {x:-7.83, y:0.83, z:16.52, t:9},
+              {x:-7.72, y:0.80, z:16.07, t:9.5},
+              {x:-7.10, y:0.82, z:15.92, t:10},
+              {x:-6.28, y:0.80, z:15.91, t:10.5},
+              {x:-5.67, y:0.78, z:15.87, t:11},
+              {x:-4.66, y:0.70, z:15.83, t:11.5},
+              {x:-3.32, y:0.55, z:15.78, t:12},
+              {x:-2.73, y:0.53, z:15.80, t:12.5},
+              {x:-1.92, y:0.61, z:16.07, t:13},
+              {x:-1.07, y:0.67, z:16.40, t:13.5},
+              {x:-0.42, y:0.69, z:16.92, t:14},
+              {x:-0.14, y:0.71, z:17.49, t:14.5},
+              {x:0.11,  y:0.73, z:18.21, t:15},
+              {x:0.34,  y:0.73, z:18.95, t:16},
+            ],
+          },
         ];
-        const totalDuration = WAYPOINTS[WAYPOINTS.length - 1].t;
 
-        // --- Line2 trail + Sprite glow dot ---
-        const curvePoints = WAYPOINTS.map(w => new THREE.Vector3(w.x, w.y, w.z));
-        const curve = new THREE.CatmullRomCurve3(curvePoints, false, "catmullrom", 0.5);
-
-        // Sample the curve into dense points for smooth line
+        // Build all path animations
         const SAMPLE_COUNT = 500;
-        const sampledPoints: number[] = [];
-        const sampledColors: number[] = [];
-        for (let i = 0; i < SAMPLE_COUNT; i++) {
-          const t = i / (SAMPLE_COUNT - 1);
-          const p = curve.getPoint(t);
-          sampledPoints.push(p.x, p.y, p.z);
-          // Subtle gradient: muted cyan at tail -> slightly brighter at head
-          const brightness = 0.4 + 0.4 * t;
-          sampledColors.push(brightness * 0.1, brightness * 0.3, brightness * 1.0);
+        const allAnims: Array<{
+          dot: THREE.Sprite;
+          lineGeo: LineGeometry;
+          lineMat: LineMaterial;
+          sampledPoints: number[];
+          totalSegments: number;
+          waypoints: Array<{x:number;y:number;z:number;t:number}>;
+          totalDuration: number;
+        }> = [];
+
+        for (const path of PATHS) {
+          if (path.waypoints.length < 2) continue;
+
+          const curvePoints = path.waypoints.map(w => new THREE.Vector3(w.x, w.y, w.z));
+          const curve = new THREE.CatmullRomCurve3(curvePoints, false, "catmullrom", 0.5);
+
+          const sampledPoints: number[] = [];
+          const sampledColors: number[] = [];
+          for (let i = 0; i < SAMPLE_COUNT; i++) {
+            const t = i / (SAMPLE_COUNT - 1);
+            const p = curve.getPoint(t);
+            sampledPoints.push(p.x, p.y, p.z);
+            const brightness = 0.4 + 0.4 * t;
+            sampledColors.push(
+              brightness * path.color[0],
+              brightness * path.color[1],
+              brightness * path.color[2]
+            );
+          }
+
+          const lineGeo = new LineGeometry();
+          lineGeo.setPositions(sampledPoints);
+          lineGeo.setColors(sampledColors);
+
+          const lineMat = new LineMaterial({
+            linewidth: 2,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.7,
+            resolution: new THREE.Vector2(container.clientWidth, container.clientHeight),
+          });
+
+          const trailLine = new Line2(lineGeo, lineMat);
+          trailLine.computeLineDistances();
+          // @ts-ignore
+          lineGeo.instanceCount = 0;
+          scene.add(trailLine);
+
+          // Dot sprite
+          const glowCanvas = document.createElement("canvas");
+          glowCanvas.width = 64;
+          glowCanvas.height = 64;
+          const glowCtx = glowCanvas.getContext("2d")!;
+          const gradient = glowCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+          gradient.addColorStop(0, path.dotColors[0]);
+          gradient.addColorStop(0.3, path.dotColors[1]);
+          gradient.addColorStop(1, path.dotColors[2]);
+          glowCtx.fillStyle = gradient;
+          glowCtx.fillRect(0, 0, 64, 64);
+
+          const dot = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+              map: new THREE.CanvasTexture(glowCanvas),
+              blending: THREE.NormalBlending,
+              transparent: true,
+              depthTest: false,
+            })
+          );
+          dot.scale.set(0.2, 0.2, 1);
+          dot.visible = false;
+          scene.add(dot);
+
+          allAnims.push({
+            dot,
+            lineGeo,
+            lineMat,
+            sampledPoints,
+            totalSegments: SAMPLE_COUNT - 1,
+            waypoints: path.waypoints,
+            totalDuration: path.waypoints[path.waypoints.length - 1].t,
+          });
         }
 
-        const lineGeo = new LineGeometry();
-        lineGeo.setPositions(sampledPoints);
-        lineGeo.setColors(sampledColors);
+        // Store all line materials for resize updates
+        lineMatRef = allAnims.length > 0 ? allAnims[0].lineMat : null;
+        const allLineMats = allAnims.map(a => a.lineMat);
 
-        const lineMat = new LineMaterial({
-          linewidth: 2,
-          vertexColors: true,
-          transparent: true,
-          opacity: 0.7,
-          resolution: new THREE.Vector2(container.clientWidth, container.clientHeight),
-        });
-
-        lineMatRef = lineMat;
-        const trailLine = new Line2(lineGeo, lineMat);
-        trailLine.computeLineDistances();
-        // @ts-ignore — instanceCount is the Line2 progressive reveal mechanism
-        lineGeo.instanceCount = 0;
-        scene.add(trailLine);
-
-        // Glowing sprite dot
-        const glowCanvas = document.createElement("canvas");
-        glowCanvas.width = 64;
-        glowCanvas.height = 64;
-        const glowCtx = glowCanvas.getContext("2d")!;
-        const gradient = glowCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
-        gradient.addColorStop(0, "rgba(60, 100, 255, 0.9)");
-        gradient.addColorStop(0.3, "rgba(40, 80, 220, 0.3)");
-        gradient.addColorStop(1, "rgba(30, 60, 200, 0)");
-        glowCtx.fillStyle = gradient;
-        glowCtx.fillRect(0, 0, 64, 64);
-        const glowTexture = new THREE.CanvasTexture(glowCanvas);
-
-        const dot = new THREE.Sprite(
-          new THREE.SpriteMaterial({
-            map: glowTexture,
-            blending: THREE.NormalBlending,
-            transparent: true,
-            depthTest: false,
-          })
-        );
-        dot.scale.set(0.2, 0.2, 1);
-        dot.visible = false; // hidden until animation starts
-        scene.add(dot);
-
-        // Animation state — time-based
+        // Global animation state
+        const globalMaxDuration = Math.max(...allAnims.map(a => a.totalDuration));
         const animState = {
-          dot,
-          lineGeo,
-          sampledPoints,
-          totalSegments: SAMPLE_COUNT - 1,
-          waypoints: WAYPOINTS,
-          totalDuration,
+          paths: allAnims,
+          totalDuration: globalMaxDuration,
           elapsed: 0,
+          allLineMats,
         };
         (scene as unknown as { _pathAnim: typeof animState })._pathAnim = animState;
-        pathAnimRef.current = animState;
+        pathAnimRef.current = animState as unknown as typeof pathAnimRef.current;
 
         setObjReady(true);
       });
@@ -333,7 +393,8 @@ export default function WatchmanPage() {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
-      if (lineMatRef) lineMatRef.resolution.set(w, h);
+      const animForResize = (scene as unknown as { _pathAnim?: { allLineMats: LineMaterial[] } })._pathAnim;
+      if (animForResize) animForResize.allLineMats.forEach(m => m.resolution.set(w, h));
     };
     window.addEventListener("resize", onResize);
 
@@ -366,8 +427,8 @@ export default function WatchmanPage() {
       const newData = { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw };
       camDataRef.current = newData;
 
-      // Animate path — time-based interpolation + Line2 progressive reveal
-      const anim = (scene as unknown as { _pathAnim?: typeof pathAnimRef.current })._pathAnim;
+      // Animate all paths — time-based interpolation + Line2 progressive reveal
+      const anim = (scene as unknown as { _pathAnim?: { paths: Array<{ dot: THREE.Sprite; lineGeo: LineGeometry; sampledPoints: number[]; totalSegments: number; waypoints: Array<{x:number;y:number;z:number;t:number}>; totalDuration: number }>; totalDuration: number; elapsed: number } })._pathAnim;
       if (anim && pathPlayingRef.current) {
         anim.elapsed += delta;
 
@@ -385,59 +446,61 @@ export default function WatchmanPage() {
         videos.forEach((v, vi) => {
           const feed = VIDEO_FEEDS[vi];
           if (feed && feed.src) {
-            // Only check videos whose offset has been reached
             if (anim.elapsed >= feed.offset && !v.ended) {
               allVideosFinished = false;
             }
           }
         });
-        const dotDone = anim.elapsed >= anim.totalDuration;
+        const allPathsDone = anim.paths.every(p => anim.elapsed >= p.totalDuration);
 
-        // Stop when all started videos have ended AND dot is done
-        if (dotDone && allVideosFinished) {
+        if (allPathsDone && allVideosFinished) {
           pathPlayingRef.current = false;
           pathFinishedRef.current = true;
           setPathPlaying(false);
         }
 
-        // Clamp dot animation to its own duration (but keep elapsed running for videos)
-        const dotElapsed = Math.min(anim.elapsed, anim.totalDuration);
+        // Animate each person's path
+        for (const p of anim.paths) {
+          const dotElapsed = Math.min(anim.elapsed, p.totalDuration);
 
-        // Find which two waypoints bracket the current time and lerp
-        const wps = anim.waypoints;
-        let wpIdx = 0;
-        for (let i = 0; i < wps.length - 1; i++) {
-          if (dotElapsed >= wps[i].t) wpIdx = i;
-        }
-        const wpA = wps[wpIdx];
-        const wpB = wps[Math.min(wpIdx + 1, wps.length - 1)];
-        const segDuration = wpB.t - wpA.t;
-        const lerpT = segDuration > 0 ? Math.min((dotElapsed - wpA.t) / segDuration, 1) : 1;
-
-        // Interpolated position
-        const px = wpA.x + (wpB.x - wpA.x) * lerpT;
-        const py = wpA.y + (wpB.y - wpA.y) * lerpT;
-        const pz = wpA.z + (wpB.z - wpA.z) * lerpT;
-
-        anim.dot.visible = true;
-        anim.dot.position.set(px, py, pz);
-
-        // Reveal trail: find the sampled point closest to the dot and reveal up to it
-        let closestSeg = 0;
-        let closestDist = Infinity;
-        for (let s = 0; s <= anim.totalSegments; s++) {
-          const si = s * 3;
-          const dx = anim.sampledPoints[si] - px;
-          const dy = anim.sampledPoints[si + 1] - py;
-          const dz = anim.sampledPoints[si + 2] - pz;
-          const dist = dx * dx + dy * dy + dz * dz;
-          if (dist < closestDist) {
-            closestDist = dist;
-            closestSeg = s;
+          // Lerp between waypoints
+          const wps = p.waypoints;
+          let wpIdx = 0;
+          for (let i = 0; i < wps.length - 1; i++) {
+            if (dotElapsed >= wps[i].t) wpIdx = i;
           }
+          const wpA = wps[wpIdx];
+          const wpB = wps[Math.min(wpIdx + 1, wps.length - 1)];
+          const segDur = wpB.t - wpA.t;
+          const lerpT = segDur > 0 ? Math.min((dotElapsed - wpA.t) / segDur, 1) : 1;
+
+          const px = wpA.x + (wpB.x - wpA.x) * lerpT;
+          const py = wpA.y + (wpB.y - wpA.y) * lerpT;
+          const pz = wpA.z + (wpB.z - wpA.z) * lerpT;
+
+          // Only show dot if we've reached this person's start time
+          if (anim.elapsed >= wps[0].t) {
+            p.dot.visible = true;
+            p.dot.position.set(px, py, pz);
+          }
+
+          // Reveal trail by closest point to dot
+          let closestSeg = 0;
+          let closestDist = Infinity;
+          for (let s = 0; s <= p.totalSegments; s++) {
+            const si = s * 3;
+            const dx = p.sampledPoints[si] - px;
+            const dy = p.sampledPoints[si + 1] - py;
+            const dz = p.sampledPoints[si + 2] - pz;
+            const dist = dx * dx + dy * dy + dz * dz;
+            if (dist < closestDist) {
+              closestDist = dist;
+              closestSeg = s;
+            }
+          }
+          // @ts-ignore
+          p.lineGeo.instanceCount = closestSeg;
         }
-        // @ts-ignore — instanceCount controls Line2 progressive reveal
-        anim.lineGeo.instanceCount = closestSeg;
       }
 
       renderer.render(scene, camera);
@@ -622,12 +685,17 @@ export default function WatchmanPage() {
                 <button
                   onClick={() => {
                     if (pathFinishedRef.current && pathAnimRef.current) {
-                      pathAnimRef.current.elapsed = 0;
-                      // @ts-ignore
-                      pathAnimRef.current.lineGeo.instanceCount = 0;
-                      (pathAnimRef.current.dot as THREE.Sprite).visible = false;
+                      (pathAnimRef.current as unknown as { elapsed: number }).elapsed = 0;
+                      // Reset all paths
+                      const paths = (pathAnimRef.current as unknown as { paths: Array<{ dot: THREE.Sprite; lineGeo: LineGeometry }> }).paths;
+                      if (paths) {
+                        for (const p of paths) {
+                          // @ts-ignore
+                          p.lineGeo.instanceCount = 0;
+                          p.dot.visible = false;
+                        }
+                      }
                       pathFinishedRef.current = false;
-                      // Reset videos to start
                       document.querySelectorAll<HTMLVideoElement>("[data-watchman-video]").forEach((v) => { v.currentTime = 0; });
                     }
                     pathPlayingRef.current = true;
@@ -676,10 +744,15 @@ export default function WatchmanPage() {
                     pathFinishedRef.current = false;
                     setPathPlaying(false);
                     if (pathAnimRef.current) {
-                      pathAnimRef.current.elapsed = 0;
-                      // @ts-ignore
-                      pathAnimRef.current.lineGeo.instanceCount = 0;
-                      (pathAnimRef.current.dot as THREE.Sprite).visible = false;
+                      (pathAnimRef.current as unknown as { elapsed: number }).elapsed = 0;
+                      const paths = (pathAnimRef.current as unknown as { paths: Array<{ dot: THREE.Sprite; lineGeo: LineGeometry }> }).paths;
+                      if (paths) {
+                        for (const p of paths) {
+                          // @ts-ignore
+                          p.lineGeo.instanceCount = 0;
+                          p.dot.visible = false;
+                        }
+                      }
                     }
                     document.querySelectorAll<HTMLVideoElement>("[data-watchman-video]").forEach((v) => {
                       v.pause();
