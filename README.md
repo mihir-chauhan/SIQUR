@@ -110,17 +110,25 @@ SIQUR utilizes a modular architecture that connects a modern web frontend with s
 * **AI Training Module:** Ingests the synthetic data to train bespoke, per-camera classification models. This ensures the neural networks are highly specialized to the unique lighting, angle, and depth of their specific deployment locations.
 * **Simulation & Inference Engine:** Feeds prompt-driven synthetic security scenarios (e.g., intrusions, fights) into the trained models. It processes the feeds in real time, classifies threats, and returns the actionable telemetry back to the frontend dashboard for user review.
 
-### Running Locally
-Frontend
+## Running Locally
+
+### Frontend
+
+```bash
 cd frontend
 npm install
 npm run dev
 
+
 By default, the frontend runs at:
+http://localhost:3000
 
-[http://localhost:**3000**](http://localhost:**3000**) Backend cd backend pip install -r requirements.txt
 
-Some backend modules may have their own setup steps, dependencies, or runtime instructions. Check the local **README** or module documentation inside each backend folder for service-specific details.
+## Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
 
 ### Repository Structure
 **SIQUR**/
