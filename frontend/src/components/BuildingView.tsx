@@ -384,7 +384,7 @@ export default function BuildingView() {
           <div style={{ width: "100%", position: "relative" }}>
             <img
               src="/models/DSAI_floorplan.png"
-              alt={`Floor plan of ${building.name}`}
+              alt={`Floor plan of Hall of Data Science and AI`}
               style={{
                 width: "100%",
                 display: "block",

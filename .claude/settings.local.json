@@ -53,7 +53,10 @@
       "Bash(ln -sf __TRACKED_VAR__/camera-screenshots/cam2_screenshot.png /home/mihir/Data/MinorityReport/frontend/public/camera-screenshots/cam_h2.png)",
       "Bash(ln -sf __TRACKED_VAR__/camera-screenshots/cam3_screenshot.png /home/mihir/Data/MinorityReport/frontend/public/camera-screenshots/cam_h3.png)",
       "Bash(ln -sf __TRACKED_VAR__/camera-screenshots/cam4_screenshot.png /home/mihir/Data/MinorityReport/frontend/public/camera-screenshots/cam_h4.png)",
-      "Bash(ln -sf __TRACKED_VAR__/scans/4_4_2026-2/textures/4868cfa4d570620552596d41d0795f82.jpg /home/mihir/Data/MinorityReport/frontend/public/models/interior/textures/4868cfa4d570620552596d41d0795f82.jpg)"
+      "Bash(ln -sf __TRACKED_VAR__/scans/4_4_2026-2/textures/4868cfa4d570620552596d41d0795f82.jpg /home/mihir/Data/MinorityReport/frontend/public/models/interior/textures/4868cfa4d570620552596d41d0795f82.jpg)",
+      "Bash(ls /home/mihir/Data/MinorityReport/backend/SyntheticDataset/outputs/*.mp4)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(ln -sfn /home/mihir/Data/MinorityReport/backend/SyntheticDataset/outputs /home/mihir/Data/MinorityReport/frontend/public/training-videos)"
     ]
   },
   "disabledMcpjsonServers": [

@@ -195,168 +195,58 @@ export default function PropertiesPanel({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Layer name header */}
-      <div
-        style={{
-          borderBottom: "1px solid rgba(0, 229, 255, 0.1)",
-          paddingBottom: "10px",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "9px",
-            letterSpacing: "0.35em",
-            color: "var(--color-accent-cyan)",
-          }}
-        >
-          PROPERTIES
-        </span>
-        <p
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "13px",
-            color: "var(--color-text)",
-            marginTop: "6px",
-            letterSpacing: "0.05em",
-          }}
-        >
-          {layer.name}
-        </p>
-        <p
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "8px",
-            color: "var(--color-text-dim)",
-            letterSpacing: "0.15em",
-            marginTop: "2px",
-          }}
-        >
-          {layer.type === "splat"
-            ? "GAUSSIAN SPLAT"
-            : layer.type === "camera"
-              ? "CAMERA POINT"
-              : "OBJ MESH"}
-        </p>
+      <div style={{ borderBottom: "1px solid rgba(0, 229, 255, 0.1)", paddingBottom: "6px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "11px", color: "var(--color-text)", letterSpacing: "0.05em" }}>
+            {layer.name}
+          </span>
+          <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", color: "var(--color-text-dim)", letterSpacing: "0.1em" }}>
+            {layer.type === "splat" ? "SPLAT" : layer.type === "camera" ? "CAM" : "OBJ"}
+          </span>
+        </div>
         {layer.type === "camera" && yaw !== undefined && (
-          <p
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: "10px",
-              color: "#ffdd44",
-              letterSpacing: "0.1em",
-              marginTop: "6px",
-            }}
-          >
-            YAW: {yaw.toFixed(2)}°
-          </p>
+          <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "9px", color: "#ffdd44", letterSpacing: "0.1em" }}>
+            YAW: {yaw.toFixed(1)}°
+          </span>
         )}
       </div>
 
-      {/* Position — drag to adjust */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <span
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "9px",
-            letterSpacing: "0.25em",
-            color: "var(--color-text-dim)",
-            marginBottom: "2px",
-          }}
-        >
-          POSITION — DRAG TO ADJUST
+      {/* Position — horizontal row */}
+      <div>
+        <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", letterSpacing: "0.2em", color: "var(--color-text-dim)", display: "block", marginBottom: "3px" }}>
+          POSITION
         </span>
-        <DragInput
-          label="X"
-          value={position.x}
-          onChange={(v) => onPositionChange("x", v)}
-          color="#ff4444"
-        />
-        <DragInput
-          label="Y"
-          value={position.y}
-          onChange={(v) => onPositionChange("y", v)}
-          color="#44ff44"
-        />
-        <DragInput
-          label="Z"
-          value={position.z}
-          onChange={(v) => onPositionChange("z", v)}
-          color="#4488ff"
-        />
+        <div style={{ display: "flex", gap: "4px" }}>
+          <DragInput label="X" value={position.x} onChange={(v) => onPositionChange("x", v)} color="#ff4444" />
+          <DragInput label="Y" value={position.y} onChange={(v) => onPositionChange("y", v)} color="#44ff44" />
+          <DragInput label="Z" value={position.z} onChange={(v) => onPositionChange("z", v)} color="#4488ff" />
+        </div>
       </div>
 
-      {/* Rotation */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <span
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "9px",
-            letterSpacing: "0.25em",
-            color: "var(--color-text-dim)",
-            marginBottom: "2px",
-          }}
-        >
-          ROTATION (DEG) — DRAG TO ADJUST
+      {/* Rotation — horizontal row */}
+      <div>
+        <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", letterSpacing: "0.2em", color: "var(--color-text-dim)", display: "block", marginBottom: "3px" }}>
+          ROTATION
         </span>
-        <DragInput
-          label="X"
-          value={rotation.x}
-          onChange={(v) => onRotationChange("x", v)}
-          color="#ff4444"
-          step={0.5}
-        />
-        <DragInput
-          label="Y"
-          value={rotation.y}
-          onChange={(v) => onRotationChange("y", v)}
-          color="#44ff44"
-          step={0.5}
-        />
-        <DragInput
-          label="Z"
-          value={rotation.z}
-          onChange={(v) => onRotationChange("z", v)}
-          color="#4488ff"
-          step={0.5}
-        />
+        <div style={{ display: "flex", gap: "4px" }}>
+          <DragInput label="X" value={rotation.x} onChange={(v) => onRotationChange("x", v)} color="#ff4444" step={0.5} />
+          <DragInput label="Y" value={rotation.y} onChange={(v) => onRotationChange("y", v)} color="#44ff44" step={0.5} />
+          <DragInput label="Z" value={rotation.z} onChange={(v) => onRotationChange("z", v)} color="#4488ff" step={0.5} />
+        </div>
       </div>
 
-      {/* Scale */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <span
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "9px",
-            letterSpacing: "0.25em",
-            color: "var(--color-text-dim)",
-            marginBottom: "2px",
-          }}
-        >
-          SCALE — DRAG TO ADJUST
+      {/* Scale — horizontal row */}
+      <div>
+        <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "8px", letterSpacing: "0.2em", color: "var(--color-text-dim)", display: "block", marginBottom: "3px" }}>
+          SCALE
         </span>
-        <DragInput
-          label="X"
-          value={scale.x}
-          onChange={(v) => onScaleChange("x", v)}
-          color="#ff4444"
-          step={0.01}
-        />
-        <DragInput
-          label="Y"
-          value={scale.y}
-          onChange={(v) => onScaleChange("y", v)}
-          color="#44ff44"
-          step={0.01}
-        />
-        <DragInput
-          label="Z"
-          value={scale.z}
-          onChange={(v) => onScaleChange("z", v)}
-          color="#4488ff"
-          step={0.01}
-        />
+        <div style={{ display: "flex", gap: "4px" }}>
+          <DragInput label="X" value={scale.x} onChange={(v) => onScaleChange("x", v)} color="#ff4444" step={0.01} />
+          <DragInput label="Y" value={scale.y} onChange={(v) => onScaleChange("y", v)} color="#44ff44" step={0.01} />
+          <DragInput label="Z" value={scale.z} onChange={(v) => onScaleChange("z", v)} color="#4488ff" step={0.01} />
+        </div>
       </div>
 
       {/* Cone visibility toggle — camera layers only */}

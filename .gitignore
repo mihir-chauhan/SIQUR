@@ -33,3 +33,4 @@ screenshots/
 
 # ── Generated outputs ────────────────────────────────────────
 **/outputs/
+!backend/SyntheticDataset/outputs/

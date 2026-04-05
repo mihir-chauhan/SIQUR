@@ -571,7 +571,45 @@ export default function BuildingPage() {
 
   const handleSelectLayer = useCallback((id: string) => {
     setSelectedLayerId(id);
-  }, []);
+
+    if (id === "indoor") {
+      // Hide outdoor splat, show indoor OBJ
+      setLayers((prev) =>
+        prev.map((l) => {
+          if (l.id === "outdoor") return { ...l, visible: false };
+          if (l.id === "indoor") return { ...l, visible: true };
+          return l;
+        })
+      );
+    } else if (id === "outdoor") {
+      // Show outdoor splat, hide indoor OBJ
+      setLayers((prev) =>
+        prev.map((l) => {
+          if (l.id === "outdoor") return { ...l, visible: true };
+          if (l.id === "indoor") return { ...l, visible: false };
+          return l;
+        })
+      );
+    } else if (id.startsWith("cam_")) {
+      // Cameras are indoors: hide outdoor, show indoor
+      setLayers((prev) =>
+        prev.map((l) => {
+          if (l.id === "outdoor") return { ...l, visible: false };
+          if (l.id === "indoor") return { ...l, visible: true };
+          return l;
+        })
+      );
+      // Fly the 3D camera to this camera's position
+      const handle = sceneHandleRef.current;
+      if (handle) {
+        const pos = positions[id];
+        const yaw = cameraYaws[id];
+        if (pos && yaw !== undefined) {
+          handle.flyTo(pos, yaw);
+        }
+      }
+    }
+  }, [positions, cameraYaws]);
 
   const handleSave = useCallback(() => {
     if (!selectedLayerId) return;
