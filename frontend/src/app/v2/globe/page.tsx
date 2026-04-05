@@ -1,5 +1,13 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function GlobeRedirect() {
-  redirect("/v2");
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/v2");
+  }, [router]);
+
+  return <div style={{ background: "#000", position: "fixed", inset: 0 }} />;
 }

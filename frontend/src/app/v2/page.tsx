@@ -145,7 +145,6 @@ export default function V2Page() {
     setTimeout(() => {
       setTransitionPhase(4);
       setView("globe");
-      window.history.replaceState(null, "", "/v2/globe");
     }, 1800);
   }, [view]);
 

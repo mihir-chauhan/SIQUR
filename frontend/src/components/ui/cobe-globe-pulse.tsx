@@ -37,6 +37,11 @@ export function GlobePulse({
   const phiOffsetRef = useRef(0)
   const thetaOffsetRef = useRef(0)
   const isPausedRef = useRef(false)
+  const isAnimatingToTargetRef = useRef(false)
+  const targetPhiRef = useRef(0)
+  const targetThetaRef = useRef(0)
+  const currentPhiRef = useRef(0)
+  const currentThetaRef = useRef(0.2)
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     pointerInteracting.current = { x: e.clientX, y: e.clientY }
@@ -97,10 +102,45 @@ export function GlobePulse({
       arcWidth: 0.5, arcHeight: 0.25, opacity: 0.7,
     })
     function animate() {
-      if (!isPausedRef.current && !pausedProp) phi += speed
+      if (isAnimatingToTargetRef.current) {
+        const lerpFactor = 0.06
+        const totalPhi = phi + phiOffsetRef.current
+        const totalTheta = 0.2 + thetaOffsetRef.current
+
+        const dphi = targetPhiRef.current - totalPhi
+        const dtheta = targetThetaRef.current - totalTheta
+
+        // Normalize dphi to [-PI, PI] for shortest rotation path
+        const normalizedDphi = ((dphi + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI
+
+        phiOffsetRef.current += normalizedDphi * lerpFactor
+        thetaOffsetRef.current += dtheta * lerpFactor
+
+        const remainingPhi = Math.abs(targetPhiRef.current - (phi + phiOffsetRef.current))
+        const remainingTheta = Math.abs(targetThetaRef.current - (0.2 + thetaOffsetRef.current))
+
+        // Normalize remaining phi check
+        const normRemPhi = Math.abs(((remainingPhi + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI)
+
+        if (normRemPhi < 0.01 && remainingTheta < 0.01) {
+          // Snap to target
+          phiOffsetRef.current = targetPhiRef.current - phi
+          thetaOffsetRef.current = targetThetaRef.current - 0.2
+          isAnimatingToTargetRef.current = false
+          isPausedRef.current = true
+        }
+      } else if (!isPausedRef.current && !pausedProp) {
+        phi += speed
+      }
+
+      const finalPhi = phi + phiOffsetRef.current + dragOffset.current.phi
+      const finalTheta = 0.2 + thetaOffsetRef.current + dragOffset.current.theta
+      currentPhiRef.current = finalPhi
+      currentThetaRef.current = finalTheta
+
       globe!.update({
-        phi: phi + phiOffsetRef.current + dragOffset.current.phi,
-        theta: 0.2 + thetaOffsetRef.current + dragOffset.current.theta,
+        phi: finalPhi,
+        theta: finalTheta,
       })
       animationId = requestAnimationFrame(animate)
     }
@@ -164,6 +204,11 @@ export function GlobePulse({
           }}
           onClick={(e) => {
             e.stopPropagation()
+            const [lat, lng] = m.location
+            targetPhiRef.current = -lng * (Math.PI / 180) + Math.PI
+            targetThetaRef.current = lat * (Math.PI / 180)
+            isAnimatingToTargetRef.current = true
+            isPausedRef.current = false
             if (onMarkerClick) onMarkerClick(m)
           }}
         >
