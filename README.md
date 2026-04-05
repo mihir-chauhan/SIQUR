@@ -1,10 +1,10 @@
 # SIQUR
 
-**See everything. Miss nothing.**
+**The First Fully-Integrated Intelligent Security Suite**
 
 SIQUR is an AI powered surveillance optimization platform that automates camera placement, trains bespoke per camera AI models, and evaluates security coverage through synthetic scenario simulation.
 
-Built by Team Catapult at Purdue University.
+Built by Mihir Chauhan, David Chen, Rohan Muppa, and David Wang at Purdue University.
 
 ## What It Does
 
