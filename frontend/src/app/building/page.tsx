@@ -812,8 +812,8 @@ export default function BuildingPage() {
                 width: 48,
                 height: 48,
                 borderRadius: "50%",
-                border: "2px solid rgba(16, 185, 129, 0.15)",
-                borderTopColor: "rgba(16, 185, 129, 0.8)",
+                border: "2px solid rgba(0, 229, 255, 0.15)",
+                borderTopColor: "rgba(0, 229, 255, 0.8)",
                 animation: "spin 1s linear infinite",
                 marginBottom: 20,
               }}
@@ -824,8 +824,8 @@ export default function BuildingPage() {
                 fontSize: 11,
                 fontWeight: 700,
                 letterSpacing: "0.3em",
-                color: "#10b981",
-                textShadow: "0 0 12px rgba(16, 185, 129, 0.4)",
+                color: "#00e5ff",
+                textShadow: "0 0 12px rgba(0, 229, 255, 0.4)",
               }}
             >
               INITIALIZING WATCHMAN

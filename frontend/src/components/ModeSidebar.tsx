@@ -146,7 +146,7 @@ export default function ModeSidebar({ onTransitionStart }: ModeSidebarProps) {
           borderRadius: isWatchman ? 8 : 18,
           border: "none",
           background: isWatchman
-            ? "rgba(16, 185, 129, 0.15)"
+            ? "rgba(0, 229, 255, 0.15)"
             : "rgba(255, 255, 255, 0.04)",
           cursor: isWatchman ? "default" : "pointer",
           display: "flex",
@@ -164,11 +164,11 @@ export default function ModeSidebar({ onTransitionStart }: ModeSidebarProps) {
               width: 3,
               height: 20,
               borderRadius: 2,
-              backgroundColor: "#10b981",
+              backgroundColor: "#00e5ff",
             }}
           />
         )}
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isWatchman ? "#10b981" : "rgba(255,255,255,0.35)"} strokeWidth="1.5">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isWatchman ? "#00e5ff" : "rgba(255,255,255,0.35)"} strokeWidth="1.5">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
           <circle cx="12" cy="12" r="3" />
         </svg>

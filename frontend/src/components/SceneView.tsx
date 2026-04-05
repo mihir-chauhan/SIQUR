@@ -143,6 +143,8 @@ export default function SceneView({
   onCameraPlaced,
   onCameraClicked,
   onSplatLoaded,
+  initialCameraPos,
+  initialCameraLookAt,
 }: {
   splatPath: string;
   objPath?: string;
@@ -159,6 +161,8 @@ export default function SceneView({
   onCameraPlaced?: (placement: CameraPlacement) => void;
   onCameraClicked?: (cameraId: string) => void;
   onSplatLoaded?: () => void;
+  initialCameraPos?: [number, number, number];
+  initialCameraLookAt?: [number, number, number];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -209,8 +213,8 @@ export default function SceneView({
       const viewer = new GaussianSplats3D.Viewer({
         rootElement: container,
         cameraUp: [0, -1, 0],
-        initialCameraPosition: [0, -0.5, -8],
-        initialCameraLookAt: [0, 0, 0],
+        initialCameraPosition: initialCameraPos ?? [0, -0.5, -8],
+        initialCameraLookAt: initialCameraLookAt ?? [0, 0, 0],
         selfDrivenMode: false,
         useBuiltInControls: false,
         sharedMemoryForWorkers: false,
@@ -324,8 +328,8 @@ export default function SceneView({
       // --- WASD + Mouse Look (FPS style) ---
       const keys: Record<string, boolean> = {};
       const euler = new THREE.Euler(0, 0, 0, "YXZ");
-      const baseSpeed = 1.875; // units/sec — fast enough for large scenes
-      const shiftMultiplier = 3; // 3x speed when holding shift
+      const baseSpeed = 0.5; // units/sec — slow for precise point plotting (was 1.875)
+      const shiftMultiplier = 6; // hold shift for fast movement
       const lookSpeed = 0.004;
       let isDragging = false;
       let didDrag = false;
@@ -599,7 +603,7 @@ export default function SceneView({
         window.removeEventListener("mouseup", onMouseUp);
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("resize", onResize);
-        viewer.dispose();
+        try { viewer.dispose(); } catch { /* strict mode double-unmount race */ }
       };
     }
 
